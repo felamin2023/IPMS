@@ -1,0 +1,375 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ── Enums ───────────────────────────────────────────
+
+enum ProcurementRequestStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  PENDING_SIGNATURE
+  APPROVED
+  REJECTED
+  IN_PROGRESS
+  PO_GENERATED
+  COMPLETED
+}
+
+enum ApprovalStepStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SKIPPED
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  ISSUED
+  DELIVERED
+  CANCELLED
+}
+
+// ── 1) Users / Access Control ───────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  fullName     String   @map("full_name")
+  email        String   @unique
+  position     String?
+  departmentId String?  @map("department_id")
+  passwordHash String?  @map("password_hash")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  department Department? @relation(fields: [departmentId], references: [id])
+
+  // Relations
+  userRoles                    UserRole[]
+  procurementRequests          ProcurementRequest[]
+  requestComments              RequestComment[]
+  uploadedAttachments          ProcurementRequestAttachment[]
+  assignedApprovalSteps        RequestApprovalStep[]
+  approvalSignatures           ApprovalSignature[]
+  approvalTemplateStepsForUser ApprovalWorkflowTemplateStep[] @relation("StepApproverUser")
+  purchaseOrdersCreated        PurchaseOrder[]
+  requestStatusHistories       RequestStatusHistory[]
+  notifications                Notification[]
+  notificationPreferences      UserNotificationPreference?
+  systemPreferences            UserSystemPreference?
+
+  @@map("users")
+}
+
+model Role {
+  id          String  @id @default(uuid())
+  name        String  @unique // requester, procurement_staff, approver, admin
+  description String?
+
+  userRoles                    UserRole[]
+  approvalTemplateStepsForRole ApprovalWorkflowTemplateStep[] @relation("StepApproverRole")
+
+  @@map("roles")
+}
+
+model UserRole {
+  userId String @map("user_id")
+  roleId String @map("role_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model Department {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  code      String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  users               User[]
+  procurementRequests ProcurementRequest[]
+
+  @@map("departments")
+}
+
+// ── 2) Request Module ───────────────────────────────
+
+model ProcurementRequest {
+  id                    String                   @id @default(uuid())
+  requestNumber         String                   @unique @map("request_number")
+  title                 String
+  departmentId          String                   @map("department_id")
+  requestedBy           String                   @map("requested_by")
+  justification         String?
+  preferredSupplierId   String?                  @map("preferred_supplier_id")
+  preferredSupplierName String?                  @map("preferred_supplier_name")
+  estimatedTotal        Decimal                  @map("estimated_total") @db.Decimal(12, 2)
+  currencyCode          String                   @default("PHP") @map("currency_code")
+  status                ProcurementRequestStatus @default(DRAFT)
+  submittedAt           DateTime?                @map("submitted_at") @db.Timestamptz
+  createdAt             DateTime                 @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime                 @updatedAt @map("updated_at") @db.Timestamptz
+
+  department        Department @relation(fields: [departmentId], references: [id])
+  requester         User       @relation(fields: [requestedBy], references: [id])
+  preferredSupplier Supplier?  @relation("PreferredSupplier", fields: [preferredSupplierId], references: [id])
+
+  items          ProcurementRequestItem[]
+  attachments    ProcurementRequestAttachment[]
+  comments       RequestComment[]
+  approvalSteps  RequestApprovalStep[]
+  purchaseOrder  PurchaseOrder?
+  statusHistory  RequestStatusHistory[]
+  notifications  Notification[]
+
+  @@map("procurement_requests")
+}
+
+model ProcurementRequestItem {
+  id            String   @id @default(uuid())
+  requestId     String   @map("request_id")
+  description   String
+  quantity      Int
+  unitCost      Decimal? @map("unit_cost") @db.Decimal(12, 2)
+  estimatedCost Decimal  @map("estimated_cost") @db.Decimal(12, 2)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  request            ProcurementRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  purchaseOrderItems PurchaseOrderItem[]
+
+  @@map("procurement_request_items")
+}
+
+model ProcurementRequestAttachment {
+  id         String   @id @default(uuid())
+  requestId  String   @map("request_id")
+  fileName   String   @map("file_name")
+  fileUrl    String   @map("file_url")
+  mimeType   String?  @map("mime_type")
+  uploadedBy String   @map("uploaded_by")
+  uploadedAt DateTime @default(now()) @map("uploaded_at") @db.Timestamptz
+
+  request  ProcurementRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  uploader User               @relation(fields: [uploadedBy], references: [id])
+
+  @@map("procurement_request_attachments")
+}
+
+model RequestComment {
+  id         String   @id @default(uuid())
+  requestId  String   @map("request_id")
+  authorId   String   @map("author_id")
+  comment    String
+  isInternal Boolean  @default(false) @map("is_internal")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  request ProcurementRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  author  User               @relation(fields: [authorId], references: [id])
+
+  @@map("request_comments")
+}
+
+// ── 3) Approval Module ──────────────────────────────
+
+model ApprovalWorkflowTemplate {
+  id        String   @id @default(uuid())
+  name      String
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  steps ApprovalWorkflowTemplateStep[]
+
+  @@map("approval_workflow_templates")
+}
+
+model ApprovalWorkflowTemplateStep {
+  id             String  @id @default(uuid())
+  templateId     String  @map("template_id")
+  stepOrder      Int     @map("step_order")
+  stepName       String  @map("step_name")
+  approverRoleId String? @map("approver_role_id")
+  approverUserId String? @map("approver_user_id")
+  isRequired     Boolean @default(true) @map("is_required")
+
+  template     ApprovalWorkflowTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  approverRole Role?                    @relation("StepApproverRole", fields: [approverRoleId], references: [id])
+  approverUser User?                    @relation("StepApproverUser", fields: [approverUserId], references: [id])
+
+  requestApprovalSteps RequestApprovalStep[]
+
+  @@map("approval_workflow_template_steps")
+}
+
+model RequestApprovalStep {
+  id                 String             @id @default(uuid())
+  requestId          String             @map("request_id")
+  templateStepId     String             @map("template_step_id")
+  stepOrder          Int                @map("step_order")
+  stepName           String             @map("step_name")
+  assignedApproverId String             @map("assigned_approver_id")
+  status             ApprovalStepStatus @default(PENDING)
+  decisionNote       String?            @map("decision_note")
+  decidedAt          DateTime?          @map("decided_at") @db.Timestamptz
+
+  request          ProcurementRequest           @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  templateStep     ApprovalWorkflowTemplateStep @relation(fields: [templateStepId], references: [id])
+  assignedApprover User                         @relation(fields: [assignedApproverId], references: [id])
+
+  signatures ApprovalSignature[]
+
+  @@map("request_approval_steps")
+}
+
+model ApprovalSignature {
+  id                    String   @id @default(uuid())
+  requestApprovalStepId String   @map("request_approval_step_id")
+  signerId              String   @map("signer_id")
+  signatureType         String   @map("signature_type") // typed, drawn, certificate, otp
+  signatureData         Json?    @map("signature_data")
+  signedAt              DateTime @default(now()) @map("signed_at") @db.Timestamptz
+  ipAddress             String?  @map("ip_address")
+  userAgent             String?  @map("user_agent")
+
+  approvalStep RequestApprovalStep @relation(fields: [requestApprovalStepId], references: [id], onDelete: Cascade)
+  signer       User                @relation(fields: [signerId], references: [id])
+
+  @@map("approval_signatures")
+}
+
+// ── 4) Purchase Number Generation + Purchase Orders ─
+
+model NumberSequence {
+  id        String @id @default(uuid())
+  seqKey    String @map("seq_key")
+  year      Int
+  nextValue Int    @default(1) @map("next_value")
+
+  @@unique([seqKey, year])
+  @@map("number_sequences")
+}
+
+model Supplier {
+  id        String   @id @default(uuid())
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  preferredByRequests ProcurementRequest[] @relation("PreferredSupplier")
+  purchaseOrders      PurchaseOrder[]
+
+  @@map("suppliers")
+}
+
+model PurchaseOrder {
+  id           String              @id @default(uuid())
+  poNumber     String              @unique @map("po_number")
+  requestId    String              @unique @map("request_id")
+  supplierId   String              @map("supplier_id")
+  status       PurchaseOrderStatus @default(DRAFT)
+  totalAmount  Decimal             @map("total_amount") @db.Decimal(12, 2)
+  currencyCode String              @default("PHP") @map("currency_code")
+  createdBy    String              @map("created_by")
+  issuedAt     DateTime?           @map("issued_at") @db.Timestamptz
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz
+
+  request  ProcurementRequest @relation(fields: [requestId], references: [id])
+  supplier Supplier           @relation(fields: [supplierId], references: [id])
+  creator  User               @relation(fields: [createdBy], references: [id])
+
+  items PurchaseOrderItem[]
+
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id              String  @id @default(uuid())
+  purchaseOrderId String  @map("purchase_order_id")
+  requestItemId   String? @map("request_item_id")
+  description     String
+  quantity        Int
+  unitCost        Decimal @map("unit_cost") @db.Decimal(12, 2)
+  lineTotal       Decimal @map("line_total") @db.Decimal(12, 2)
+
+  purchaseOrder PurchaseOrder           @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  requestItem   ProcurementRequestItem? @relation(fields: [requestItemId], references: [id])
+
+  @@map("purchase_order_items")
+}
+
+// ── 5) Status Monitoring / Tracking ─────────────────
+
+model RequestStatusHistory {
+  id           String   @id @default(uuid())
+  requestId    String   @map("request_id")
+  statusFrom   String   @map("status_from")
+  statusTo     String   @map("status_to")
+  eventTitle   String   @map("event_title")
+  eventDetails String?  @map("event_details")
+  actorId      String?  @map("actor_id")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  request ProcurementRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  actor   User?              @relation(fields: [actorId], references: [id])
+
+  @@map("request_status_history")
+}
+
+// ── 6) Notifications + Preferences ──────────────────
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  type      String // new_request, approval_needed, status_update, etc.
+  title     String
+  message   String
+  requestId String?  @map("request_id")
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  readAt    DateTime? @map("read_at") @db.Timestamptz
+
+  user    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  request ProcurementRequest? @relation(fields: [requestId], references: [id])
+
+  @@map("notifications")
+}
+
+model UserNotificationPreference {
+  userId                   String   @id @map("user_id")
+  newRequestSubmissions    Boolean  @default(true) @map("new_request_submissions")
+  approvalReminders        Boolean  @default(true) @map("approval_reminders")
+  statusUpdates            Boolean  @default(true) @map("status_updates")
+  emailDigest              Boolean  @default(false) @map("email_digest")
+  updatedAt                DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_notification_preferences")
+}
+
+model UserSystemPreference {
+  userId     String   @id @map("user_id")
+  language   String   @default("en")
+  timezone   String   @default("Asia/Manila")
+  dateFormat String   @default("MM/DD/YYYY") @map("date_format")
+  currency   String   @default("PHP")
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_system_preferences")
+}
