@@ -33,7 +33,7 @@ export default function SignIn() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#f0f6ff] to-[#ffffff] flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl rounded-3xl bg-white shadow-[0_10px_30px_rgba(0,0,0,0.12)] overflow-hidden">
+      <div className="w-full max-w-4xl rounded-t-[70px] md:rounded-3xl bg-white shadow-[0_10px_30px_rgba(0,0,0,0.12)] overflow-hidden">
         <div className="grid md:grid-cols-2">
           {/* Left Side - Sign In Form */}
           <div className="px-6 py-6 md:px-8 md:py-8 flex items-center justify-center order-2 md:order-1">
