@@ -173,7 +173,7 @@ export default function SignIn() {
           </div>
 
           {/* Bottom (mobile) / Right (desktop) - Greeting Panel */}
-          <div className="relative bg-gradient-to-b from-[#60a5fa] to-[#1e3a8a] text-white flex items-center justify-center px-6 py-7 md:py-14 rounded-t-[70px] md:rounded-t-none md:rounded-l-[90px]">
+          <div className="relative bg-gradient-to-b from-[#60a5fa] to-[#1e3a8a] text-white flex items-center justify-center px-6 py-8 md:py-14 rounded-t-[36px] md:rounded-t-none md:rounded-l-[90px]">
             <div className="text-center max-w-[300px]">
               <h2 className="text-2xl md:text-3xl font-bold mb-3">
                 New to the System?
