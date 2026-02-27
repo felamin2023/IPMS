@@ -802,7 +802,7 @@ export default function SignUp() {
           </div>
 
           {/* Bottom (mobile) / Left (desktop) - Greeting Panel */}
-          <div className="relative bg-gradient-to-b from-[#60a5fa] to-[#1e3a8a] text-white flex items-center justify-center px-6 py-7 md:py-14 md:order-1 rounded-t-[70px] md:rounded-t-none md:rounded-tr-[90px] md:rounded-br-[90px]">
+          <div className="relative bg-gradient-to-b from-[#60a5fa] to-[#1e3a8a] text-white flex items-center justify-center px-6 py-7 md:py-14 md:order-1 rounded-t-[36px] md:rounded-t-none md:rounded-tr-[90px] md:rounded-br-[90px]">
             <div className="text-center max-w-[295px] ">
               <h2 className="text-2xl md:text-3xl font-bold mb-3 ">
                 {showOtp ? "Check Your Email" : "Already have an account?"}
