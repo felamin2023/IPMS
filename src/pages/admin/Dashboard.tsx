@@ -1,6 +1,5 @@
 // src/pages/admin/Dashboard.tsx
 import { useMemo } from "react";
-import { useAuth } from "../../context/AuthContext";
 import { FileText, Clock, CheckCircle2, Package, Eye } from "lucide-react";
 import {
   ResponsiveContainer,

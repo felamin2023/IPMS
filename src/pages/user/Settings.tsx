@@ -1,7 +1,7 @@
 // src/pages/user/Settings.tsx
 import { useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { User, Mail, Key, Globe, Settings2 } from "lucide-react";
+import { User, Key, Globe, Settings2 } from "lucide-react";
 
 export default function Settings() {
   const { user } = useAuth();

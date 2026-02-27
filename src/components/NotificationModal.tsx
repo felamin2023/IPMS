@@ -1,4 +1,4 @@
-import React from "react";
+// React default import removed (automatic JSX runtime)
 
 type Props = {
   open: boolean;
