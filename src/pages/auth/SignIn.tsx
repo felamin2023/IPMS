@@ -33,10 +33,10 @@ export default function SignIn() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#f0f6ff] to-[#ffffff] flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl rounded-t-[70px] md:rounded-3xl bg-white shadow-[0_10px_30px_rgba(0,0,0,0.12)] overflow-hidden">
+      <div className="w-full max-w-4xl rounded-3xl bg-white shadow-[0_10px_30px_rgba(0,0,0,0.12)] overflow-hidden">
         <div className="grid md:grid-cols-2">
-          {/* Left Side - Sign In Form */}
-          <div className="px-6 py-6 md:px-8 md:py-8 flex items-center justify-center order-2 md:order-1">
+          {/* Top (mobile) / Left (desktop) - Sign In Form */}
+          <div className="px-6 py-6 md:px-8 md:py-8 flex items-center justify-center">
             <div className="w-full max-w-xs">
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900 text-center mb-5">
                 Sign In
@@ -169,21 +169,11 @@ export default function SignIn() {
                   </button>
                 </div>
               </form>
-
-              <p className="mt-5 text-center text-sm text-gray-600 md:hidden">
-                Don&apos;t have an account?{" "}
-                <Link
-                  to="/signup"
-                  className="font-semibold text-purple-700 hover:underline"
-                >
-                  Sign Up
-                </Link>
-              </p>
             </div>
           </div>
 
-          {/* Right Side - Greeting Panel */}
-          <div className="relative bg-gradient-to-b from-[#60a5fa] to-[#1e3a8a] text-white flex items-center justify-center px-6 py-12 md:py-14 order-1 md:order-2 rounded-t-[70px] md:rounded-t-none md:rounded-l-[90px]">
+          {/* Bottom (mobile) / Right (desktop) - Greeting Panel */}
+          <div className="relative bg-gradient-to-b from-[#60a5fa] to-[#1e3a8a] text-white flex items-center justify-center px-6 py-7 md:py-14 rounded-t-[70px] md:rounded-t-none md:rounded-l-[90px]">
             <div className="text-center max-w-[300px]">
               <h2 className="text-2xl md:text-3xl font-bold mb-3">
                 New to the System?

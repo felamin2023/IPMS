@@ -483,29 +483,8 @@ export default function SignUp() {
     <div className="min-h-screen bg-gradient-to-b from-[#f0f6ff] to-[#ffffff] flex items-center justify-center p-4">
       <div className="w-full max-w-4xl rounded-3xl bg-white shadow-[0_10px_30px_rgba(0,0,0,0.12)] overflow-hidden">
         <div className="grid md:grid-cols-2">
-          {/* Left Side - Greeting Panel */}
-          <div className="relative bg-gradient-to-b from-[#60a5fa] to-[#1e3a8a] text-white flex items-center justify-center px-6 py-12 md:py-14 rounded-b-[70px] md:rounded-bl-none md:rounded-tr-[90px] md:rounded-br-[90px]">
-            <div className="text-center max-w-[275px]">
-              <h2 className="text-2xl md:text-3xl font-bold mb-3">
-                {showOtp ? "Check Your Email" : "Create an Account"}
-              </h2>
-              <p className="text-xs md:text-sm text-white/90 leading-relaxed mb-6">
-                {showOtp
-                  ? "Enter the verification code we sent to your email to complete registration."
-                  : "Register your department account to access the request tracking system."}
-              </p>
-
-              <Link
-                to="/signin"
-                className="inline-flex items-center justify-center px-10 py-2.5 border border-white rounded-full text-sm font-semibold tracking-wide hover:bg-white hover:text-[#1e3a8a] transition"
-              >
-                SIGN IN
-              </Link>
-            </div>
-          </div>
-
-          {/* Right Side - Form / OTP */}
-          <div className="px-6 py-6 md:px-8 md:py-8 flex items-center justify-center">
+          {/* Top (mobile) / Right (desktop) - Form / OTP */}
+          <div className="px-6 py-6 md:px-8 md:py-8 flex items-center justify-center md:order-2">
             {showOtp && pendingProfile ? (
               <OtpVerification
                 email={email.trim()}
@@ -820,6 +799,27 @@ export default function SignUp() {
                 </p>
               </div>
             )}
+          </div>
+
+          {/* Bottom (mobile) / Left (desktop) - Greeting Panel */}
+          <div className="relative bg-gradient-to-b from-[#60a5fa] to-[#1e3a8a] text-white flex items-center justify-center px-6 py-7 md:py-14 md:order-1 rounded-t-[70px] md:rounded-t-none md:rounded-tr-[90px] md:rounded-br-[90px]">
+            <div className="text-center max-w-[295px] ">
+              <h2 className="text-2xl md:text-3xl font-bold mb-3 ">
+                {showOtp ? "Check Your Email" : "Already have an account?"}
+              </h2>
+              <p className="text-xs md:text-sm text-white/90 leading-relaxed mb-6">
+                {showOtp
+                  ? "Enter the verification code we sent to your email to complete registration."
+                  : "Sign in to access your department account and the request tracking system."}
+              </p>
+
+              <Link
+                to="/signin"
+                className="inline-flex items-center justify-center px-10 py-2.5 border border-white rounded-full text-sm font-semibold tracking-wide hover:bg-white hover:text-[#1e3a8a] transition"
+              >
+                SIGN IN
+              </Link>
+            </div>
           </div>
         </div>
       </div>
