@@ -108,14 +108,13 @@ async function main() {
 
   console.log("\nSeeding admin user...");
   await prisma.user.upsert({
-    where: { username: "admin" },
+    where: { email: "admin@ipms.local" },
     update: {
       firstName: "System",
       lastName: "Administrator",
       role: "admin",
     },
     create: {
-      username: "admin",
       email: "admin@ipms.local",
       firstName: "System",
       lastName: "Administrator",
@@ -123,7 +122,7 @@ async function main() {
       role: "admin",
     },
   });
-  console.log("  ✓ Admin user created (username: admin)\n");
+  console.log("  ✓ Admin user created (email: admin@ipms.local)\n");
 
   console.log("Seed complete!");
 }

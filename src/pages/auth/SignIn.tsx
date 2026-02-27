@@ -8,6 +8,7 @@ export default function SignIn() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -17,8 +18,12 @@ export default function SignIn() {
 
     try {
       setLoading(true);
-      await signIn(email, password);
-      navigate("/");
+      const role = await signIn(email, password);
+      if (role === "admin") {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/");
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Sign in failed");
     } finally {
@@ -27,8 +32,8 @@ export default function SignIn() {
   };
 
   return (
-    <div className="min-h-screen bg-[#edf0fb] flex items-center justify-center p-4">
-      <div className="w-full max-w-3xl rounded-3xl bg-white shadow-[0_10px_30px_rgba(0,0,0,0.12)] overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-[#f0f6ff] to-[#ffffff] flex items-center justify-center p-4">
+      <div className="w-full max-w-4xl rounded-3xl bg-white shadow-[0_10px_30px_rgba(0,0,0,0.12)] overflow-hidden">
         <div className="grid md:grid-cols-2">
           {/* Left Side - Sign In Form */}
           <div className="px-6 py-6 md:px-8 md:py-8 flex items-center justify-center order-2 md:order-1">
@@ -42,7 +47,7 @@ export default function SignIn() {
                 <button
                   type="button"
                   aria-label="Sign in with Google"
-                  className="flex w-[80%] items-center justify-center gap-2 rounded-full bg-gray-100 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition"
+                  className="flex w-[80%] items-center justify-center gap-4 rounded-full bg-gray-100 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition"
                 >
                   <svg className="h-5 w-5" viewBox="0 0 24 24">
                     <path
@@ -98,16 +103,59 @@ export default function SignIn() {
                   <label htmlFor="password" className="sr-only">
                     Password
                   </label>
-                  <input
-                    id="password"
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="current-password"
-                    required
-                    className="w-full rounded-md bg-gray-100 px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-500 outline-none focus:ring-2 focus:ring-purple-400"
-                  />
+                  <div className="relative">
+                    <input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      autoComplete="current-password"
+                      required
+                      className="w-full rounded-md bg-gray-100 px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-500 outline-none focus:ring-2 focus:ring-purple-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((s) => !s)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showPassword ? (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={1.5}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M13.875 18.825A10.05 10.05 0 0 1 12 19.5c-5.523 0-10-4.477-10-10a9.96 9.96 0 0 1 1.175-4.125M6.343 6.343A9.962 9.962 0 0 1 12 4.5c5.523 0 10 4.477 10 10 0 1.356-.265 2.65-.743 3.816M3 3l18 18"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={1.5}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                   <div className="mt-0.5 text-xs min-h-[0.75rem]"></div>
                 </div>
 
@@ -115,7 +163,7 @@ export default function SignIn() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="min-w-[170px] rounded-md bg-linear-to-r from-[#6b4cf6] to-[#592cd4] px-6 py-2.5 text-sm font-semibold text-white shadow hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-70"
+                    className="min-w-[170px] rounded-md bg-gradient-to-r from-[#93c5fd] to-[#2563eb] px-6 py-2.5 text-sm font-semibold text-white shadow hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {loading ? "SIGNING IN..." : "SIGN IN"}
                   </button>
@@ -135,7 +183,7 @@ export default function SignIn() {
           </div>
 
           {/* Right Side - Greeting Panel */}
-          <div className="relative bg-linear-to-b from-[#5f6ad8] to-[#5a2ccf] text-white flex items-center justify-center px-6 py-12 md:py-14 order-1 md:order-2 rounded-t-[70px] md:rounded-t-none md:rounded-l-[90px]">
+          <div className="relative bg-gradient-to-b from-[#60a5fa] to-[#1e3a8a] text-white flex items-center justify-center px-6 py-12 md:py-14 order-1 md:order-2 rounded-t-[70px] md:rounded-t-none md:rounded-l-[90px]">
             <div className="text-center max-w-[300px]">
               <h2 className="text-2xl md:text-3xl font-bold mb-3">
                 New to the System?
@@ -146,7 +194,7 @@ export default function SignIn() {
 
               <Link
                 to="/signup"
-                className="inline-flex items-center justify-center px-10 py-2.5 border border-white rounded-full text-sm font-semibold tracking-wide hover:bg-white hover:text-[#5a2ccf] transition"
+                className="inline-flex items-center justify-center px-10 py-2.5 border border-white rounded-full text-sm font-semibold tracking-wide hover:bg-white hover:text-[#1e3a8a] transition"
               >
                 SIGN UP
               </Link>
