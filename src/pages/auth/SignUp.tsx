@@ -169,8 +169,11 @@ function OtpVerification({
         </p>
       )}
 
-      {/* OTP digit inputs */}
-      <div className="flex justify-center gap-2 mb-6" onPaste={handlePaste}>
+      {/* OTP digit inputs: grid that becomes 4 cols on small screens (2 rows) and 8 cols on sm+ (single row) */}
+      <div
+        className="grid grid-cols-4 sm:grid-cols-8 gap-2 mb-6 justify-items-center"
+        onPaste={handlePaste}
+      >
         {digits.map((digit, i) => (
           <input
             key={i}
@@ -183,7 +186,7 @@ function OtpVerification({
             value={digit}
             onChange={(e) => handleChange(i, e.target.value)}
             onKeyDown={(e) => handleKeyDown(i, e)}
-            className="h-12 w-10 rounded-lg border-2 border-gray-200 bg-gray-50 text-center text-lg font-semibold text-gray-800 outline-none transition-colors focus:border-blue-500 focus:bg-white"
+            className="h-12 w-full max-w-[48px] sm:max-w-[40px] rounded-lg border-2 border-gray-200 bg-gray-50 text-center text-lg font-semibold text-gray-800 outline-none transition-colors focus:border-blue-500 focus:bg-white"
           />
         ))}
       </div>
@@ -257,7 +260,7 @@ export default function SignUp() {
   const [submitted, setSubmitted] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
 
-  // OTP step state
+  // OTP step state (normal behavior)
   const [showOtp, setShowOtp] = useState(false);
   const [pendingProfile, setPendingProfile] = useState<{
     firstName: string;

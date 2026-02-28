@@ -81,6 +81,17 @@ export default function AdminNav({ hideBrand }: { hideBrand?: boolean }) {
             );
           })}
         </ul>
+        {/* Mobile-only sign out so it's always reachable on small screens */}
+        <div className="mt-3 md:hidden">
+          <button
+            type="button"
+            onClick={signOut}
+            className="w-full group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+          >
+            <LogOut className="h-5 w-5 text-gray-500 group-hover:text-gray-700" />
+            <span>Sign Out</span>
+          </button>
+        </div>
       </nav>
 
       {/* Sign out (sticks to bottom) */}
