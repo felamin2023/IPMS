@@ -790,16 +790,6 @@ export default function SignUp() {
                     </button>
                   </div>
                 </form>
-
-                <p className="mt-5 text-center text-sm text-gray-600 md:hidden">
-                  Already have an account?{" "}
-                  <Link
-                    to="/signin"
-                    className="font-semibold text-purple-700 hover:underline"
-                  >
-                    Sign In
-                  </Link>
-                </p>
               </div>
             )}
           </div>
