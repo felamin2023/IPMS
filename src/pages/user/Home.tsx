@@ -1,5 +1,5 @@
 // src/pages/user/Home.tsx
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -10,40 +10,37 @@ import {
   CheckCircle2,
   Package,
   ArrowRight,
+  Loader2,
 } from "lucide-react";
+import {
+  fetchRequestStats,
+  fetchRequests,
+  type RequestRow,
+  type RequestStatus,
+  STATUS_LABELS,
+} from "../../lib/requests";
 
-type Status = "Pending Approval" | "Approved" | "In Progress" | "Completed";
-
-type RequestRow = {
-  requestNo: string;
-  title: string;
-  department: string;
-  dateSubmitted: string;
-  amount: number;
-  status: Status;
-};
-
-function StatusPill({ status }: { status: Status }) {
-  const map: Record<Status, string> = {
-    "Pending Approval": "bg-amber-100 text-amber-700",
-    Approved: "bg-green-100 text-green-700",
-    "In Progress": "bg-blue-100 text-blue-700",
-    Completed: "bg-violet-100 text-violet-700",
+function StatusPill({ status }: { status: RequestStatus }) {
+  const map: Record<RequestStatus, string> = {
+    submitted: "bg-gray-100 text-gray-700",
+    head_review: "bg-amber-100 text-amber-700",
+    budget_review: "bg-blue-100 text-blue-700",
+    procurement_processing: "bg-green-100 text-green-700",
+    purchase_order: "bg-violet-100 text-violet-700",
+    rejected: "bg-red-100 text-red-700",
   };
-
-  const label = status === "Pending Approval" ? "Pending\nApproval" : status;
 
   return (
     <span
       className={[
         "inline-flex items-center justify-center",
-        "min-w-[120px] px-4 py-2",
+        "min-w-[100px] px-3 py-1.5",
         "rounded-full text-xs font-semibold",
-        "text-center leading-tight whitespace-pre-line",
-        map[status],
+        "text-center leading-tight",
+        map[status] ?? "bg-gray-100 text-gray-700",
       ].join(" ")}
     >
-      {label}
+      {STATUS_LABELS[status]}
     </span>
   );
 }
@@ -103,6 +100,11 @@ function StatCard({
   );
 }
 
+function itemsTotal(items?: { unit_cost: number | null; qty: number }[]) {
+  if (!items) return 0;
+  return items.reduce((s, it) => s + (it.unit_cost ?? 0) * (it.qty ?? 0), 0);
+}
+
 export default function Home() {
   const { user } = useAuth();
 
@@ -110,61 +112,52 @@ export default function Home() {
     (user?.user_metadata?.full_name as string | undefined) ??
     (user?.email ? user.email.split("@")[0] : "Guest");
 
-  const prettyRole = "Procurement Officer";
+  const [stats, setStats] = useState({
+    total: 0,
+    submitted: 0,
+    headReview: 0,
+    budgetReview: 0,
+    procurementProcessing: 0,
+    purchaseOrder: 0,
+    rejected: 0,
+  });
+  const [recent, setRecent] = useState<RequestRow[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const stats = useMemo(
-    () => ({
-      total: 12,
-      pending: 3,
-      inProgress: 4,
-      completed: 5,
-    }),
-    [],
-  );
+  const loadData = useCallback(async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    try {
+      const [s, all] = await Promise.all([
+        fetchRequestStats(user.id),
+        fetchRequests({ createdBy: user.id }),
+      ]);
+      setStats(s);
+      setRecent(all.slice(0, 4));
+    } catch (err) {
+      console.error("Home load error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id]);
 
-  const recent = useMemo<RequestRow[]>(
-    () => [
-      {
-        requestNo: "PR-2024-0248",
-        title: "Office Supplies - Accounting Dept",
-        department: "Accounting",
-        dateSubmitted: "2024-02-15",
-        amount: 1250,
-        status: "Pending Approval",
-      },
-      {
-        requestNo: "PR-2024-0246",
-        title: "Computer Hardware - 10 Units",
-        department: "IT Department",
-        dateSubmitted: "2024-02-14",
-        amount: 12000,
-        status: "In Progress",
-      },
-      {
-        requestNo: "PR-2024-0245",
-        title: "Furniture - Faculty Lounge",
-        department: "Facilities",
-        dateSubmitted: "2024-02-14",
-        amount: 3800,
-        status: "Completed",
-      },
-      {
-        requestNo: "PR-2024-0244",
-        title: "Library Books Purchase",
-        department: "Library",
-        dateSubmitted: "2024-02-13",
-        amount: 5200,
-        status: "Approved",
-      },
-    ],
-    [],
-  );
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const money = useMemo(
     () =>
-      new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }),
+      new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }),
     [],
   );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-50">
@@ -174,10 +167,11 @@ export default function Home() {
             Welcome, {displayName}
           </h1>
           <p className="text-sm text-gray-500">
-            {prettyRole} • Track your procurement requests and monitor progress
+            Track your procurement requests and monitor progress
           </p>
         </div>
 
+        {/* Quick Actions */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <Link
             to="/create-request"
@@ -246,6 +240,7 @@ export default function Home() {
           </Link>
         </div>
 
+        {/* Stats */}
         <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Requests"
@@ -254,25 +249,30 @@ export default function Home() {
             tone="blue"
           />
           <StatCard
-            title="Pending Approval"
-            value={stats.pending}
+            title="Pending Review"
+            value={stats.submitted}
             icon={Clock}
             tone="amber"
           />
           <StatCard
             title="In Progress"
-            value={stats.inProgress}
+            value={
+              stats.headReview +
+              stats.budgetReview +
+              stats.procurementProcessing
+            }
             icon={CheckCircle2}
             tone="green"
           />
           <StatCard
-            title="Completed"
-            value={stats.completed}
+            title="Purchase Orders"
+            value={stats.purchaseOrder}
             icon={Package}
             tone="violet"
           />
         </div>
 
+        {/* Recent + How it works */}
         <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
           <div className="rounded-2xl border border-gray-200 bg-white shadow-sm min-w-0">
             <div className="border-b border-gray-200 px-6 py-4 flex items-start justify-between gap-3">
@@ -296,26 +296,27 @@ export default function Home() {
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr className="text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    <th className="px-6 py-3">Request No.</th>
-                    <th className="px-6 py-3">Title</th>
+                    <th className="px-6 py-3">PR No.</th>
+                    <th className="px-6 py-3">Purpose</th>
                     <th className="px-6 py-3">Date</th>
                     <th className="px-6 py-3">Amount</th>
                     <th className="px-6 py-3 text-center">Status</th>
                   </tr>
                 </thead>
-
                 <tbody className="divide-y divide-gray-100">
                   {recent.map((r) => (
-                    <tr key={r.requestNo} className="text-sm text-gray-700">
+                    <tr key={r.id} className="text-sm text-gray-700">
                       <td className="px-6 py-4 font-medium text-gray-900">
-                        {r.requestNo}
+                        {r.pr_no ?? "—"}
                       </td>
-                      <td className="px-6 py-4">{r.title}</td>
+                      <td className="px-6 py-4 max-w-[180px] truncate">
+                        {r.purpose || "—"}
+                      </td>
                       <td className="px-6 py-4 text-gray-600">
-                        {r.dateSubmitted}
+                        {new Date(r.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 font-semibold text-gray-900 whitespace-nowrap">
-                        {money.format(r.amount)}
+                        {money.format(itemsTotal(r.items))}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex justify-center">
@@ -324,11 +325,22 @@ export default function Home() {
                       </td>
                     </tr>
                   ))}
+                  {recent.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="px-6 py-10 text-center text-sm text-gray-500"
+                      >
+                        No requests yet. Create your first request!
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
           </div>
 
+          {/* How it works */}
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
             <div className="text-sm font-semibold text-gray-900">
               How it works
@@ -346,31 +358,36 @@ export default function Home() {
                   Create a request with complete details.
                 </div>
               </div>
-
               <div className="rounded-xl bg-amber-50 p-4">
                 <div className="text-sm font-semibold text-gray-900">
-                  2) Pending Approval
+                  2) Dept Head Review
                 </div>
                 <div className="mt-1 text-sm text-gray-600">
-                  Request is waiting for approvers.
+                  Department head reviews and forwards.
                 </div>
               </div>
-
               <div className="rounded-xl bg-blue-50 p-4">
                 <div className="text-sm font-semibold text-gray-900">
-                  3) In Progress
+                  3) Budget Review
                 </div>
                 <div className="mt-1 text-sm text-gray-600">
-                  Procurement processing and PO steps.
+                  Budget officer reviews and approves funding.
                 </div>
               </div>
-
               <div className="rounded-xl bg-green-50 p-4">
                 <div className="text-sm font-semibold text-gray-900">
-                  4) Completed
+                  4) Procurement Processing
                 </div>
                 <div className="mt-1 text-sm text-gray-600">
-                  Done and delivered / finalized.
+                  Procurement office processes the request.
+                </div>
+              </div>
+              <div className="rounded-xl bg-violet-50 p-4">
+                <div className="text-sm font-semibold text-gray-900">
+                  5) Purchase Order
+                </div>
+                <div className="mt-1 text-sm text-gray-600">
+                  PO issued — procurement fully completed.
                 </div>
               </div>
             </div>

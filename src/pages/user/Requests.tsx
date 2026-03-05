@@ -1,104 +1,92 @@
 // src/pages/user/Requests.tsx
-import { useEffect, useMemo, useState } from "react";
-import { Search, Filter, Eye } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Search, Filter, Eye, Download, Loader2, X } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import {
+  fetchRequests,
+  type RequestRow,
+  type RequestStatus,
+  STATUS_LABELS,
+} from "../../lib/requests";
+import { generatePrDocument } from "../../lib/generatePr.ts";
 
-type Status = "Pending Approval" | "Approved" | "In Progress" | "Completed";
-
-type RequestRow = {
-  requestNo: string;
-  title: string;
-  department: string;
-  dateSubmitted: string;
-  amount: number;
-  status: Status;
-};
-
-function StatusPill({ status }: { status: Status }) {
-  const map: Record<Status, string> = {
-    "Pending Approval": "bg-amber-100 text-amber-700",
-    Approved: "bg-green-100 text-green-700",
-    "In Progress": "bg-blue-100 text-blue-700",
-    Completed: "bg-violet-100 text-violet-700",
+function StatusPill({ status }: { status: RequestStatus }) {
+  const map: Record<RequestStatus, string> = {
+    submitted: "bg-gray-100 text-gray-700",
+    head_review: "bg-amber-100 text-amber-700",
+    budget_review: "bg-blue-100 text-blue-700",
+    procurement_processing: "bg-green-100 text-green-700",
+    purchase_order: "bg-violet-100 text-violet-700",
+    rejected: "bg-red-100 text-red-700",
   };
-
-  // Force "Pending Approval" into 2 lines so width stays clean/consistent
-  const label = status === "Pending Approval" ? "Pending\nApproval" : status;
 
   return (
     <span
       className={[
         "inline-flex items-center justify-center",
-        "min-w-[120px] px-4 py-2",
+        "min-w-[100px] px-3 py-1.5",
         "rounded-full text-xs font-semibold",
-        "text-center leading-tight whitespace-pre-line",
-        map[status],
+        "text-center leading-tight",
+        map[status] ?? "bg-gray-100 text-gray-700",
       ].join(" ")}
     >
-      {label}
+      {STATUS_LABELS[status]}
     </span>
   );
 }
 
-export default function Requests() {
-  const data = useMemo<RequestRow[]>(
-    () => [
-      {
-        requestNo: "PR-2024-0248",
-        title: "Office Supplies - Accounting Dept",
-        department: "Accounting",
-        dateSubmitted: "2024-02-15",
-        amount: 1250,
-        status: "Pending Approval",
-      },
-      {
-        requestNo: "PR-2024-0247",
-        title: "Laboratory Equipment",
-        department: "Science Lab",
-        dateSubmitted: "2024-02-15",
-        amount: 8500,
-        status: "Approved",
-      },
-      {
-        requestNo: "PR-2024-0246",
-        title: "Computer Hardware - 10 Units",
-        department: "IT Department",
-        dateSubmitted: "2024-02-14",
-        amount: 12000,
-        status: "In Progress",
-      },
-      {
-        requestNo: "PR-2024-0245",
-        title: "Furniture - Faculty Lounge",
-        department: "Facilities",
-        dateSubmitted: "2024-02-14",
-        amount: 3800,
-        status: "Completed",
-      },
-    ],
-    [],
+function itemsTotal(items?: { unit_cost: number | null; qty: number }[]) {
+  if (!items) return 0;
+  return items.reduce(
+    (sum, it) => sum + (it.unit_cost ?? 0) * (it.qty ?? 0),
+    0,
   );
+}
 
+export default function Requests() {
+  const { user } = useAuth();
+  const [data, setData] = useState<RequestRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<"" | Status>("");
+  const [statusFilter, setStatusFilter] = useState<"" | RequestStatus>("");
+  const [viewRequest, setViewRequest] = useState<RequestRow | null>(null);
+
+  const loadData = useCallback(async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    try {
+      const rows = await fetchRequests({ createdBy: user.id });
+      setData(rows);
+    } catch (err) {
+      console.error("Failed to load requests:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return data.filter((r) => {
       const matchesQuery =
         !q ||
-        r.requestNo.toLowerCase().includes(q) ||
-        r.title.toLowerCase().includes(q) ||
-        r.department.toLowerCase().includes(q);
+        (r.pr_no ?? "").toLowerCase().includes(q) ||
+        (r.purpose ?? "").toLowerCase().includes(q) ||
+        (r.college?.code ?? "").toLowerCase().includes(q) ||
+        (r.program?.code ?? "").toLowerCase().includes(q);
 
-      const matchesStatus = !status || r.status === status;
+      const matchesStatus = !statusFilter || r.status === statusFilter;
 
       return matchesQuery && matchesStatus;
     });
-  }, [data, query, status]);
+  }, [data, query, statusFilter]);
 
   const money = useMemo(
     () =>
-      new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }),
+      new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }),
     [],
   );
 
@@ -118,7 +106,7 @@ export default function Requests() {
         {/* Header */}
         <div className="mb-5">
           <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-            Procurement Requests
+            My Procurement Requests
           </h1>
           <p className="mt-1 text-sm text-gray-500">
             View your submitted procurement requests
@@ -139,7 +127,7 @@ export default function Requests() {
                     setPage(1);
                   }}
                   className="w-full rounded-lg border border-gray-200 bg-white pl-10 pr-4 py-2.5 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-                  placeholder="Search by request number, title, or department..."
+                  placeholder="Search by PR number, purpose, college..."
                 />
               </div>
 
@@ -149,131 +137,337 @@ export default function Requests() {
                 </div>
 
                 <select
-                  value={status}
+                  value={statusFilter}
                   onChange={(e) => {
-                    setStatus(e.target.value as any);
+                    setStatusFilter(e.target.value as any);
                     setPage(1);
                   }}
                   className="h-10 min-w-[160px] rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="">All Status</option>
-                  <option value="Pending Approval">Pending Approval</option>
-                  <option value="Approved">Approved</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Completed">Completed</option>
+                  <option value="submitted">Submitted</option>
+                  <option value="head_review">Head Review</option>
+                  <option value="budget_review">Budget Review</option>
+                  <option value="procurement_processing">
+                    Procurement Processing
+                  </option>
+                  <option value="purchase_order">Purchase Order</option>
+                  <option value="rejected">Rejected</option>
                 </select>
               </div>
             </div>
           </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[860px]">
-              <thead className="bg-gray-50">
-                <tr className="text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  <th className="px-5 py-3">Request Number</th>
-                  <th className="px-5 py-3">Title</th>
-                  <th className="px-5 py-3">Department</th>
-                  <th className="px-5 py-3">Date Submitted</th>
-                  <th className="px-5 py-3">Amount</th>
-                  <th className="px-5 py-3 text-center">Status</th>
-                  <th className="px-5 py-3">Actions</th>
-                </tr>
-              </thead>
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+          ) : (
+            <>
+              {/* Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[860px]">
+                  <thead className="bg-gray-50">
+                    <tr className="text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      <th className="px-5 py-3">PR Number</th>
+                      <th className="px-5 py-3">Purpose</th>
+                      <th className="px-5 py-3">College / Program</th>
+                      <th className="px-5 py-3">Date Submitted</th>
+                      <th className="px-5 py-3">Amount</th>
+                      <th className="px-5 py-3 text-center">Status</th>
+                      <th className="px-5 py-3">Actions</th>
+                    </tr>
+                  </thead>
 
-              <tbody className="divide-y divide-gray-100">
-                {current.map((r) => (
-                  <tr key={r.requestNo} className="text-sm text-gray-700">
-                    <td className="px-5 py-4 font-medium text-gray-900">
-                      {r.requestNo}
-                    </td>
-                    <td className="px-5 py-4">{r.title}</td>
-                    <td className="px-5 py-4 text-gray-600">{r.department}</td>
-                    <td className="px-5 py-4 text-gray-600">
-                      {r.dateSubmitted}
-                    </td>
+                  <tbody className="divide-y divide-gray-100">
+                    {current.map((r) => (
+                      <tr key={r.id} className="text-sm text-gray-700">
+                        <td className="px-5 py-4 font-medium text-gray-900">
+                          {r.pr_no ?? "—"}
+                        </td>
+                        <td className="px-5 py-4 max-w-[200px] truncate">
+                          {r.purpose || "—"}
+                        </td>
+                        <td className="px-5 py-4 text-gray-600">
+                          {r.college?.code} / {r.program?.code}
+                        </td>
+                        <td className="px-5 py-4 text-gray-600">
+                          {new Date(r.created_at).toLocaleDateString()}
+                        </td>
 
-                    <td className="px-5 py-4 font-semibold text-gray-900 whitespace-nowrap">
-                      {money.format(r.amount)}
-                    </td>
+                        <td className="px-5 py-4 font-semibold text-gray-900 whitespace-nowrap">
+                          {money.format(itemsTotal(r.items))}
+                        </td>
 
-                    <td className="px-5 py-4">
-                      <div className="flex justify-center">
-                        <StatusPill status={r.status} />
-                      </div>
-                    </td>
+                        <td className="px-5 py-4">
+                          <div className="flex justify-center">
+                            <StatusPill status={r.status} />
+                          </div>
+                        </td>
 
-                    <td className="px-5 py-4">
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-2 text-blue-600 font-semibold hover:text-blue-700"
-                        onClick={() => alert(`View ${r.requestNo} (UI only)`)}
-                      >
-                        <Eye className="h-4 w-4" />
-                        View
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-1 text-blue-600 font-semibold hover:text-blue-700 text-sm"
+                              onClick={() => setViewRequest(r)}
+                            >
+                              <Eye className="h-4 w-4" />
+                              View
+                            </button>
+                            {(r.status === "head_review" ||
+                              r.status === "budget_review" ||
+                              r.status === "procurement_processing" ||
+                              r.status === "purchase_order") && (
+                              <button
+                                type="button"
+                                className="inline-flex items-center gap-1 text-green-600 font-semibold hover:text-green-700 text-sm"
+                                onClick={() => generatePrDocument(r)}
+                              >
+                                <Download className="h-4 w-4" />
+                                PR
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
 
-                {current.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={7}
-                      className="px-5 py-10 text-center text-sm text-gray-500"
+                    {current.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={7}
+                          className="px-5 py-10 text-center text-sm text-gray-500"
+                        >
+                          {data.length === 0
+                            ? "You haven't submitted any requests yet."
+                            : "No requests found."}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Footer / Pagination */}
+              <div className="flex flex-col gap-3 border-t border-gray-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-sm text-gray-500">
+                  Showing {current.length} of {filtered.length} requests
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                    disabled={page <= 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  >
+                    Previous
+                  </button>
+
+                  {Array.from(
+                    { length: Math.min(totalPages, 5) },
+                    (_, i) => i + 1,
+                  ).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      className={[
+                        "h-9 w-9 rounded-lg border text-sm font-semibold",
+                        page === p
+                          ? "border-blue-600 bg-blue-600 text-white"
+                          : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50",
+                      ].join(" ")}
+                      onClick={() => setPage(p)}
                     >
-                      No requests found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                      {p}
+                    </button>
+                  ))}
 
-          {/* Footer / Pagination */}
-          <div className="flex flex-col gap-3 border-t border-gray-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm text-gray-500">
-              Showing {current.length} of {filtered.length} requests
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                Previous
-              </button>
-
-              {[1, 2, 3].map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  className={[
-                    "h-9 w-9 rounded-lg border text-sm font-semibold",
-                    page === p
-                      ? "border-blue-600 bg-blue-600 text-white"
-                      : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50",
-                  ].join(" ")}
-                  onClick={() => setPage(Math.min(totalPages, p))}
-                >
-                  {p}
-                </button>
-              ))}
-
-              <button
-                type="button"
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              >
-                Next
-              </button>
-            </div>
-          </div>
+                  <button
+                    type="button"
+                    className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                    disabled={page >= totalPages}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
+
+      {/* View Modal */}
+      {viewRequest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <div className="text-lg font-semibold text-gray-900">
+                  {viewRequest.pr_no ?? "—"}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {viewRequest.purpose || "No purpose"}
+                </div>
+              </div>
+              <button
+                onClick={() => setViewRequest(null)}
+                className="rounded-lg p-1 hover:bg-gray-100"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+              <div>
+                <div className="text-xs font-semibold uppercase text-gray-500">
+                  College
+                </div>
+                <div className="mt-1 text-gray-900">
+                  {viewRequest.college?.name ?? "—"}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-semibold uppercase text-gray-500">
+                  Program
+                </div>
+                <div className="mt-1 text-gray-900">
+                  {viewRequest.program?.name ?? "—"}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-semibold uppercase text-gray-500">
+                  Status
+                </div>
+                <div className="mt-1">
+                  <StatusPill status={viewRequest.status} />
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-semibold uppercase text-gray-500">
+                  Date
+                </div>
+                <div className="mt-1 text-gray-900">
+                  {new Date(viewRequest.created_at).toLocaleDateString()}
+                </div>
+              </div>
+              {viewRequest.fund_source && (
+                <div>
+                  <div className="text-xs font-semibold uppercase text-gray-500">
+                    Fund Source
+                  </div>
+                  <div className="mt-1 text-gray-900">
+                    {viewRequest.fund_source}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {viewRequest.items && viewRequest.items.length > 0 && (
+              <div className="mb-4">
+                <div className="text-xs font-semibold uppercase text-gray-500 mb-2">
+                  Items
+                </div>
+                <div className="overflow-x-auto rounded-lg border border-gray-200">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr className="text-left text-xs font-semibold uppercase text-gray-500">
+                        <th className="px-3 py-2">Description</th>
+                        <th className="px-3 py-2">Qty</th>
+                        <th className="px-3 py-2">UOM</th>
+                        <th className="px-3 py-2">Unit Cost</th>
+                        <th className="px-3 py-2">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {viewRequest.items.map((item) => (
+                        <tr key={item.id}>
+                          <td className="px-3 py-2">{item.item_description}</td>
+                          <td className="px-3 py-2">{item.qty}</td>
+                          <td className="px-3 py-2">{item.uom}</td>
+                          <td className="px-3 py-2">
+                            {item.unit_cost
+                              ? money.format(Number(item.unit_cost))
+                              : "—"}
+                          </td>
+                          <td className="px-3 py-2 font-medium">
+                            {item.total_cost
+                              ? money.format(Number(item.total_cost))
+                              : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="mt-2 text-right text-sm font-semibold text-gray-900">
+                  Total: {money.format(itemsTotal(viewRequest.items))}
+                </div>
+              </div>
+            )}
+
+            {/* Status Timeline */}
+            {viewRequest.status_logs && viewRequest.status_logs.length > 0 && (
+              <div>
+                <div className="text-xs font-semibold uppercase text-gray-500 mb-2">
+                  Status History
+                </div>
+                <div className="space-y-3">
+                  {viewRequest.status_logs
+                    .sort(
+                      (a, b) =>
+                        new Date(a.created_at).getTime() -
+                        new Date(b.created_at).getTime(),
+                    )
+                    .map((log) => (
+                      <div
+                        key={log.id}
+                        className="flex items-start gap-3 text-sm"
+                      >
+                        <div className="h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
+                          <div className="h-2 w-2 rounded-full bg-blue-600" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {STATUS_LABELS[log.status as RequestStatus] ??
+                              log.status}
+                          </div>
+                          {log.note && (
+                            <div className="text-gray-500">{log.note}</div>
+                          )}
+                          <div className="text-xs text-gray-400">
+                            {new Date(log.created_at).toLocaleString()}
+                            {log.updater &&
+                              ` — ${log.updater.first_name} ${log.updater.last_name}`}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Download button */}
+            {(viewRequest.status === "head_review" ||
+              viewRequest.status === "budget_review" ||
+              viewRequest.status === "procurement_processing" ||
+              viewRequest.status === "purchase_order") && (
+              <div className="mt-4 flex justify-end">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+                  onClick={() => generatePrDocument(viewRequest)}
+                >
+                  <Download className="h-4 w-4" />
+                  Download PR Document
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

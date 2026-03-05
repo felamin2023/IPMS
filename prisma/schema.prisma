@@ -19,11 +19,11 @@ enum UserRole {
 
 enum RequestStatus {
   submitted
-  received
-  under_review
-  approved
+  head_review
+  budget_review
+  procurement_processing
+  purchase_order
   rejected
-  completed
 }
 
 // ── Colleges / Programs ─────────────────────────────
