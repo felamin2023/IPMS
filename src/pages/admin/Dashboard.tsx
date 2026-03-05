@@ -5,7 +5,6 @@ import {
   Clock,
   CheckCircle2,
   Package,
-  Eye,
   Loader2,
 } from "lucide-react";
 import {
@@ -13,11 +12,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
   Tooltip,
   Legend,
 } from "recharts";
