@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import {
   fetchRequestStats,
-  fetchRequests,
+  fetchRequestsLight,
   type RequestRow,
   type RequestStatus,
   STATUS_SHORT_LABELS,
@@ -133,7 +133,7 @@ export default function Home() {
     try {
       const [s, all] = await Promise.all([
         fetchRequestStats(user.id),
-        fetchRequests({ createdBy: user.id }),
+        fetchRequestsLight({ createdBy: user.id }),
       ]);
       setStats(s);
       setRecent(all.slice(0, 4));

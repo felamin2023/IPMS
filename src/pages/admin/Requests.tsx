@@ -14,7 +14,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import {
-  fetchRequests,
+  fetchRequestsLight,
+  fetchRequestById,
   updateRequestStatus,
   type RequestRow,
   type RequestStatus,
@@ -106,8 +107,10 @@ function getActions(
   const responsibleRole = STATUS_RESPONSIBLE_ROLE[nextStatus];
   const canAdvance = userRole === responsibleRole;
 
-  // Check if the user's role can return for revision (TWG only)
-  const canReturn = userRole === "twg";
+  // Return button: only the role responsible for advancing can also return,
+  // and only TWG and procurement_admin have return capability
+  const canReturn =
+    canAdvance && (userRole === "twg" || userRole === "procurement_admin");
 
   if (!canAdvance && !canReturn) return {};
 
@@ -147,6 +150,19 @@ export default function Requests() {
   const [statusFilter, setStatusFilter] = useState<"" | RequestStatus>("");
   const [viewRequest, setViewRequest] = useState<RequestRow | null>(null);
   const [advancing, setAdvancing] = useState<string | null>(null);
+  const [viewLoading, setViewLoading] = useState(false);
+
+  async function openView(r: RequestRow) {
+    setViewLoading(true);
+    try {
+      const full = await fetchRequestById(r.id);
+      setViewRequest(full);
+    } catch {
+      setViewRequest(r);
+    } finally {
+      setViewLoading(false);
+    }
+  }
 
   // Return/Decline modal state
   const [noteModal, setNoteModal] = useState<{
@@ -159,7 +175,7 @@ export default function Requests() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const rows = await fetchRequests();
+      const rows = await fetchRequestsLight();
       setData(rows);
     } catch (err) {
       console.error("Failed to load requests:", err);
@@ -373,11 +389,12 @@ export default function Requests() {
                               {/* View */}
                               <button
                                 type="button"
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-blue-600 hover:bg-blue-50"
-                                onClick={() => setViewRequest(r)}
+                                disabled={viewLoading}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+                                onClick={() => openView(r)}
                                 title="View details"
                               >
-                                <Eye className="h-4 w-4" />
+                                {viewLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
                               </button>
 
                               {/* Download PR */}

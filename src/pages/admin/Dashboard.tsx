@@ -11,7 +11,7 @@ import {
 } from "recharts";
 import {
   fetchRequestStats,
-  fetchRequests,
+  fetchRequestsLight,
   type RequestRow,
   type RequestStatus,
   STATUS_SHORT_LABELS,
@@ -116,7 +116,7 @@ export default function Dashboard() {
     try {
       const [s, all] = await Promise.all([
         fetchRequestStats(),
-        fetchRequests(),
+        fetchRequestsLight(),
       ]);
       setStats(s);
       setRecent(all.slice(0, 5));

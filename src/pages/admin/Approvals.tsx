@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import {
-  fetchRequests,
+  fetchRequestsLight,
   approveRequest,
   returnForRevision,
   type RequestRow,
@@ -115,7 +115,7 @@ export default function Approvals() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const all = await fetchRequests();
+      const all = await fetchRequestsLight();
       const pendingList = all.filter(
         (r) =>
           r.status === "request_sent" || r.status === "returned_for_revision",

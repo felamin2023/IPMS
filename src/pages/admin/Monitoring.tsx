@@ -5,7 +5,8 @@ import {
   Loader2,
 } from "lucide-react";
 import {
-  fetchRequests,
+  fetchRequestsLight,
+  fetchRequestById,
   type RequestRow,
   type RequestStatus,
   STATUS_SHORT_LABELS,
@@ -67,16 +68,18 @@ export default function Monitoring() {
   const [requests, setRequests] = useState<RequestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedFull, setSelectedFull] = useState<RequestRow | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch non-completed, non-rejected requests (active pipeline)
-      const all = await fetchRequests();
-      // Show all except completed (admins may want to see the pipeline)
+      const all = await fetchRequestsLight();
       const active = all.filter((r) => r.status !== "returned_for_revision");
       setRequests(active);
-      if (active.length > 0 && !selectedId) setSelectedId(active[0].id);
+      if (active.length > 0 && !selectedId) {
+        setSelectedId(active[0].id);
+        fetchRequestById(active[0].id).then(setSelectedFull).catch(() => {});
+      }
     } catch (err) {
       console.error("Failed to load monitoring data:", err);
     } finally {
@@ -88,9 +91,15 @@ export default function Monitoring() {
     loadData();
   }, [loadData]);
 
+  function handleSelect(id: string) {
+    setSelectedId(id);
+    setSelectedFull(null);
+    fetchRequestById(id).then(setSelectedFull).catch(() => {});
+  }
+
   const selected = useMemo(
-    () => requests.find((r) => r.id === selectedId) ?? null,
-    [requests, selectedId],
+    () => selectedFull ?? requests.find((r) => r.id === selectedId) ?? null,
+    [requests, selectedId, selectedFull],
   );
 
   if (loading) {
@@ -136,7 +145,7 @@ export default function Monitoring() {
               <button
                 key={r.id}
                 type="button"
-                onClick={() => setSelectedId(r.id)}
+                onClick={() => handleSelect(r.id)}
                 className={[
                   "rounded-2xl border bg-white p-5 text-left shadow-sm transition-colors",
                   active

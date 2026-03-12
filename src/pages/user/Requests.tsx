@@ -11,7 +11,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import {
-  fetchRequests,
+  fetchRequestsLight,
+  fetchRequestById,
   confirmReceipt,
   type RequestRow,
   type RequestStatus,
@@ -64,17 +65,30 @@ export default function Requests() {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"" | RequestStatus>("");
   const [viewRequest, setViewRequest] = useState<RequestRow | null>(null);
+  const [viewLoading, setViewLoading] = useState(false);
   const [receiptRequest, setReceiptRequest] = useState<RequestRow | null>(null);
   const [receiptItems, setReceiptItems] = useState<
     { id: string; receivedQty: number; damageNotes: string }[]
   >([]);
   const [submittingReceipt, setSubmittingReceipt] = useState(false);
 
+  async function openView(r: RequestRow) {
+    setViewLoading(true);
+    try {
+      const full = await fetchRequestById(r.id);
+      setViewRequest(full);
+    } catch {
+      setViewRequest(r);
+    } finally {
+      setViewLoading(false);
+    }
+  }
+
   const loadData = useCallback(async () => {
     if (!user?.id) return;
     setLoading(true);
     try {
-      const rows = await fetchRequests({ createdBy: user.id });
+      const rows = await fetchRequestsLight({ createdBy: user.id });
       setData(rows);
     } catch (err) {
       console.error("Failed to load requests:", err);
@@ -237,7 +251,7 @@ export default function Requests() {
                                     type="button"
                                     className="text-xs text-red-600 hover:text-red-800 underline underline-offset-2 max-w-[140px] truncate"
                                     title={note}
-                                    onClick={() => setViewRequest(r)}
+                                    onClick={() => openView(r)}
                                   >
                                     View Note
                                   </button>
@@ -251,9 +265,9 @@ export default function Requests() {
                             <button
                               type="button"
                               className="inline-flex items-center gap-1 text-blue-600 font-semibold hover:text-blue-700 text-sm"
-                              onClick={() => setViewRequest(r)}
+                              onClick={() => openView(r)}
                             >
-                              <Eye className="h-4 w-4" />
+                              {viewLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
                               View
                             </button>
                             {r.status === "issuance" && (

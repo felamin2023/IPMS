@@ -477,6 +477,44 @@ export async function createRequest(params: {
 
 // ── Fetch Requests ────────────────────────────────────
 
+/**
+ * Light fetch: only core request fields + college code + creator name + items.
+ * No status_logs (the heaviest join). Use for list/table views.
+ */
+export async function fetchRequestsLight(filters?: {
+  status?: RequestStatus;
+  createdBy?: string;
+}) {
+  let query = supabase
+    .from("requests")
+    .select(
+      `
+      *,
+      college:colleges(id, code, name),
+      program:programs(id, code, name),
+      creator:users!requests_created_by_fkey(id, first_name, last_name, email),
+      items:request_items(*)
+    `,
+    )
+    .order("created_at", { ascending: false });
+
+  if (filters?.status) {
+    query = query.eq("status", filters.status);
+  } else {
+    query = query.neq("status", "draft");
+  }
+  if (filters?.createdBy) {
+    query = query.eq("created_by", filters.createdBy);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as RequestRow[];
+}
+
+/**
+ * Full fetch: includes status_logs + updater. Use only when timeline/detail is needed.
+ */
 export async function fetchRequests(filters?: {
   status?: RequestStatus;
   createdBy?: string;
@@ -528,6 +566,41 @@ export async function fetchRequestById(id: string) {
 
   if (error) throw error;
   return data as RequestRow;
+}
+
+// ── Report-specific lightweight fetch ──────────────────
+
+export interface ReportRow {
+  id: string;
+  status: RequestStatus;
+  created_at: string;
+  college: { code: string } | null;
+  program: { code: string } | null;
+  items: { unit_cost: number | null; qty: number }[];
+  status_logs: { created_at: string }[];
+}
+
+/**
+ * Minimal fetch for reports: only status, dates, college code, item costs,
+ * and status_log timestamps (no updater join).
+ */
+export async function fetchReportData(): Promise<ReportRow[]> {
+  const { data, error } = await supabase
+    .from("requests")
+    .select(
+      `
+      id, status, created_at,
+      college:colleges(code),
+      program:programs(code),
+      items:request_items(unit_cost, qty),
+      status_logs:request_status_logs(created_at)
+    `,
+    )
+    .neq("status", "draft")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as unknown as ReportRow[];
 }
 
 // ── Fetch pending requests for approval ────────────────
