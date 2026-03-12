@@ -8,12 +8,9 @@ import {
   Loader2,
   X,
   PlayCircle,
-  CheckCircle2,
   XCircle,
   RotateCcw,
   Check,
-  MessageSquareWarning,
-  Package,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -22,18 +19,25 @@ import {
   type RequestRow,
   type RequestStatus,
   STATUS_LABELS,
+  STATUS_SHORT_LABELS,
+  STATUS_TONE,
+  STATUS_FLOW,
+  STATUS_RESPONSIBLE_ROLE,
 } from "../../lib/requests";
 import { generatePrDocument } from "../../lib/generatePr";
+import StatusTimeline from "../../components/StatusTimeline";
 
 function StatusPill({ status }: { status: RequestStatus }) {
-  const map: Record<RequestStatus, string> = {
-    submitted: "bg-gray-100 text-gray-700",
-    head_review: "bg-amber-100 text-amber-700",
-    budget_review: "bg-blue-100 text-blue-700",
-    procurement_processing: "bg-green-100 text-green-700",
-    purchase_order: "bg-violet-100 text-violet-700",
-    rejected: "bg-red-100 text-red-700",
+  const toneMap: Record<string, string> = {
+    gray: "bg-gray-100 text-gray-700",
+    amber: "bg-amber-100 text-amber-700",
+    blue: "bg-blue-100 text-blue-700",
+    green: "bg-green-100 text-green-700",
+    violet: "bg-violet-100 text-violet-700",
+    emerald: "bg-emerald-100 text-emerald-700",
+    red: "bg-red-100 text-red-700",
   };
+  const tone = STATUS_TONE[status] ?? "gray";
 
   return (
     <span
@@ -42,10 +46,10 @@ function StatusPill({ status }: { status: RequestStatus }) {
         "min-w-[100px] px-3 py-1.5",
         "rounded-full text-xs font-semibold",
         "text-center leading-tight",
-        map[status] ?? "bg-gray-100 text-gray-700",
+        toneMap[tone] ?? "bg-gray-100 text-gray-700",
       ].join(" ")}
     >
-      {STATUS_LABELS[status]}
+      {STATUS_SHORT_LABELS[status] ?? status}
     </span>
   );
 }
@@ -58,8 +62,14 @@ function itemsTotal(items?: { unit_cost: number | null; qty: number }[]) {
   );
 }
 
-/** Return contextual action buttons config for admin based on current status. */
-function getActions(current: RequestStatus): {
+/**
+ * Return contextual action buttons based on current status AND the user's role.
+ * Only shows actions if the user's role is responsible for the next status.
+ */
+function getActions(
+  current: RequestStatus,
+  userRole: string | null,
+): {
   primary?: {
     label: string;
     status: RequestStatus;
@@ -73,74 +83,64 @@ function getActions(current: RequestStatus): {
     tone: string;
   };
 } {
-  switch (current) {
-    case "submitted":
-      return {
-        primary: {
-          label: "Head Review",
-          status: "head_review",
-          icon: PlayCircle,
-          tone: "amber",
-        },
-        negative: {
-          label: "Return",
-          status: "rejected",
-          icon: RotateCcw,
-          tone: "red",
-        },
-      };
-    case "head_review":
-      return {
-        primary: {
-          label: "Budget Review",
-          status: "budget_review",
-          icon: CheckCircle2,
-          tone: "blue",
-        },
-        negative: {
-          label: "Decline",
-          status: "rejected",
-          icon: XCircle,
-          tone: "red",
-        },
-      };
-    case "budget_review":
-      return {
-        primary: {
-          label: "Procurement",
-          status: "procurement_processing",
-          icon: Package,
-          tone: "green",
-        },
-        negative: {
-          label: "Return",
-          status: "rejected",
-          icon: RotateCcw,
-          tone: "red",
-        },
-      };
-    case "procurement_processing":
-      return {
-        primary: {
-          label: "Purchase Order",
-          status: "purchase_order",
-          icon: Check,
-          tone: "violet",
-        },
-        negative: {
-          label: "Return",
-          status: "rejected",
-          icon: MessageSquareWarning,
-          tone: "red",
-        },
-      };
-    default:
-      return {};
+  const idx = STATUS_FLOW.indexOf(current);
+
+  // Special case: returned requests can be re-validated by TWG
+  if (current === "returned_for_revision" && userRole === "twg") {
+    return {
+      primary: {
+        label: "Validate & Approve",
+        status: "request_reviewed" as RequestStatus,
+        icon: PlayCircle,
+        tone: "amber",
+      },
+    };
   }
+
+  // If this is the last status (completed) or returned, no further actions
+  if (idx === -1 || idx >= STATUS_FLOW.length - 1) return {};
+
+  const nextStatus = STATUS_FLOW[idx + 1];
+
+  // Check if the user's role is allowed to advance to the next status
+  const responsibleRole = STATUS_RESPONSIBLE_ROLE[nextStatus];
+  const canAdvance = userRole === responsibleRole;
+
+  // Check if the user's role can return for revision (TWG only)
+  const canReturn = userRole === "twg";
+
+  if (!canAdvance && !canReturn) return {};
+
+  // Determine label and tone for the next step
+  const toneByPhase =
+    idx < 2 ? "amber" : idx < 14 ? "blue" : idx < 20 ? "violet" : "green";
+
+  return {
+    ...(canAdvance
+      ? {
+          primary: {
+            label: STATUS_SHORT_LABELS[nextStatus] ?? nextStatus,
+            status: nextStatus,
+            icon: PlayCircle,
+            tone: toneByPhase,
+          },
+        }
+      : {}),
+    ...(canReturn
+      ? {
+          negative: {
+            label: "Return",
+            status: "returned_for_revision" as RequestStatus,
+            icon: RotateCcw,
+            tone: "red",
+          },
+        }
+      : {}),
+  };
 }
 
 export default function Requests() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const [data, setData] = useState<RequestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -299,14 +299,14 @@ export default function Requests() {
                   className="h-10 min-w-[160px] rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="">All Status</option>
-                  <option value="submitted">Submitted</option>
-                  <option value="head_review">Head Review</option>
-                  <option value="budget_review">Budget Review</option>
-                  <option value="procurement_processing">
-                    Procurement Processing
+                  {STATUS_FLOW.map((s) => (
+                    <option key={s} value={s}>
+                      {STATUS_SHORT_LABELS[s]}
+                    </option>
+                  ))}
+                  <option value="returned_for_revision">
+                    Returned for Revision
                   </option>
-                  <option value="purchase_order">Purchase Order</option>
-                  <option value="rejected">Rejected</option>
                 </select>
               </div>
             </div>
@@ -336,7 +336,7 @@ export default function Requests() {
 
                   <tbody className="divide-y divide-gray-100">
                     {current.map((r) => {
-                      const actions = getActions(r.status);
+                      const actions = getActions(r.status, role);
                       return (
                         <tr key={r.id} className="text-sm text-gray-700">
                           <td className="px-5 py-4">
@@ -381,10 +381,7 @@ export default function Requests() {
                               </button>
 
                               {/* Download PR */}
-                              {(r.status === "head_review" ||
-                                r.status === "budget_review" ||
-                                r.status === "procurement_processing" ||
-                                r.status === "purchase_order") && (
+                              {STATUS_FLOW.indexOf(r.status) >= 2 && (
                                 <button
                                   type="button"
                                   className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-green-600 hover:bg-green-50"
@@ -632,45 +629,10 @@ export default function Requests() {
             )}
 
             {/* Status Timeline */}
-            {viewRequest.status_logs && viewRequest.status_logs.length > 0 && (
-              <div>
-                <div className="text-xs font-semibold uppercase text-gray-500 mb-2">
-                  Status History
-                </div>
-                <div className="space-y-3">
-                  {viewRequest.status_logs
-                    .sort(
-                      (a, b) =>
-                        new Date(a.created_at).getTime() -
-                        new Date(b.created_at).getTime(),
-                    )
-                    .map((log) => (
-                      <div
-                        key={log.id}
-                        className="flex items-start gap-3 text-sm"
-                      >
-                        <div className="h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
-                          <div className="h-2 w-2 rounded-full bg-blue-600" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-900">
-                            {STATUS_LABELS[log.status as RequestStatus] ??
-                              log.status}
-                          </div>
-                          {log.note && (
-                            <div className="text-gray-500">{log.note}</div>
-                          )}
-                          <div className="text-xs text-gray-400">
-                            {new Date(log.created_at).toLocaleString()}
-                            {log.updater &&
-                              ` — ${log.updater.first_name} ${log.updater.last_name}`}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
+            <StatusTimeline
+              currentStatus={viewRequest.status}
+              statusLogs={viewRequest.status_logs}
+            />
           </div>
         </div>
       )}

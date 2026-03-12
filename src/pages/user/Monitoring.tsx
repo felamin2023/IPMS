@@ -1,34 +1,23 @@
 // src/pages/user/Monitoring.tsx
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  FileText,
-  Clock,
-  CheckCircle2,
-  Package,
-  Check,
-  Loader2,
-  XCircle,
-} from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import {
   fetchRequests,
   type RequestRow,
   type RequestStatus,
-  STATUS_LABELS,
+  STATUS_SHORT_LABELS,
+  STATUS_TONE,
   STATUS_FLOW,
 } from "../../lib/requests";
+import StatusTimeline from "../../components/StatusTimeline";
 
 // ── helpers ────────────────────────────────────────────
 
-function stepIndexFor(status: RequestStatus): number {
-  if (status === "rejected") return -1;
-  const idx = STATUS_FLOW.indexOf(status);
-  return idx === -1 ? 0 : idx;
-}
-
 function progressFor(status: RequestStatus): { text: string; value: number } {
-  if (status === "rejected") return { text: "Rejected", value: 0 };
-  if (status === "purchase_order")
+  if (status === "returned_for_revision")
+    return { text: "Returned for Revision", value: 0 };
+  if (status === "completed")
     return {
       text: `${STATUS_FLOW.length} of ${STATUS_FLOW.length}`,
       value: 100,
@@ -48,23 +37,15 @@ const TONE_MAP: Record<string, string> = {
   green: "bg-green-100 text-green-700",
   red: "bg-red-100 text-red-700",
   violet: "bg-violet-100 text-violet-700",
-};
-
-const STATUS_TONE_MAP: Record<RequestStatus, string> = {
-  submitted: "gray",
-  head_review: "amber",
-  budget_review: "blue",
-  procurement_processing: "green",
-  purchase_order: "violet",
-  rejected: "red",
+  emerald: "bg-emerald-100 text-emerald-700",
 };
 
 function Pill({ status }: { status: RequestStatus }) {
   return (
     <span
-      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${TONE_MAP[STATUS_TONE_MAP[status]] ?? TONE_MAP.gray}`}
+      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${TONE_MAP[STATUS_TONE[status]] ?? TONE_MAP.gray}`}
     >
-      {STATUS_LABELS[status]}
+      {STATUS_SHORT_LABELS[status]}
     </span>
   );
 }
@@ -76,35 +57,6 @@ function ProgressBar({ value }: { value: number }) {
         className="h-2 rounded-full bg-blue-600"
         style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
       />
-    </div>
-  );
-}
-
-const STEP_ICONS = [FileText, Clock, CheckCircle2, Package, Check] as const;
-
-function StepIcon({
-  index,
-  activeIndex,
-  icon: Icon,
-}: {
-  index: number;
-  activeIndex: number;
-  icon: React.ComponentType<{ className?: string }>;
-}) {
-  const isDone = index < activeIndex;
-  const isActive = index === activeIndex;
-
-  const ring = isDone
-    ? "bg-green-500 text-white"
-    : isActive
-      ? "bg-blue-600 text-white"
-      : "bg-white text-gray-400 border border-gray-200";
-
-  return (
-    <div
-      className={`h-11 w-11 rounded-full flex items-center justify-center ${ring}`}
-    >
-      <Icon className="h-5 w-5" />
     </div>
   );
 }
@@ -122,7 +74,7 @@ export default function Monitoring() {
       const all = await fetchRequests({ createdBy: user.id });
       // Show non-completed active requests for tracking
       const active = all.filter(
-        (r) => r.status !== "purchase_order" && r.status !== "rejected",
+        (r) => r.status !== "completed" && r.status !== "returned_for_revision",
       );
       // If none are active, show all
       const display = active.length > 0 ? active : all;
@@ -143,40 +95,6 @@ export default function Monitoring() {
     () => requests.find((r) => r.id === selectedId) ?? null,
     [requests, selectedId],
   );
-
-  const activeStepIndex = selected ? stepIndexFor(selected.status) : 0;
-
-  const steps = useMemo(
-    () =>
-      STATUS_FLOW.map((s, i) => ({
-        key: s,
-        label: STATUS_LABELS[s],
-        icon: STEP_ICONS[i] ?? Check,
-      })),
-    [],
-  );
-
-  // Build timeline from real status_logs
-  const timeline = useMemo(() => {
-    if (!selected?.status_logs) return [];
-    return [...selected.status_logs]
-      .sort(
-        (a, b) =>
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-      )
-      .map((log, i, arr) => ({
-        title: STATUS_LABELS[log.status as RequestStatus] ?? log.status,
-        desc: log.note ?? "",
-        by: log.updater
-          ? `${log.updater.first_name} ${log.updater.last_name}`
-          : undefined,
-        time: new Date(log.created_at).toLocaleString(),
-        state: (i < arr.length - 1 ? "done" : "current") as
-          | "done"
-          | "current"
-          | "todo",
-      }));
-  }, [selected]);
 
   if (loading) {
     return (
@@ -274,123 +192,10 @@ export default function Monitoring() {
             </div>
 
             <div className="px-6 py-6">
-              {/* Steps */}
-              {selected.status !== "rejected" ? (
-                <div className="relative">
-                  <div className="absolute left-6 right-6 top-[22px] h-[3px] rounded-full bg-gray-200" />
-                  <div
-                    className="absolute left-6 top-[22px] h-[3px] rounded-full bg-green-500"
-                    style={{
-                      width: `calc(${(activeStepIndex / (steps.length - 1)) * 100}% + 2.75rem)`,
-                    }}
-                  />
-
-                  <div
-                    className="relative grid items-start gap-2"
-                    style={{
-                      gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))`,
-                    }}
-                  >
-                    {steps.map((s, idx) => (
-                      <div
-                        key={s.key}
-                        className="flex flex-col items-center gap-3"
-                      >
-                        <StepIcon
-                          index={idx}
-                          activeIndex={activeStepIndex}
-                          icon={s.icon}
-                        />
-                        <div className="text-center text-xs font-medium text-gray-600 whitespace-pre-line">
-                          {s.label}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-red-600">
-                  <XCircle className="h-5 w-5" />
-                  <span className="text-sm font-semibold">
-                    This request was rejected
-                  </span>
-                </div>
-              )}
-
-              {/* Activity Timeline */}
-              <div className="mt-8">
-                <div className="text-sm font-semibold text-gray-900">
-                  Activity Timeline
-                </div>
-
-                {timeline.length === 0 ? (
-                  <p className="mt-3 text-sm text-gray-500">
-                    No status history recorded yet.
-                  </p>
-                ) : (
-                  <div className="mt-4 space-y-5">
-                    {timeline.map((t, i) => {
-                      const isDone = t.state === "done";
-                      return (
-                        <div key={i} className="flex items-start gap-4">
-                          <div className="relative">
-                            <div
-                              className={[
-                                "h-8 w-8 rounded-full flex items-center justify-center",
-                                isDone
-                                  ? "bg-green-100 text-green-600"
-                                  : "bg-white text-gray-400 border border-gray-200",
-                              ].join(" ")}
-                            >
-                              {isDone ? (
-                                <CheckCircle2 className="h-4 w-4" />
-                              ) : (
-                                <Clock className="h-4 w-4" />
-                              )}
-                            </div>
-                            {i !== timeline.length - 1 && (
-                              <div
-                                className={[
-                                  "absolute left-1/2 top-8 h-10 w-px -translate-x-1/2",
-                                  isDone ? "bg-green-500" : "bg-gray-200",
-                                ].join(" ")}
-                              />
-                            )}
-                          </div>
-
-                          <div className="flex-1">
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <div className="text-sm font-semibold text-gray-900">
-                                  {t.title}
-                                </div>
-                                {t.desc && (
-                                  <div className="mt-1 text-sm text-gray-600">
-                                    {t.desc}
-                                  </div>
-                                )}
-                                {t.by && (
-                                  <div className="mt-1 text-xs text-gray-400">
-                                    By: {t.by}
-                                  </div>
-                                )}
-                                {t.state === "current" && (
-                                  <div className="mt-2 inline-flex items-center gap-2 text-xs font-medium text-amber-700">
-                                    <span>⏳</span> Current Status
-                                  </div>
-                                )}
-                              </div>
-                              <div className="text-xs text-gray-500 whitespace-nowrap">
-                                {t.time}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              <StatusTimeline
+                currentStatus={selected.status}
+                statusLogs={selected.status_logs}
+              />
             </div>
           </div>
         )}
@@ -402,42 +207,26 @@ export default function Monitoring() {
           </div>
 
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {STATUS_FLOW.map((s, i) => {
-              const Icon = STEP_ICONS[i] ?? Check;
-              const bg =
-                [
-                  "bg-gray-50",
-                  "bg-amber-50",
-                  "bg-blue-50",
-                  "bg-green-50",
-                  "bg-violet-50",
-                ][i] ?? "bg-gray-50";
-              const iconColor =
-                [
-                  "text-gray-500",
-                  "text-amber-600",
-                  "text-blue-600",
-                  "text-green-600",
-                  "text-violet-600",
-                ][i] ?? "text-gray-500";
+            {STATUS_FLOW.map((s) => {
+              const toneToColors: Record<string, { bg: string; icon: string }> =
+                {
+                  gray: { bg: "bg-gray-50", icon: "text-gray-500" },
+                  amber: { bg: "bg-amber-50", icon: "text-amber-600" },
+                  blue: { bg: "bg-blue-50", icon: "text-blue-600" },
+                  green: { bg: "bg-green-50", icon: "text-green-600" },
+                  violet: { bg: "bg-violet-50", icon: "text-violet-600" },
+                  emerald: { bg: "bg-emerald-50", icon: "text-emerald-600" },
+                  red: { bg: "bg-red-50", icon: "text-red-600" },
+                };
+              const tone = STATUS_TONE[s] ?? "gray";
+              const colors = toneToColors[tone] ?? toneToColors.gray;
               return (
-                <div key={s} className={`rounded-xl ${bg} p-4`}>
+                <div key={s} className={`rounded-xl ${colors.bg} p-4`}>
                   <div className="flex items-center gap-2">
-                    <Icon className={`h-4 w-4 ${iconColor}`} />
+                    <Check className={`h-4 w-4 ${colors.icon}`} />
                     <div className="text-sm font-semibold text-gray-900">
-                      {STATUS_LABELS[s]}
+                      {STATUS_SHORT_LABELS[s]}
                     </div>
-                  </div>
-                  <div className="mt-1 text-xs text-gray-500">
-                    {
-                      [
-                        "Request filed",
-                        "Dept head reviewing",
-                        "Awaiting budget approval",
-                        "Procurement in progress",
-                        "PO issued / completed",
-                      ][i]
-                    }
                   </div>
                 </div>
               );

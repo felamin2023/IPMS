@@ -17,18 +17,21 @@ import {
   fetchRequests,
   type RequestRow,
   type RequestStatus,
-  STATUS_LABELS,
+  STATUS_SHORT_LABELS,
+  STATUS_TONE,
 } from "../../lib/requests";
 
 function StatusPill({ status }: { status: RequestStatus }) {
-  const map: Record<RequestStatus, string> = {
-    submitted: "bg-gray-100 text-gray-700",
-    head_review: "bg-amber-100 text-amber-700",
-    budget_review: "bg-blue-100 text-blue-700",
-    procurement_processing: "bg-green-100 text-green-700",
-    purchase_order: "bg-violet-100 text-violet-700",
-    rejected: "bg-red-100 text-red-700",
+  const toneMap: Record<string, string> = {
+    gray: "bg-gray-100 text-gray-700",
+    amber: "bg-amber-100 text-amber-700",
+    blue: "bg-blue-100 text-blue-700",
+    green: "bg-green-100 text-green-700",
+    violet: "bg-violet-100 text-violet-700",
+    emerald: "bg-emerald-100 text-emerald-700",
+    red: "bg-red-100 text-red-700",
   };
+  const tone = STATUS_TONE[status] ?? "gray";
 
   return (
     <span
@@ -37,10 +40,10 @@ function StatusPill({ status }: { status: RequestStatus }) {
         "min-w-[100px] px-3 py-1.5",
         "rounded-full text-xs font-semibold",
         "text-center leading-tight",
-        map[status] ?? "bg-gray-100 text-gray-700",
+        toneMap[tone] ?? "bg-gray-100 text-gray-700",
       ].join(" ")}
     >
-      {STATUS_LABELS[status]}
+      {STATUS_SHORT_LABELS[status] ?? status}
     </span>
   );
 }
@@ -114,12 +117,12 @@ export default function Home() {
 
   const [stats, setStats] = useState({
     total: 0,
-    submitted: 0,
-    headReview: 0,
-    budgetReview: 0,
-    procurementProcessing: 0,
-    purchaseOrder: 0,
-    rejected: 0,
+    requestSent: 0,
+    twgPhase: 0,
+    procurementPhase: 0,
+    supplyPhase: 0,
+    completed: 0,
+    returned: 0,
   });
   const [recent, setRecent] = useState<RequestRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -250,23 +253,19 @@ export default function Home() {
           />
           <StatCard
             title="Pending Review"
-            value={stats.submitted}
+            value={stats.requestSent}
             icon={Clock}
             tone="amber"
           />
           <StatCard
             title="In Progress"
-            value={
-              stats.headReview +
-              stats.budgetReview +
-              stats.procurementProcessing
-            }
+            value={stats.twgPhase + stats.procurementPhase + stats.supplyPhase}
             icon={CheckCircle2}
             tone="green"
           />
           <StatCard
-            title="Purchase Orders"
-            value={stats.purchaseOrder}
+            title="Completed"
+            value={stats.completed}
             icon={Package}
             tone="violet"
           />
@@ -352,42 +351,42 @@ export default function Home() {
             <div className="mt-5 space-y-4">
               <div className="rounded-xl bg-gray-50 p-4">
                 <div className="text-sm font-semibold text-gray-900">
-                  1) Submit
+                  1) Create & Send Request
                 </div>
                 <div className="mt-1 text-sm text-gray-600">
-                  Create a request with complete details.
+                  Submit a new procurement request with complete details.
                 </div>
               </div>
               <div className="rounded-xl bg-amber-50 p-4">
                 <div className="text-sm font-semibold text-gray-900">
-                  2) Dept Head Review
+                  2) TWG Review & Validation
                 </div>
                 <div className="mt-1 text-sm text-gray-600">
-                  Department head reviews and forwards.
+                  Technical Working Group reviews items and assigns PR number.
                 </div>
               </div>
               <div className="rounded-xl bg-blue-50 p-4">
                 <div className="text-sm font-semibold text-gray-900">
-                  3) Budget Review
+                  3) Procurement Processing
                 </div>
                 <div className="mt-1 text-sm text-gray-600">
-                  Budget officer reviews and approves funding.
-                </div>
-              </div>
-              <div className="rounded-xl bg-green-50 p-4">
-                <div className="text-sm font-semibold text-gray-900">
-                  4) Procurement Processing
-                </div>
-                <div className="mt-1 text-sm text-gray-600">
-                  Procurement office processes the request.
+                  BAC evaluation, quotations, contract award and PO issuance.
                 </div>
               </div>
               <div className="rounded-xl bg-violet-50 p-4">
                 <div className="text-sm font-semibold text-gray-900">
-                  5) Purchase Order
+                  4) Supply Office Processing
                 </div>
                 <div className="mt-1 text-sm text-gray-600">
-                  PO issued — procurement fully completed.
+                  Delivery, inspection, warehousing and final issuance.
+                </div>
+              </div>
+              <div className="rounded-xl bg-emerald-50 p-4">
+                <div className="text-sm font-semibold text-gray-900">
+                  5) Completed
+                </div>
+                <div className="mt-1 text-sm text-gray-600">
+                  Items issued to end users — procurement fully completed.
                 </div>
               </div>
             </div>

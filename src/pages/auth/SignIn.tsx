@@ -19,10 +19,10 @@ export default function SignIn() {
     try {
       setLoading(true);
       const role = await signIn(email, password);
-      if (role === "admin") {
-        navigate("/admin/dashboard");
-      } else {
+      if (role === "department_user") {
         navigate("/");
+      } else {
+        navigate("/admin/dashboard");
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Sign in failed");

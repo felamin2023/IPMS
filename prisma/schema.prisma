@@ -13,17 +13,36 @@ datasource db {
 // ── Enums ───────────────────────────────────────────
 
 enum UserRole {
-  admin
   department_user
+  twg
+  procurement_admin
+  supply_admin
 }
 
 enum RequestStatus {
-  submitted
-  head_review
-  budget_review
-  procurement_processing
-  purchase_order
-  rejected
+  request_sent
+  request_reviewed
+  pr_number_assigned
+  notice_of_meeting
+  endorsed_to_bac
+  resolution_approved
+  under_supplier_quotation
+  quotations_received
+  under_quotation_evaluation
+  hope_approval
+  abstract_prepared
+  contract_awarded
+  po_issued
+  ntp_issued
+  noa_po_ntp_posted
+  po_delivered
+  po_received_supply
+  items_for_inspection
+  under_inspection
+  under_warehousing
+  issuance
+  completed
+  returned_for_revision
 }
 
 // ── Colleges / Programs ─────────────────────────────
@@ -88,7 +107,7 @@ model Request {
   programId  String        @map("program_id")
   purpose    String?
   fundSource String?       @map("fund_source")
-  status     RequestStatus @default(submitted)
+  status     RequestStatus @default(request_sent)
   createdBy  String        @map("created_by")
   createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz
   updatedAt  DateTime      @updatedAt @map("updated_at") @db.Timestamptz
@@ -114,6 +133,8 @@ model RequestItem {
   uom             String   // pcs, box, ream, etc.
   unitCost        Decimal? @map("unit_cost") @db.Decimal(12, 2)
   totalCost       Decimal? @map("total_cost") @db.Decimal(12, 2)
+  receivedQty     Int?     @map("received_qty")
+  damageNotes     String?  @map("damage_notes")
 
   request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
 

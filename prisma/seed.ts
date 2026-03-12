@@ -106,23 +106,23 @@ async function main() {
     }
   }
 
-  console.log("\nSeeding admin user...");
+  console.log("\nSeeding supply admin user...");
   await prisma.user.upsert({
     where: { email: "admin@ipms.local" },
     update: {
-      firstName: "System",
+      firstName: "Supply",
       lastName: "Administrator",
-      role: "admin",
+      role: "supply_admin",
     },
     create: {
       email: "admin@ipms.local",
-      firstName: "System",
+      firstName: "Supply",
       lastName: "Administrator",
       passwordHash: "changeme", // placeholder — replace with a proper hash
-      role: "admin",
+      role: "supply_admin",
     },
   });
-  console.log("  ✓ Admin user created (email: admin@ipms.local)\n");
+  console.log("  ✓ Supply admin user created (email: admin@ipms.local)\n");
 
   console.log("Seed complete!");
 }

@@ -13,10 +13,11 @@ import { useAuth } from "../../context/AuthContext";
 import {
   fetchRequests,
   approveRequest,
-  rejectRequest,
+  returnForRevision,
   type RequestRow,
   type RequestStatus,
   STATUS_LABELS,
+  STATUS_FLOW,
 } from "../../lib/requests";
 
 function money(n: number) {
@@ -80,31 +81,13 @@ function Step({
 
 function getStepState(
   status: RequestStatus,
-  step:
-    | "submitted"
-    | "head_review"
-    | "budget_review"
-    | "procurement"
-    | "purchase_order",
+  stepStatus: RequestStatus,
 ): "done" | "current" | "todo" {
-  const order: Record<string, number> = {
-    submitted: 0,
-    head_review: 1,
-    budget_review: 2,
-    procurement_processing: 3,
-    purchase_order: 4,
-  };
-  const stepOrder: Record<string, number> = {
-    submitted: 0,
-    head_review: 1,
-    budget_review: 2,
-    procurement: 3,
-    purchase_order: 4,
-  };
-  const current = order[status] ?? 0;
-  const stepIdx = stepOrder[step];
-  if (current > stepIdx) return "done";
-  if (current === stepIdx) return "current";
+  const currentIdx = STATUS_FLOW.indexOf(status);
+  const stepIdx = STATUS_FLOW.indexOf(stepStatus);
+  if (currentIdx < 0 || stepIdx < 0) return "todo";
+  if (currentIdx > stepIdx) return "done";
+  if (currentIdx === stepIdx) return "current";
   return "todo";
 }
 
@@ -117,7 +100,10 @@ function itemsTotal(items?: { unit_cost: number | null; qty: number }[]) {
 }
 
 export default function Approvals() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+
+  // Only TWG can take approval actions
+  const canAct = role === "twg";
   const [pending, setPending] = useState<RequestRow[]>([]);
   const [recentActions, setRecentActions] = useState<RequestRow[]>([]);
   const [selected, setSelected] = useState<RequestRow | null>(null);
@@ -130,9 +116,12 @@ export default function Approvals() {
     setLoading(true);
     try {
       const all = await fetchRequests();
-      const pendingList = all.filter((r) => r.status === "submitted");
+      const pendingList = all.filter(
+        (r) =>
+          r.status === "request_sent" || r.status === "returned_for_revision",
+      );
       const actionedList = all
-        .filter((r) => r.status === "head_review" || r.status === "rejected")
+        .filter((r) => r.status === "request_reviewed")
         .slice(0, 5);
       setPending(pendingList);
       setRecentActions(actionedList);
@@ -168,7 +157,7 @@ export default function Approvals() {
     if (!selected || !user?.id) return;
     setActing(true);
     try {
-      await rejectRequest(selected.id, user.id, rejectNote || undefined);
+      await returnForRevision(selected.id, user.id, rejectNote || undefined);
       setShowRejectModal(false);
       setRejectNote("");
       setSelected(null);
@@ -194,10 +183,10 @@ export default function Approvals() {
         {/* Header */}
         <div className="mb-5">
           <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-            Department Head Review
+            TWG Review & Validation
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            Review and approve or reject pending procurement requests
+            Review item descriptions and validate pending procurement requests
           </p>
         </div>
 
@@ -290,7 +279,7 @@ export default function Approvals() {
                         </div>
                       </div>
 
-                      {a.status !== "rejected" ? (
+                      {a.status !== "returned_for_revision" ? (
                         <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
                       ) : (
                         <XCircle className="h-5 w-5 text-red-500 shrink-0" />
@@ -420,77 +409,68 @@ export default function Approvals() {
                 )}
               </div>
 
-              {/* Progress */}
+              {/* Progress — show TWG-relevant steps */}
               <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                 <div className="mb-4 text-sm font-semibold text-gray-900">
-                  Approval Progress
+                  Review Progress
                 </div>
 
                 <div className="relative">
                   <div className="absolute left-6 right-6 top-[22px] h-[2px] bg-gray-200" />
 
-                  <div className="relative grid grid-cols-5">
+                  <div className="relative grid grid-cols-2">
                     <Step
-                      label="Submitted"
-                      state={getStepState(selected.status, "submitted")}
+                      label="Request Sent"
+                      state={getStepState(selected.status, "request_sent")}
                     />
                     <Step
-                      label="Head Review"
-                      state={getStepState(selected.status, "head_review")}
-                    />
-                    <Step
-                      label="Budget Review"
-                      state={getStepState(selected.status, "budget_review")}
-                    />
-                    <Step
-                      label="Procurement"
-                      state={getStepState(selected.status, "procurement")}
-                    />
-                    <Step
-                      label="Purchase Order"
-                      state={getStepState(selected.status, "purchase_order")}
+                      label="Reviewed & Validated"
+                      state={getStepState(selected.status, "request_reviewed")}
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Action Buttons — only show for pending requests */}
-              {selected.status === "submitted" && (
-                <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                  <div className="text-sm font-semibold text-gray-900">
-                    Department Head Decision
-                  </div>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Review the details above and approve or reject this request
-                  </p>
+              {/* Action Buttons — only show for pending requests if user has TWG role */}
+              {(selected.status === "request_sent" ||
+                selected.status === "returned_for_revision") &&
+                canAct && (
+                  <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                    <div className="text-sm font-semibold text-gray-900">
+                      TWG Decision
+                    </div>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Ensure item descriptions are correct and complete, then
+                      approve or return for revision
+                    </p>
 
-                  <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      disabled={acting}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-300 bg-white px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
-                      onClick={() => setShowRejectModal(true)}
-                    >
-                      <XCircle className="h-5 w-5" />
-                      Reject Request
-                    </button>
+                    <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        disabled={acting}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-300 bg-white px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+                        onClick={() => setShowRejectModal(true)}
+                      >
+                        <XCircle className="h-5 w-5" />
+                        Return for Revision
+                      </button>
 
-                    <button
-                      type="button"
-                      disabled={acting}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50"
-                      onClick={handleApprove}
-                    >
-                      {acting ? (
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                      ) : (
-                        <CheckCircle2 className="h-5 w-5" />
-                      )}
-                      Approve Request
-                    </button>
+                      <button
+                        type="button"
+                        disabled={acting}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+                        onClick={handleApprove}
+                      >
+                        {acting ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="h-5 w-5" />
+                        )}
+                        Validate & Approve
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
           ) : (
             <div className="flex items-center justify-center rounded-2xl border border-gray-200 bg-white p-20 shadow-sm">
@@ -513,7 +493,7 @@ export default function Approvals() {
               Reject Request
             </div>
             <p className="mt-1 text-sm text-gray-500">
-              Provide a reason for rejecting this request (optional)
+              Provide notes on what needs to be revised (optional)
             </p>
             <textarea
               value={rejectNote}

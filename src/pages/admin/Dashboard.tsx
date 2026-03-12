@@ -1,12 +1,6 @@
 // src/pages/admin/Dashboard.tsx
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  FileText,
-  Clock,
-  CheckCircle2,
-  Package,
-  Loader2,
-} from "lucide-react";
+import { FileText, Clock, CheckCircle2, Package, Loader2 } from "lucide-react";
 import {
   ResponsiveContainer,
   PieChart,
@@ -21,6 +15,8 @@ import {
   type RequestRow,
   type RequestStatus,
   STATUS_LABELS,
+  STATUS_SHORT_LABELS,
+  STATUS_TONE,
 } from "../../lib/requests";
 
 type StatCardProps = {
@@ -78,20 +74,22 @@ function StatCard({ title, value, sub, icon: Icon, theme }: StatCardProps) {
 }
 
 function StatusPill({ status }: { status: RequestStatus }) {
-  const map: Record<RequestStatus, string> = {
-    submitted: "bg-gray-100 text-gray-700",
-    head_review: "bg-amber-100 text-amber-700",
-    budget_review: "bg-blue-100 text-blue-700",
-    procurement_processing: "bg-green-100 text-green-700",
-    purchase_order: "bg-violet-100 text-violet-700",
-    rejected: "bg-red-100 text-red-700",
+  const toneMap: Record<string, string> = {
+    gray: "bg-gray-100 text-gray-700",
+    amber: "bg-amber-100 text-amber-700",
+    blue: "bg-blue-100 text-blue-700",
+    green: "bg-green-100 text-green-700",
+    violet: "bg-violet-100 text-violet-700",
+    emerald: "bg-emerald-100 text-emerald-700",
+    red: "bg-red-100 text-red-700",
   };
+  const tone = STATUS_TONE[status] ?? "gray";
 
   return (
     <span
-      className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${map[status] ?? "bg-gray-100 text-gray-700"}`}
+      className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${toneMap[tone] ?? "bg-gray-100 text-gray-700"}`}
     >
-      {STATUS_LABELS[status]}
+      {STATUS_SHORT_LABELS[status] ?? status}
     </span>
   );
 }
@@ -104,12 +102,12 @@ function itemsTotal(items?: { unit_cost: number | null; qty: number }[]) {
 export default function Dashboard() {
   const [stats, setStats] = useState({
     total: 0,
-    submitted: 0,
-    headReview: 0,
-    budgetReview: 0,
-    procurementProcessing: 0,
-    purchaseOrder: 0,
-    rejected: 0,
+    requestSent: 0,
+    twgPhase: 0,
+    procurementPhase: 0,
+    supplyPhase: 0,
+    completed: 0,
+    returned: 0,
   });
   const [recent, setRecent] = useState<RequestRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,20 +135,16 @@ export default function Dashboard() {
   const statusDistribution = useMemo(
     () =>
       [
-        { name: "Submitted", value: stats.submitted, color: "#6b7280" },
-        { name: "Head Review", value: stats.headReview, color: "#f59e0b" },
-        { name: "Budget Review", value: stats.budgetReview, color: "#3b82f6" },
+        { name: "Request Sent", value: stats.requestSent, color: "#6b7280" },
+        { name: "TWG Phase", value: stats.twgPhase, color: "#f59e0b" },
         {
-          name: "Procurement",
-          value: stats.procurementProcessing,
-          color: "#22c55e",
+          name: "Procurement Phase",
+          value: stats.procurementPhase,
+          color: "#3b82f6",
         },
-        {
-          name: "Purchase Order",
-          value: stats.purchaseOrder,
-          color: "#8b5cf6",
-        },
-        { name: "Rejected", value: stats.rejected, color: "#ef4444" },
+        { name: "Supply Phase", value: stats.supplyPhase, color: "#8b5cf6" },
+        { name: "Completed", value: stats.completed, color: "#22c55e" },
+        { name: "Returned", value: stats.returned, color: "#ef4444" },
       ].filter((d) => d.value > 0),
     [stats],
   );
@@ -192,26 +186,22 @@ export default function Dashboard() {
           />
           <StatCard
             title="Pending Review"
-            value={stats.submitted}
-            sub="awaiting head review"
+            value={stats.requestSent}
+            sub="awaiting TWG review"
             icon={Clock}
             theme="amber"
           />
           <StatCard
             title="In Progress"
-            value={
-              stats.headReview +
-              stats.budgetReview +
-              stats.procurementProcessing
-            }
+            value={stats.twgPhase + stats.procurementPhase + stats.supplyPhase}
             sub="under processing"
             icon={CheckCircle2}
             theme="green"
           />
           <StatCard
-            title="Purchase Orders"
-            value={stats.purchaseOrder}
-            sub="completed"
+            title="Completed"
+            value={stats.completed}
+            sub="fully completed"
             icon={Package}
             theme="violet"
           />
@@ -259,33 +249,33 @@ export default function Dashboard() {
             <div className="grid grid-cols-2 gap-4">
               {[
                 {
-                  label: "Submitted",
-                  count: stats.submitted,
+                  label: "Request Sent",
+                  count: stats.requestSent,
                   color: "bg-gray-100 text-gray-700",
                 },
                 {
-                  label: "Head Review",
-                  count: stats.headReview,
+                  label: "TWG Phase",
+                  count: stats.twgPhase,
                   color: "bg-amber-100 text-amber-700",
                 },
                 {
-                  label: "Budget Review",
-                  count: stats.budgetReview,
+                  label: "Procurement Phase",
+                  count: stats.procurementPhase,
                   color: "bg-blue-100 text-blue-700",
                 },
                 {
-                  label: "Procurement",
-                  count: stats.procurementProcessing,
-                  color: "bg-green-100 text-green-700",
-                },
-                {
-                  label: "Purchase Order",
-                  count: stats.purchaseOrder,
+                  label: "Supply Phase",
+                  count: stats.supplyPhase,
                   color: "bg-violet-100 text-violet-700",
                 },
                 {
-                  label: "Rejected",
-                  count: stats.rejected,
+                  label: "Completed",
+                  count: stats.completed,
+                  color: "bg-green-100 text-green-700",
+                },
+                {
+                  label: "Returned",
+                  count: stats.returned,
                   color: "bg-red-100 text-red-700",
                 },
               ].map((s) => (

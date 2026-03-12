@@ -6,38 +6,170 @@ import { supabase } from "./supabase";
 // ── Types ──────────────────────────────────────────────
 
 export type RequestStatus =
-  | "submitted"
-  | "head_review"
-  | "budget_review"
-  | "procurement_processing"
-  | "purchase_order"
-  | "rejected";
+  | "request_sent"
+  | "request_reviewed"
+  | "pr_number_assigned"
+  | "notice_of_meeting"
+  | "endorsed_to_bac"
+  | "resolution_approved"
+  | "under_supplier_quotation"
+  | "quotations_received"
+  | "under_quotation_evaluation"
+  | "hope_approval"
+  | "abstract_prepared"
+  | "contract_awarded"
+  | "po_issued"
+  | "ntp_issued"
+  | "noa_po_ntp_posted"
+  | "po_delivered"
+  | "po_received_supply"
+  | "items_for_inspection"
+  | "under_inspection"
+  | "under_warehousing"
+  | "issuance"
+  | "completed"
+  | "returned_for_revision";
 
-/** The ordered steps a request walks through (excluding rejected). */
+/** The ordered steps a request walks through (excluding returned_for_revision). */
 export const STATUS_FLOW: RequestStatus[] = [
-  "submitted",
-  "head_review",
-  "budget_review",
-  "procurement_processing",
-  "purchase_order",
+  "request_sent",
+  "request_reviewed",
+  "pr_number_assigned",
+  "notice_of_meeting",
+  "endorsed_to_bac",
+  "resolution_approved",
+  "under_supplier_quotation",
+  "quotations_received",
+  "under_quotation_evaluation",
+  "hope_approval",
+  "abstract_prepared",
+  "contract_awarded",
+  "po_issued",
+  "ntp_issued",
+  "noa_po_ntp_posted",
+  "po_delivered",
+  "po_received_supply",
+  "items_for_inspection",
+  "under_inspection",
+  "under_warehousing",
+  "issuance",
+  "completed",
 ];
 
 export const STATUS_LABELS: Record<RequestStatus, string> = {
-  submitted: "Request Submitted",
-  head_review: "Head Review",
-  budget_review: "Budget Review",
-  procurement_processing: "Procurement Processing",
-  purchase_order: "Purchase Order",
-  rejected: "Rejected",
+  request_sent: "Request Sent",
+  request_reviewed: "Request Reviewed and Validated",
+  pr_number_assigned: "PR Number Assigned",
+  notice_of_meeting: "Notice of Meeting",
+  endorsed_to_bac: "Endorsed to BAC for Procurement Mode Evaluation",
+  resolution_approved: "Resolution Approved",
+  under_supplier_quotation: "Under Supplier Quotation Process",
+  quotations_received: "Supplier Quotations Received",
+  under_quotation_evaluation: "Under Quotation Evaluation",
+  hope_approval: "For HoPE Approval of BAC Recommendation",
+  abstract_prepared: "Abstract Prepared",
+  contract_awarded: "Contract Awarded",
+  po_issued: "Contract Signed and Purchase Order Issued",
+  ntp_issued: "Notice to Proceed Issued",
+  noa_po_ntp_posted: "NOA, PO/Contract and NTP Issued",
+  po_delivered: "Purchase Order Delivered/Picked Up",
+  po_received_supply: "Purchase Order Received by Supply Office",
+  items_for_inspection: "Items Endorsed for Inspection",
+  under_inspection: "Under Checking and Inspection",
+  under_warehousing: "Under Storing and Warehousing for Inventory",
+  issuance: "Issuance and Utilization to End-users",
+  completed: "Issuance and Utilization Completed",
+  returned_for_revision: "Returned to User for Revision",
+};
+
+/** Short labels for compact displays (pills, table headers). */
+export const STATUS_SHORT_LABELS: Record<RequestStatus, string> = {
+  request_sent: "Request Sent",
+  request_reviewed: "Reviewed & Validated",
+  pr_number_assigned: "PR Assigned",
+  notice_of_meeting: "Notice of Meeting",
+  endorsed_to_bac: "Endorsed to BAC",
+  resolution_approved: "Resolution Approved",
+  under_supplier_quotation: "Supplier Quotation",
+  quotations_received: "Quotations Received",
+  under_quotation_evaluation: "Quotation Eval",
+  hope_approval: "HoPE Approval",
+  abstract_prepared: "Abstract Prepared",
+  contract_awarded: "Contract Awarded",
+  po_issued: "PO Issued",
+  ntp_issued: "NTP Issued",
+  noa_po_ntp_posted: "NOA/PO/NTP Posted",
+  po_delivered: "PO Delivered",
+  po_received_supply: "Received by Supply",
+  items_for_inspection: "For Inspection",
+  under_inspection: "Under Inspection",
+  under_warehousing: "Warehousing",
+  issuance: "Issuance",
+  completed: "Completed",
+  returned_for_revision: "Returned for Revision",
 };
 
 export const STATUS_TONE: Record<RequestStatus, string> = {
-  submitted: "gray",
-  head_review: "amber",
-  budget_review: "blue",
-  procurement_processing: "green",
-  purchase_order: "violet",
-  rejected: "red",
+  request_sent: "gray",
+  request_reviewed: "amber",
+  pr_number_assigned: "amber",
+  notice_of_meeting: "blue",
+  endorsed_to_bac: "blue",
+  resolution_approved: "blue",
+  under_supplier_quotation: "blue",
+  quotations_received: "blue",
+  under_quotation_evaluation: "blue",
+  hope_approval: "blue",
+  abstract_prepared: "blue",
+  contract_awarded: "green",
+  po_issued: "green",
+  ntp_issued: "green",
+  noa_po_ntp_posted: "green",
+  po_delivered: "violet",
+  po_received_supply: "violet",
+  items_for_inspection: "violet",
+  under_inspection: "violet",
+  under_warehousing: "violet",
+  issuance: "emerald",
+  completed: "emerald",
+  returned_for_revision: "red",
+};
+
+/** Which role is responsible for advancing to each status. */
+export type UserRole = "department_user" | "twg" | "procurement_admin" | "supply_admin";
+
+export const STATUS_RESPONSIBLE_ROLE: Record<RequestStatus, UserRole> = {
+  request_sent: "department_user",
+  request_reviewed: "twg",
+  pr_number_assigned: "procurement_admin",
+  notice_of_meeting: "procurement_admin",
+  endorsed_to_bac: "procurement_admin",
+  resolution_approved: "procurement_admin",
+  under_supplier_quotation: "procurement_admin",
+  quotations_received: "procurement_admin",
+  under_quotation_evaluation: "procurement_admin",
+  hope_approval: "procurement_admin",
+  abstract_prepared: "procurement_admin",
+  contract_awarded: "procurement_admin",
+  po_issued: "procurement_admin",
+  ntp_issued: "procurement_admin",
+  noa_po_ntp_posted: "procurement_admin",
+  po_delivered: "supply_admin",
+  po_received_supply: "supply_admin",
+  items_for_inspection: "supply_admin",
+  under_inspection: "supply_admin",
+  under_warehousing: "supply_admin",
+  issuance: "supply_admin",
+  completed: "department_user",
+  returned_for_revision: "twg",
+};
+
+/** Statuses grouped by responsible role (phase). */
+export const ROLE_LABELS: Record<UserRole, string> = {
+  department_user: "End User (Department)",
+  twg: "Technical Working Group (TWG)",
+  procurement_admin: "Procurement Office Administrator",
+  supply_admin: "Supply Office Administrator",
 };
 
 export interface RequestItemInput {
@@ -80,6 +212,8 @@ export interface RequestItemRow {
   uom: string;
   unit_cost: number | null;
   total_cost: number | null;
+  received_qty: number | null;
+  damage_notes: string | null;
 }
 
 export interface StatusLogRow {
@@ -140,7 +274,7 @@ export async function createRequest(params: {
       program_id: params.programId,
       purpose: params.purpose,
       fund_source: params.fundSource ?? null,
-      status: "submitted" as RequestStatus,
+      status: "request_sent" as RequestStatus,
       created_by: params.createdBy,
       updated_at: new Date().toISOString(),
     })
@@ -172,8 +306,8 @@ export async function createRequest(params: {
   await supabase.from("request_status_logs").insert({
     id: crypto.randomUUID(),
     request_id: request.id,
-    status: "submitted",
-    note: "Request submitted",
+    status: "request_sent",
+    note: "Request created and sent",
     updated_by: params.createdBy,
   });
 
@@ -235,7 +369,7 @@ export async function fetchRequestById(id: string) {
 // ── Fetch pending requests for approval ────────────────
 
 export async function fetchPendingRequests() {
-  return fetchRequests({ status: "submitted" });
+  return fetchRequests({ status: "request_sent" });
 }
 
 // ── Send status-update email via Edge Function ─────────
@@ -276,6 +410,28 @@ export async function updateRequestStatus(params: {
   updatedBy: string;
   note?: string;
 }) {
+  // ── Role-based guard: verify the user is allowed to set this status ──
+  const { data: updater, error: userErr } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", params.updatedBy)
+    .single();
+
+  if (userErr || !updater) {
+    throw new Error("Could not verify user role.");
+  }
+
+  const userRole = updater.role as UserRole;
+  const responsibleRole = STATUS_RESPONSIBLE_ROLE[params.newStatus];
+
+  // Role must match the responsible role for the target status
+  if (userRole !== responsibleRole) {
+    throw new Error(
+      `Your role (${ROLE_LABELS[userRole]}) is not authorized to set status to "${STATUS_LABELS[params.newStatus]}". ` +
+        `This action requires: ${ROLE_LABELS[responsibleRole]}.`,
+    );
+  }
+
   const { error: updateError } = await supabase
     .from("requests")
     .update({ status: params.newStatus, updated_at: new Date().toISOString() })
@@ -326,7 +482,7 @@ export async function updateRequestStatus(params: {
           email: creator.email,
           recipientName: `${creator.first_name} ${creator.last_name}`,
           prNo: request.pr_no ?? params.requestId,
-          statusLabel: STATUS_LABELS[params.newStatus],
+          statusLabel: STATUS_LABELS[params.newStatus] ?? params.newStatus,
           note: params.note,
         });
       } else {
@@ -344,27 +500,42 @@ export async function updateRequestStatus(params: {
 
 export async function approveRequest(
   requestId: string,
-  adminId: string,
+  userId: string,
   note?: string,
 ) {
   await updateRequestStatus({
     requestId,
-    newStatus: "head_review",
-    updatedBy: adminId,
-    note: note || "Reviewed by Department Head",
+    newStatus: "request_reviewed",
+    updatedBy: userId,
+    note: note || "Request reviewed and validated by TWG",
   });
 }
 
-export async function rejectRequest(
+export async function returnForRevision(
   requestId: string,
-  adminId: string,
+  userId: string,
   note?: string,
 ) {
   await updateRequestStatus({
     requestId,
-    newStatus: "rejected",
-    updatedBy: adminId,
-    note: note || "Rejected by Department Head",
+    newStatus: "returned_for_revision",
+    updatedBy: userId,
+    note: note || "Returned to end user for revision",
+  });
+}
+
+/** Advance a request to the next status in the flow. */
+export async function advanceStatus(
+  requestId: string,
+  userId: string,
+  nextStatus: RequestStatus,
+  note?: string,
+) {
+  await updateRequestStatus({
+    requestId,
+    newStatus: nextStatus,
+    updatedBy: userId,
+    note: note ?? `Status updated to ${STATUS_LABELS[nextStatus]}`,
   });
 }
 
@@ -401,16 +572,28 @@ export async function fetchRequestStats(userId?: string) {
   if (error) throw error;
 
   const rows = data ?? [];
+
+  // Group by phase for dashboard
+  const twgStatuses: RequestStatus[] = ["request_reviewed", "pr_number_assigned"];
+  const procurementStatuses: RequestStatus[] = [
+    "notice_of_meeting", "endorsed_to_bac", "resolution_approved",
+    "under_supplier_quotation", "quotations_received", "under_quotation_evaluation",
+    "hope_approval", "abstract_prepared", "contract_awarded",
+    "po_issued", "ntp_issued", "noa_po_ntp_posted",
+  ];
+  const supplyStatuses: RequestStatus[] = [
+    "po_delivered", "po_received_supply", "items_for_inspection",
+    "under_inspection", "under_warehousing", "issuance",
+  ];
+
   return {
     total: rows.length,
-    submitted: rows.filter((r) => r.status === "submitted").length,
-    headReview: rows.filter((r) => r.status === "head_review").length,
-    budgetReview: rows.filter((r) => r.status === "budget_review").length,
-    procurementProcessing: rows.filter(
-      (r) => r.status === "procurement_processing",
-    ).length,
-    purchaseOrder: rows.filter((r) => r.status === "purchase_order").length,
-    rejected: rows.filter((r) => r.status === "rejected").length,
+    requestSent: rows.filter((r) => r.status === "request_sent").length,
+    twgPhase: rows.filter((r) => twgStatuses.includes(r.status as RequestStatus)).length,
+    procurementPhase: rows.filter((r) => procurementStatuses.includes(r.status as RequestStatus)).length,
+    supplyPhase: rows.filter((r) => supplyStatuses.includes(r.status as RequestStatus)).length,
+    completed: rows.filter((r) => r.status === "completed").length,
+    returned: rows.filter((r) => r.status === "returned_for_revision").length,
   };
 }
 
@@ -424,4 +607,51 @@ export async function fetchUserProfile(userId: string) {
     .single();
   if (error) throw error;
   return data;
+}
+
+// ── Receipt confirmation (department user) ───────────────
+
+export interface ReceiptItemFeedback {
+  itemId: string;
+  receivedQty: number;
+  damageNotes: string;
+}
+
+/**
+ * Department user confirms receipt of items.
+ * Saves per-item feedback and advances status to completed.
+ */
+export async function confirmReceipt(
+  requestId: string,
+  userId: string,
+  items: ReceiptItemFeedback[],
+  overallNote?: string,
+) {
+  // Update each item with received qty and damage notes
+  for (const item of items) {
+    const { error } = await supabase
+      .from("request_items")
+      .update({
+        received_qty: item.receivedQty,
+        damage_notes: item.damageNotes || null,
+      })
+      .eq("id", item.itemId);
+    if (error) throw error;
+  }
+
+  // Build summary note
+  const hasDamage = items.some((i) => i.damageNotes.trim());
+  const summaryNote =
+    overallNote ||
+    (hasDamage
+      ? "Items received with noted concerns. See item details."
+      : "All items received in good condition.");
+
+  // Advance to completed
+  await updateRequestStatus({
+    requestId,
+    newStatus: "completed",
+    updatedBy: userId,
+    note: summaryNote,
+  });
 }

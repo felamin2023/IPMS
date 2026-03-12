@@ -16,20 +16,41 @@ type NavItem = {
   label: string;
   to: string;
   icon: React.ComponentType<{ className?: string }>;
+  /** Roles allowed to see this item. If omitted, visible to all admin-like roles. */
+  roles?: string[];
 };
 
 const navItems: NavItem[] = [
   { label: "Dashboard", to: "/admin/dashboard", icon: LayoutDashboard },
-  { label: "Create Request", to: "/admin/create-request", icon: FilePlus2 },
+  {
+    label: "Create Request",
+    to: "/admin/create-request",
+    icon: FilePlus2,
+    roles: ["department_user"],
+  },
   { label: "Procurement Requests", to: "/admin/requests", icon: FileText },
-  { label: "Approvals", to: "/admin/approvals", icon: CheckSquare },
+  {
+    label: "Approvals",
+    to: "/admin/approvals",
+    icon: CheckSquare,
+    roles: ["twg"],
+  },
   { label: "Monitoring", to: "/admin/monitoring", icon: Activity },
-  { label: "Reports", to: "/admin/reports", icon: BarChart3 },
+  {
+    label: "Reports",
+    to: "/admin/reports",
+    icon: BarChart3,
+    roles: ["procurement_admin"],
+  },
   { label: "Settings", to: "/admin/settings", icon: Settings2 },
 ];
 
 export default function AdminNav({ hideBrand }: { hideBrand?: boolean }) {
-  const { signOut } = useAuth();
+  const { signOut, role } = useAuth();
+
+  const visibleItems = navItems.filter(
+    (item) => !item.roles || (role && item.roles.includes(role)),
+  );
 
   return (
     <aside className="h-full w-64 bg-white border-r border-gray-200 flex flex-col">
@@ -48,7 +69,7 @@ export default function AdminNav({ hideBrand }: { hideBrand?: boolean }) {
       {/* Nav */}
       <nav className="p-3.5 flex-1">
         <ul className="space-y-1">
-          {navItems.map((item) => {
+          {visibleItems.map((item) => {
             const Icon = item.icon;
             return (
               <li key={item.to}>

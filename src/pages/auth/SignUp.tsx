@@ -253,7 +253,7 @@ export default function SignUp() {
 
   const [college, setCollege] = useState("");
   const [program, setProgram] = useState("");
-  const [role] = useState<"department_user">("department_user");
+  const [role, setRole] = useState("department_user");
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -570,52 +570,88 @@ export default function SignUp() {
                       </div>
                     </div>
 
-                    {/* Department / College */}
+                    {/* Role */}
                     <div className="relative">
-                      <label htmlFor="college" className="sr-only">
-                        Department
+                      <label htmlFor="role" className="sr-only">
+                        Role
                       </label>
                       <select
-                        id="college"
-                        value={college}
-                        onChange={(e) => setCollege(e.target.value)}
-                        onBlur={() => handleBlur("college")}
+                        id="role"
+                        value={role}
+                        onChange={(e) => {
+                          setRole(e.target.value);
+                          if (e.target.value !== "department_user") {
+                            setCollege("");
+                            setProgram("");
+                          }
+                        }}
                         className={`${inputBase} appearance-none`}
                       >
-                        <option value="">Select Department</option>
-                        {colleges.map((c) => (
-                          <option key={c.code} value={c.code}>
-                            {c.name} ({c.code})
-                          </option>
-                        ))}
+                        <option value="department_user">
+                          End User (Department)
+                        </option>
+                        <option value="twg">
+                          Technical Working Group (TWG)
+                        </option>
+                        <option value="procurement_admin">
+                          Procurement Office Administrator
+                        </option>
+                        <option value="supply_admin">
+                          Supply Office Administrator
+                        </option>
                       </select>
                     </div>
 
-                    {/* Program (depends on selected college) */}
-                    <div className="relative">
-                      <label htmlFor="program" className="sr-only">
-                        Program
-                      </label>
-                      <select
-                        id="program"
-                        value={program}
-                        onChange={(e) => setProgram(e.target.value)}
-                        onBlur={() => handleBlur("program")}
-                        disabled={!college}
-                        className={`${inputBase} appearance-none ${!college ? "opacity-60" : ""}`}
-                      >
-                        <option value="">
-                          {college
-                            ? "Select Program"
-                            : "Select Department first"}
-                        </option>
-                        {filteredPrograms.map((p) => (
-                          <option key={p.code} value={p.code}>
-                            {p.name} ({p.code})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    {/* Department / College (only for department users) */}
+                    {role === "department_user" && (
+                      <>
+                        <div className="relative">
+                          <label htmlFor="college" className="sr-only">
+                            Department
+                          </label>
+                          <select
+                            id="college"
+                            value={college}
+                            onChange={(e) => setCollege(e.target.value)}
+                            onBlur={() => handleBlur("college")}
+                            className={`${inputBase} appearance-none`}
+                          >
+                            <option value="">Select Department</option>
+                            {colleges.map((c) => (
+                              <option key={c.code} value={c.code}>
+                                {c.name} ({c.code})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Program (depends on selected college) */}
+                        <div className="relative">
+                          <label htmlFor="program" className="sr-only">
+                            Program
+                          </label>
+                          <select
+                            id="program"
+                            value={program}
+                            onChange={(e) => setProgram(e.target.value)}
+                            onBlur={() => handleBlur("program")}
+                            disabled={!college}
+                            className={`${inputBase} appearance-none ${!college ? "opacity-60" : ""}`}
+                          >
+                            <option value="">
+                              {college
+                                ? "Select Program"
+                                : "Select Department first"}
+                            </option>
+                            {filteredPrograms.map((p) => (
+                              <option key={p.code} value={p.code}>
+                                {p.name} ({p.code})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </>
+                    )}
 
                     {/* Email */}
                     <div className="relative">

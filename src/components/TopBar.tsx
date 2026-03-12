@@ -28,7 +28,13 @@ type NotifItem = {
 export default function TopBar({ onOpenMobile }: TopBarProps) {
   const { user, role } = useAuth();
 
-  const prettyRole = role === "admin" ? "Administrator" : "Procurement Officer";
+  const roleLabels: Record<string, string> = {
+    department_user: "End User (Department)",
+    twg: "Technical Working Group",
+    procurement_admin: "Procurement Administrator",
+    supply_admin: "Supply Administrator",
+  };
+  const prettyRole = role ? (roleLabels[role] ?? role) : "User";
   const displayName =
     (user?.user_metadata?.full_name as string | undefined) ??
     (user?.email ? user.email.split("@")[0] : "Guest");
