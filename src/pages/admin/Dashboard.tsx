@@ -14,7 +14,6 @@ import {
   fetchRequests,
   type RequestRow,
   type RequestStatus,
-  STATUS_LABELS,
   STATUS_SHORT_LABELS,
   STATUS_TONE,
 } from "../../lib/requests";

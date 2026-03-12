@@ -1,19 +1,13 @@
 // src/pages/admin/Monitoring.tsx
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  FileText,
-  Clock,
-  CheckCircle2,
-  Package,
   Check,
   Loader2,
-  XCircle,
 } from "lucide-react";
 import {
   fetchRequests,
   type RequestRow,
   type RequestStatus,
-  STATUS_LABELS,
   STATUS_SHORT_LABELS,
   STATUS_TONE,
   STATUS_FLOW,
@@ -21,12 +15,6 @@ import {
 import StatusTimeline from "../../components/StatusTimeline";
 
 // ── helpers ────────────────────────────────────────────
-
-function stepIndexFor(status: RequestStatus): number {
-  if (status === "returned_for_revision") return -1;
-  const idx = STATUS_FLOW.indexOf(status);
-  return idx === -1 ? 0 : idx;
-}
 
 function progressFor(status: RequestStatus): { text: string; value: number } {
   if (status === "returned_for_revision")
