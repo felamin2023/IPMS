@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   Bell,
@@ -7,26 +8,23 @@ import {
   MoreHorizontal,
   FileText,
   CheckCircle2,
-  ShoppingCart,
+  AlertTriangle,
+  Inbox,
 } from "lucide-react";
+import {
+  fetchNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+  type NotificationRow,
+} from "../lib/notifications";
 
 interface TopBarProps {
   onOpenMobile?: () => void;
 }
 
-type NotifItem = {
-  id: number;
-  title: string;
-  desc: string;
-  time: string;
-  unread: boolean;
-  icon: React.ComponentType<{ className?: string }>;
-  iconBg: string;
-  iconColor: string;
-};
-
 export default function TopBar({ onOpenMobile }: TopBarProps) {
   const { user, role } = useAuth();
+  const navigate = useNavigate();
 
   const roleLabels: Record<string, string> = {
     department_user: "End User (Department)",
@@ -42,6 +40,28 @@ export default function TopBar({ onOpenMobile }: TopBarProps) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifTab, setNotifTab] = useState<"all" | "unread">("all");
   const notifRef = useRef<HTMLDivElement | null>(null);
+  const [notifications, setNotifications] = useState<NotificationRow[]>([]);
+
+  // Fetch notifications on mount and every 30 seconds
+  const loadNotifs = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      // Look up internal user id from auth id
+      const { data: profile } = await (await import("../lib/requests")).fetchUserProfile(user.id).then((p: any) => ({ data: p })).catch(() => ({ data: null }));
+      const internalId = profile?.id;
+      if (!internalId) return;
+      const rows = await fetchNotifications(internalId);
+      setNotifications(rows);
+    } catch {
+      // silently ignore
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    loadNotifs();
+    const timer = setInterval(loadNotifs, 30_000);
+    return () => clearInterval(timer);
+  }, [loadNotifs]);
 
   useEffect(() => {
     function handleDocClick(e: MouseEvent) {
@@ -55,44 +75,65 @@ export default function TopBar({ onOpenMobile }: TopBarProps) {
     return () => document.removeEventListener("mousedown", handleDocClick);
   }, [notifOpen]);
 
-  const notifications: NotifItem[] = [
-    {
-      id: 1,
-      title: "PR-2024-0248 needs your approval",
-      desc: "Office Supplies — Accounting Dept",
-      time: "2h",
-      unread: true,
-      icon: FileText,
-      iconBg: "bg-amber-100",
-      iconColor: "text-amber-600",
-    },
-    {
-      id: 2,
-      title: "PO #123 has been created",
-      desc: "Laboratory Equipment order confirmed",
-      time: "1d",
-      unread: true,
-      icon: ShoppingCart,
-      iconBg: "bg-blue-100",
-      iconColor: "text-blue-600",
-    },
-    {
-      id: 3,
-      title: "PR-2024-0245 completed",
-      desc: "Furniture — Faculty Lounge delivered",
-      time: "3d",
-      unread: false,
-      icon: CheckCircle2,
-      iconBg: "bg-green-100",
-      iconColor: "text-green-600",
-    },
-  ];
+  function notifIcon(type: string) {
+    switch (type) {
+      case "return_note":
+        return { icon: AlertTriangle, bg: "bg-red-100", color: "text-red-600" };
+      case "new_request":
+        return { icon: Inbox, bg: "bg-amber-100", color: "text-amber-600" };
+      case "receipt_confirmed":
+        return { icon: CheckCircle2, bg: "bg-green-100", color: "text-green-600" };
+      default:
+        return { icon: FileText, bg: "bg-blue-100", color: "text-blue-600" };
+    }
+  }
+
+  function timeAgo(dateStr: string) {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60_000);
+    if (mins < 1) return "now";
+    if (mins < 60) return `${mins}m`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d`;
+  }
+
+  async function handleNotifClick(n: NotificationRow) {
+    if (!n.read) {
+      await markNotificationRead(n.id);
+      setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
+    }
+    setNotifOpen(false);
+    // Navigate to appropriate page based on role
+    if (n.request_id) {
+      if (role === "department_user") {
+        navigate("/requests");
+      } else {
+        navigate("/admin/requests");
+      }
+    }
+  }
+
+  async function handleMarkAllRead() {
+    if (!user?.id) return;
+    try {
+      const { fetchUserProfile } = await import("../lib/requests");
+      const profile = await fetchUserProfile(user.id);
+      if (profile?.id) {
+        await markAllNotificationsRead(profile.id);
+        setNotifications((prev) => prev.map((x) => ({ ...x, read: true })));
+      }
+    } catch {
+      // silently ignore
+    }
+  }
 
   const visibleNotifs =
     notifTab === "unread"
-      ? notifications.filter((n) => n.unread)
+      ? notifications.filter((n) => !n.read)
       : notifications;
-  const unreadCount = notifications.filter((n) => n.unread).length;
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
     <header className="flex items-center gap-3 border-b border-gray-200 bg-white px-4 h-17 md:px-6 shrink-0">
@@ -166,9 +207,14 @@ export default function TopBar({ onOpenMobile }: TopBarProps) {
                 <span className="text-sm font-semibold text-gray-900">
                   {notifTab === "unread" ? "Unread" : "Recent"}
                 </span>
-                <button className="text-sm font-medium text-blue-600 hover:text-blue-700">
-                  See all
-                </button>
+                {unreadCount > 0 && (
+                  <button
+                    onClick={handleMarkAllRead}
+                    className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                  >
+                    Mark all read
+                  </button>
+                )}
               </div>
 
               {/* List */}
@@ -179,20 +225,21 @@ export default function TopBar({ onOpenMobile }: TopBarProps) {
                   </div>
                 ) : (
                   visibleNotifs.map((n) => {
-                    const Icon = n.icon;
+                    const { icon: Icon, bg, color } = notifIcon(n.type);
                     return (
                       <button
                         key={n.id}
+                        onClick={() => handleNotifClick(n)}
                         className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50 ${
-                          n.unread ? "bg-blue-50/50" : ""
+                          !n.read ? "bg-blue-50/50" : ""
                         }`}
                       >
                         {/* Avatar / icon */}
                         <div className="relative flex-shrink-0">
                           <div
-                            className={`h-12 w-12 rounded-full ${n.iconBg} flex items-center justify-center`}
+                            className={`h-12 w-12 rounded-full ${bg} flex items-center justify-center`}
                           >
-                            <Icon className={`h-5 w-5 ${n.iconColor}`} />
+                            <Icon className={`h-5 w-5 ${color}`} />
                           </div>
                         </div>
 
@@ -200,7 +247,7 @@ export default function TopBar({ onOpenMobile }: TopBarProps) {
                         <div className="flex-1 min-w-0 pt-0.5">
                           <p
                             className={`text-[13px] leading-snug ${
-                              n.unread
+                              !n.read
                                 ? "font-semibold text-gray-900"
                                 : "text-gray-600"
                             }`}
@@ -208,21 +255,21 @@ export default function TopBar({ onOpenMobile }: TopBarProps) {
                             {n.title}
                           </p>
                           <p className="text-[13px] leading-snug text-gray-500">
-                            {n.desc}
+                            {n.body}
                           </p>
                           <span
                             className={`mt-0.5 block text-xs ${
-                              n.unread
+                              !n.read
                                 ? "text-blue-600 font-semibold"
                                 : "text-gray-400"
                             }`}
                           >
-                            {n.time} ago
+                            {timeAgo(n.created_at)} ago
                           </span>
                         </div>
 
                         {/* Unread dot */}
-                        {n.unread && (
+                        {!n.read && (
                           <span className="mt-4 flex-shrink-0 h-3 w-3 rounded-full bg-blue-600" />
                         )}
                       </button>

@@ -2,10 +2,15 @@
 // Service layer for request CRUD operations via Supabase
 
 import { supabase } from "./supabase";
+import {
+  createNotification,
+  notifyUsersByRole,
+} from "./notifications";
 
 // ── Types ──────────────────────────────────────────────
 
 export type RequestStatus =
+  | "draft"
   | "request_sent"
   | "request_reviewed"
   | "pr_number_assigned"
@@ -57,6 +62,7 @@ export const STATUS_FLOW: RequestStatus[] = [
 ];
 
 export const STATUS_LABELS: Record<RequestStatus, string> = {
+  draft: "Draft",
   request_sent: "Request Sent",
   request_reviewed: "Request Reviewed and Validated",
   pr_number_assigned: "PR Number Assigned",
@@ -84,6 +90,7 @@ export const STATUS_LABELS: Record<RequestStatus, string> = {
 
 /** Short labels for compact displays (pills, table headers). */
 export const STATUS_SHORT_LABELS: Record<RequestStatus, string> = {
+  draft: "Draft",
   request_sent: "Request Sent",
   request_reviewed: "Reviewed & Validated",
   pr_number_assigned: "PR Assigned",
@@ -110,6 +117,7 @@ export const STATUS_SHORT_LABELS: Record<RequestStatus, string> = {
 };
 
 export const STATUS_TONE: Record<RequestStatus, string> = {
+  draft: "slate",
   request_sent: "gray",
   request_reviewed: "amber",
   pr_number_assigned: "amber",
@@ -139,6 +147,7 @@ export const STATUS_TONE: Record<RequestStatus, string> = {
 export type UserRole = "department_user" | "twg" | "procurement_admin" | "supply_admin";
 
 export const STATUS_RESPONSIBLE_ROLE: Record<RequestStatus, UserRole> = {
+  draft: "department_user",
   request_sent: "department_user",
   request_reviewed: "twg",
   pr_number_assigned: "procurement_admin",
@@ -250,6 +259,149 @@ async function generatePrNo(): Promise<string> {
   return `${prefix}${String(seq).padStart(4, "0")}`;
 }
 
+// ── Draft Management ───────────────────────────────────
+
+/**
+ * Save a new draft (no PR number, status = draft).
+ * If a draftId is provided, updates the existing draft instead.
+ */
+export async function saveDraft(params: {
+  draftId?: string;
+  collegeId: string;
+  programId: string;
+  purpose?: string;
+  fundSource?: string;
+  createdBy: string;
+  items: RequestItemInput[];
+}): Promise<RequestRow> {
+  const requestId = params.draftId ?? crypto.randomUUID();
+
+  if (params.draftId) {
+    // Update existing draft
+    const { error: updateErr } = await supabase
+      .from("requests")
+      .update({
+        purpose: params.purpose ?? null,
+        fund_source: params.fundSource ?? null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", params.draftId)
+      .eq("status", "draft");
+    if (updateErr) throw updateErr;
+
+    // Replace items: delete old, insert new
+    await supabase.from("request_items").delete().eq("request_id", params.draftId);
+  } else {
+    // Create new draft (no PR number)
+    const { error: reqError } = await supabase
+      .from("requests")
+      .insert({
+        id: requestId,
+        pr_no: null,
+        college_id: params.collegeId,
+        program_id: params.programId,
+        purpose: params.purpose ?? null,
+        fund_source: params.fundSource ?? null,
+        status: "draft" as RequestStatus,
+        created_by: params.createdBy,
+        updated_at: new Date().toISOString(),
+      });
+    if (reqError) throw reqError;
+  }
+
+  // Insert items
+  if (params.items.length > 0) {
+    const itemRows = params.items
+      .filter((it) => it.itemDescription.trim())
+      .map((item, idx) => ({
+        id: crypto.randomUUID(),
+        request_id: requestId,
+        stock_no: String(idx + 1),
+        qty: item.qty,
+        item_description: item.itemDescription,
+        uom: item.uom,
+        unit_cost: item.unitCost ?? null,
+        total_cost: item.unitCost ? item.unitCost * item.qty : null,
+      }));
+
+    if (itemRows.length > 0) {
+      const { error: itemError } = await supabase.from("request_items").insert(itemRows);
+      if (itemError) throw itemError;
+    }
+  }
+
+  return { id: requestId, status: "draft" as RequestStatus } as RequestRow;
+}
+
+/** Fetch all drafts for a user. */
+export async function fetchDrafts(userId: string): Promise<RequestRow[]> {
+  const { data, error } = await supabase
+    .from("requests")
+    .select(
+      `
+      *,
+      college:colleges(*),
+      program:programs(*),
+      items:request_items(*)
+    `,
+    )
+    .eq("created_by", userId)
+    .eq("status", "draft")
+    .order("updated_at", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as RequestRow[];
+}
+
+/** Submit a draft: assign PR number, change status to request_sent. */
+export async function submitDraft(
+  draftId: string,
+  userId: string,
+): Promise<RequestRow> {
+  const prNo = await generatePrNo();
+
+  const { error: updateErr } = await supabase
+    .from("requests")
+    .update({
+      pr_no: prNo,
+      status: "request_sent" as RequestStatus,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", draftId)
+    .eq("status", "draft");
+  if (updateErr) throw updateErr;
+
+  // Insert initial status log
+  await supabase.from("request_status_logs").insert({
+    id: crypto.randomUUID(),
+    request_id: draftId,
+    status: "request_sent",
+    note: "Request created and sent",
+    updated_by: userId,
+  });
+
+  // Notify TWG users
+  await notifyUsersByRole({
+    role: "twg",
+    title: `New request ${prNo} submitted`,
+    body: "A new procurement request needs review",
+    type: "new_request",
+    requestId: draftId,
+  });
+
+  return { id: draftId, pr_no: prNo, status: "request_sent" as RequestStatus } as RequestRow;
+}
+
+/** Delete a draft. */
+export async function deleteDraft(draftId: string) {
+  const { error } = await supabase
+    .from("requests")
+    .delete()
+    .eq("id", draftId)
+    .eq("status", "draft");
+  if (error) throw error;
+}
+
 // ── Create Request ─────────────────────────────────────
 
 export async function createRequest(params: {
@@ -311,6 +463,15 @@ export async function createRequest(params: {
     updated_by: params.createdBy,
   });
 
+  // Notify TWG users that a new request needs review
+  await notifyUsersByRole({
+    role: "twg",
+    title: `New request ${prNo} submitted`,
+    body: params.purpose || "A new procurement request needs review",
+    type: "new_request",
+    requestId: request.id,
+  });
+
   return { ...request, pr_no: prNo } as RequestRow;
 }
 
@@ -336,6 +497,9 @@ export async function fetchRequests(filters?: {
 
   if (filters?.status) {
     query = query.eq("status", filters.status);
+  } else {
+    // Exclude drafts from general listings
+    query = query.neq("status", "draft");
   }
   if (filters?.createdBy) {
     query = query.eq("created_by", filters.createdBy);
@@ -488,6 +652,38 @@ export async function updateRequestStatus(params: {
       } else {
         console.warn("[email-notify] No email found for creator");
       }
+
+      // ── In-app notification to the request creator ──
+      const prLabel = request.pr_no ?? "Request";
+      const notifType =
+        params.newStatus === "returned_for_revision"
+          ? "return_note"
+          : "status_update";
+
+      await createNotification({
+        userId: request.created_by,
+        title: `${prLabel} — ${STATUS_SHORT_LABELS[params.newStatus]}`,
+        body: params.note || `Status updated to ${STATUS_LABELS[params.newStatus]}`,
+        type: notifType,
+        requestId: params.requestId,
+      });
+
+      // ── In-app notification to the responsible role for the next step ──
+      const nextIdx = STATUS_FLOW.indexOf(params.newStatus) + 1;
+      const nextStatus = STATUS_FLOW[nextIdx] as RequestStatus | undefined;
+      if (nextStatus) {
+        const nextRole = STATUS_RESPONSIBLE_ROLE[nextStatus];
+        // Only notify if the next responsible role differs from the updater's role
+        if (nextRole !== userRole) {
+          await notifyUsersByRole({
+            role: nextRole,
+            title: `${prLabel} needs your attention`,
+            body: `${STATUS_LABELS[params.newStatus]} — ready for ${STATUS_SHORT_LABELS[nextStatus]}`,
+            type: "new_request",
+            requestId: params.requestId,
+          });
+        }
+      }
     } else {
       console.warn("[email-notify] No creator found on request");
     }
@@ -565,7 +761,7 @@ export async function fetchPrograms(collegeId?: string) {
 // ── Stats ──────────────────────────────────────────────
 
 export async function fetchRequestStats(userId?: string) {
-  let query = supabase.from("requests").select("status");
+  let query = supabase.from("requests").select("status").neq("status", "draft");
   if (userId) query = query.eq("created_by", userId);
 
   const { data, error } = await query;

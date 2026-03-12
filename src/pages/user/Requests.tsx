@@ -1,6 +1,14 @@
 // src/pages/user/Requests.tsx
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Search, Filter, Eye, Download, Loader2, X, PackageCheck } from "lucide-react";
+import {
+  Search,
+  Filter,
+  Eye,
+  Download,
+  Loader2,
+  X,
+  PackageCheck,
+} from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import {
   fetchRequests,
@@ -57,7 +65,9 @@ export default function Requests() {
   const [statusFilter, setStatusFilter] = useState<"" | RequestStatus>("");
   const [viewRequest, setViewRequest] = useState<RequestRow | null>(null);
   const [receiptRequest, setReceiptRequest] = useState<RequestRow | null>(null);
-  const [receiptItems, setReceiptItems] = useState<{ id: string; receivedQty: number; damageNotes: string }[]>([]);
+  const [receiptItems, setReceiptItems] = useState<
+    { id: string; receivedQty: number; damageNotes: string }[]
+  >([]);
   const [submittingReceipt, setSubmittingReceipt] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -155,9 +165,13 @@ export default function Requests() {
                 >
                   <option value="">All Status</option>
                   {STATUS_FLOW.map((s) => (
-                    <option key={s} value={s}>{STATUS_SHORT_LABELS[s]}</option>
+                    <option key={s} value={s}>
+                      {STATUS_SHORT_LABELS[s]}
+                    </option>
                   ))}
-                  <option value="returned_for_revision">Returned for Revision</option>
+                  <option value="returned_for_revision">
+                    Returned for Revision
+                  </option>
                 </select>
               </div>
             </div>
@@ -207,21 +221,28 @@ export default function Requests() {
                         <td className="px-5 py-4">
                           <div className="flex flex-col items-center gap-1">
                             <StatusPill status={r.status} />
-                            {r.status === "returned_for_revision" && (() => {
-                              const note = r.status_logs
-                                ?.filter((l) => l.status === "returned_for_revision")
-                                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]?.note;
-                              return note ? (
-                                <button
-                                  type="button"
-                                  className="text-xs text-red-600 hover:text-red-800 underline underline-offset-2 max-w-[140px] truncate"
-                                  title={note}
-                                  onClick={() => setViewRequest(r)}
-                                >
-                                  View Note
-                                </button>
-                              ) : null;
-                            })()}
+                            {r.status === "returned_for_revision" &&
+                              (() => {
+                                const note = r.status_logs
+                                  ?.filter(
+                                    (l) => l.status === "returned_for_revision",
+                                  )
+                                  .sort(
+                                    (a, b) =>
+                                      new Date(b.created_at).getTime() -
+                                      new Date(a.created_at).getTime(),
+                                  )[0]?.note;
+                                return note ? (
+                                  <button
+                                    type="button"
+                                    className="text-xs text-red-600 hover:text-red-800 underline underline-offset-2 max-w-[140px] truncate"
+                                    title={note}
+                                    onClick={() => setViewRequest(r)}
+                                  >
+                                    View Note
+                                  </button>
+                                ) : null;
+                              })()}
                           </div>
                         </td>
 
@@ -254,7 +275,7 @@ export default function Requests() {
                                 Confirm Receipt
                               </button>
                             )}
-                            {STATUS_FLOW.indexOf(r.status) >= 2 && (
+                            {STATUS_FLOW.indexOf(r.status) >= 1 && (
                               <button
                                 type="button"
                                 className="inline-flex items-center gap-1 text-green-600 font-semibold hover:text-green-700 text-sm"
@@ -445,33 +466,43 @@ export default function Requests() {
             )}
 
             {/* Return Note Banner */}
-            {viewRequest.status === "returned_for_revision" && (() => {
-              const returnLog = viewRequest.status_logs
-                ?.filter((l) => l.status === "returned_for_revision")
-                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
-              return returnLog ? (
-                <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-red-100 flex items-center justify-center">
-                      <span className="text-red-600 text-xs font-bold">!</span>
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold text-red-800">Returned for Revision</div>
-                      <p className="mt-1 text-sm text-red-700">
-                        {returnLog.note || "This request has been returned. Please coordinate with TWG for details."}
-                      </p>
-                      <div className="mt-2 text-xs text-red-500">
-                        {returnLog.updater
-                          ? `By ${returnLog.updater.first_name} ${returnLog.updater.last_name}`
-                          : ""}
-                        {" • "}
-                        {new Date(returnLog.created_at).toLocaleString()}
+            {viewRequest.status === "returned_for_revision" &&
+              (() => {
+                const returnLog = viewRequest.status_logs
+                  ?.filter((l) => l.status === "returned_for_revision")
+                  .sort(
+                    (a, b) =>
+                      new Date(b.created_at).getTime() -
+                      new Date(a.created_at).getTime(),
+                  )[0];
+                return returnLog ? (
+                  <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-red-100 flex items-center justify-center">
+                        <span className="text-red-600 text-xs font-bold">
+                          !
+                        </span>
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold text-red-800">
+                          Returned for Revision
+                        </div>
+                        <p className="mt-1 text-sm text-red-700">
+                          {returnLog.note ||
+                            "This request has been returned. Please coordinate with TWG for details."}
+                        </p>
+                        <div className="mt-2 text-xs text-red-500">
+                          {returnLog.updater
+                            ? `By ${returnLog.updater.first_name} ${returnLog.updater.last_name}`
+                            : ""}
+                          {" • "}
+                          {new Date(returnLog.created_at).toLocaleString()}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ) : null;
-            })()}
+                ) : null;
+              })()}
 
             {/* Issuance — prompt to confirm receipt */}
             {viewRequest.status === "issuance" && (
@@ -479,9 +510,12 @@ export default function Requests() {
                 <div className="flex items-start gap-3">
                   <PackageCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
                   <div>
-                    <div className="text-sm font-semibold text-emerald-800">Items Ready for Pickup</div>
+                    <div className="text-sm font-semibold text-emerald-800">
+                      Items Ready for Pickup
+                    </div>
                     <p className="mt-1 text-sm text-emerald-700">
-                      Your items have been issued. Please confirm receipt and report any concerns.
+                      Your items have been issued. Please confirm receipt and
+                      report any concerns.
                     </p>
                     <button
                       type="button"
@@ -513,7 +547,7 @@ export default function Requests() {
             />
 
             {/* Download button */}
-            {STATUS_FLOW.indexOf(viewRequest.status) >= 2 && (
+            {STATUS_FLOW.indexOf(viewRequest.status) >= 1 && (
               <div className="mt-4 flex justify-end">
                 <button
                   type="button"
@@ -539,11 +573,15 @@ export default function Requests() {
                   Confirm Receipt of Items
                 </div>
                 <div className="text-sm text-gray-500">
-                  {receiptRequest.pr_no ?? "—"} — {receiptRequest.purpose || "No purpose"}
+                  {receiptRequest.pr_no ?? "—"} —{" "}
+                  {receiptRequest.purpose || "No purpose"}
                 </div>
               </div>
               <button
-                onClick={() => { setReceiptRequest(null); setReceiptItems([]); }}
+                onClick={() => {
+                  setReceiptRequest(null);
+                  setReceiptItems([]);
+                }}
                 className="rounded-lg p-1 hover:bg-gray-100"
               >
                 <X className="h-5 w-5 text-gray-500" />
@@ -551,8 +589,8 @@ export default function Requests() {
             </div>
 
             <p className="text-sm text-gray-600 mb-4">
-              Please verify the items you received. Adjust the received quantity if different from ordered,
-              and note any damages or concerns.
+              Please verify the items you received. Adjust the received quantity
+              if different from ordered, and note any damages or concerns.
             </p>
 
             <div className="space-y-4">
@@ -560,13 +598,18 @@ export default function Requests() {
                 const feedback = receiptItems[idx];
                 if (!feedback) return null;
                 return (
-                  <div key={item.id} className="rounded-xl border border-gray-200 p-4">
+                  <div
+                    key={item.id}
+                    className="rounded-xl border border-gray-200 p-4"
+                  >
                     <div className="text-sm font-semibold text-gray-900">
                       {item.item_description}
                     </div>
                     <div className="mt-1 text-xs text-gray-500">
                       Ordered: {item.qty} {item.uom}
-                      {item.unit_cost ? ` · ${money.format(Number(item.unit_cost))} each` : ""}
+                      {item.unit_cost
+                        ? ` · ${money.format(Number(item.unit_cost))} each`
+                        : ""}
                     </div>
 
                     <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -580,9 +623,14 @@ export default function Requests() {
                           max={item.qty}
                           value={feedback.receivedQty}
                           onChange={(e) => {
-                            const val = Math.max(0, Math.min(item.qty, Number(e.target.value) || 0));
+                            const val = Math.max(
+                              0,
+                              Math.min(item.qty, Number(e.target.value) || 0),
+                            );
                             setReceiptItems((prev) =>
-                              prev.map((f, i) => (i === idx ? { ...f, receivedQty: val } : f)),
+                              prev.map((f, i) =>
+                                i === idx ? { ...f, receivedQty: val } : f,
+                              ),
                             );
                           }}
                           className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
@@ -603,7 +651,11 @@ export default function Requests() {
                           value={feedback.damageNotes}
                           onChange={(e) =>
                             setReceiptItems((prev) =>
-                              prev.map((f, i) => (i === idx ? { ...f, damageNotes: e.target.value } : f)),
+                              prev.map((f, i) =>
+                                i === idx
+                                  ? { ...f, damageNotes: e.target.value }
+                                  : f,
+                              ),
                             )
                           }
                           placeholder="None"
@@ -619,7 +671,10 @@ export default function Requests() {
             <div className="mt-6 flex items-center justify-end gap-3">
               <button
                 type="button"
-                onClick={() => { setReceiptRequest(null); setReceiptItems([]); }}
+                onClick={() => {
+                  setReceiptRequest(null);
+                  setReceiptItems([]);
+                }}
                 className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
               >
                 Cancel
@@ -645,7 +700,11 @@ export default function Requests() {
                     await loadData();
                   } catch (err) {
                     console.error("Failed to confirm receipt:", err);
-                    alert(err instanceof Error ? err.message : "Failed to confirm receipt");
+                    alert(
+                      err instanceof Error
+                        ? err.message
+                        : "Failed to confirm receipt",
+                    );
                   } finally {
                     setSubmittingReceipt(false);
                   }

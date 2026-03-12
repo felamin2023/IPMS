@@ -20,6 +20,7 @@ enum UserRole {
 }
 
 enum RequestStatus {
+  draft
   request_sent
   request_reviewed
   pr_number_assigned
@@ -94,6 +95,7 @@ model User {
 
   createdRequests  Request[]          @relation("RequestCreator")
   statusLogEntries RequestStatusLog[] @relation("StatusLogUpdater")
+  notifications    Notification[]     @relation("UserNotifications")
 
   @@map("users")
 }
@@ -116,8 +118,9 @@ model Request {
   program Program @relation(fields: [programId], references: [id])
   creator User    @relation("RequestCreator", fields: [createdBy], references: [id])
 
-  items      RequestItem[]
-  statusLogs RequestStatusLog[]
+  items         RequestItem[]
+  statusLogs    RequestStatusLog[]
+  notifications Notification[]
 
   @@map("requests")
 }
@@ -155,4 +158,22 @@ model RequestStatusLog {
   updater User    @relation("StatusLogUpdater", fields: [updatedBy], references: [id])
 
   @@map("request_status_logs")
+}
+
+// ── Notifications ───────────────────────────────────
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  title     String
+  body      String
+  type      String   // status_update, return_note, new_request, receipt_confirmed
+  requestId String?  @map("request_id")
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user    User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  request Request? @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
 }

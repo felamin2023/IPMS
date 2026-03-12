@@ -381,7 +381,7 @@ export default function Requests() {
                               </button>
 
                               {/* Download PR */}
-                              {STATUS_FLOW.indexOf(r.status) >= 2 && (
+                              {STATUS_FLOW.indexOf(r.status) >= 1 && (
                                 <button
                                   type="button"
                                   className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-green-600 hover:bg-green-50"

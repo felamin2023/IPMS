@@ -1,12 +1,17 @@
 // src/pages/user/CreateRequest.tsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Send, Plus, Trash2 } from "lucide-react";
+import { Send, Plus, Trash2, Save, FileEdit, X } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import {
   createRequest,
   fetchUserProfile,
+  fetchDrafts,
+  saveDraft,
+  submitDraft,
+  deleteDraft,
   type RequestItemInput,
+  type RequestRow,
 } from "../../lib/requests";
 
 type ItemRow = RequestItemInput & { key: number };
@@ -31,7 +36,13 @@ export default function CreateRequest() {
   const [fundSource, setFundSource] = useState("");
   const [items, setItems] = useState<ItemRow[]>([emptyItem()]);
   const [submitting, setSubmitting] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  // Draft state
+  const [drafts, setDrafts] = useState<RequestRow[]>([]);
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
+  const [loadingDrafts, setLoadingDrafts] = useState(false);
 
   // Resolved from user profile — read-only
   const [profile, setProfile] = useState<any>(null);
@@ -47,6 +58,16 @@ export default function CreateRequest() {
   useEffect(() => {
     if (!user?.id) return;
     fetchUserProfile(user.id).then(setProfile).catch(console.error);
+  }, [user?.id]);
+
+  // Load drafts
+  useEffect(() => {
+    if (!user?.id) return;
+    setLoadingDrafts(true);
+    fetchDrafts(user.id)
+      .then(setDrafts)
+      .catch(console.error)
+      .finally(() => setLoadingDrafts(false));
   }, [user?.id]);
 
   const uomOptions = useMemo(
@@ -100,10 +121,60 @@ export default function CreateRequest() {
     setSubmitting(true);
     setError("");
     try {
-      await createRequest({
+      if (editingDraftId) {
+        // Update the draft first, then submit it
+        await saveDraft({
+          draftId: editingDraftId,
+          collegeId,
+          programId,
+          purpose: purpose || undefined,
+          fundSource: fundSource || undefined,
+          createdBy: user.id,
+          items: items.map((it) => ({
+            qty: it.qty,
+            itemDescription: it.itemDescription,
+            uom: it.uom,
+            unitCost: it.unitCost || undefined,
+          })),
+        });
+        await submitDraft(editingDraftId, user.id);
+      } else {
+        await createRequest({
+          collegeId,
+          programId,
+          purpose,
+          fundSource: fundSource || undefined,
+          createdBy: user.id,
+          items: items.map((it) => ({
+            qty: it.qty,
+            itemDescription: it.itemDescription,
+            uom: it.uom,
+            unitCost: it.unitCost || undefined,
+          })),
+        });
+      }
+      navigate("/requests");
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Failed to submit request.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleSaveDraft() {
+    if (!user?.id || !collegeId || !programId) {
+      setError("College and Program are required to save a draft.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const result = await saveDraft({
+        draftId: editingDraftId ?? undefined,
         collegeId,
         programId,
-        purpose,
+        purpose: purpose || undefined,
         fundSource: fundSource || undefined,
         createdBy: user.id,
         items: items.map((it) => ({
@@ -113,12 +184,49 @@ export default function CreateRequest() {
           unitCost: it.unitCost || undefined,
         })),
       });
-      navigate("/requests");
+      setEditingDraftId(result.id);
+      // Refresh drafts list
+      const updated = await fetchDrafts(user.id);
+      setDrafts(updated);
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Failed to submit request.");
+      setError(err.message || "Failed to save draft.");
     } finally {
-      setSubmitting(false);
+      setSaving(false);
+    }
+  }
+
+  function loadDraft(draft: RequestRow) {
+    setEditingDraftId(draft.id);
+    setPurpose(draft.purpose ?? "");
+    setFundSource(draft.fund_source ?? "");
+    const draftItems: ItemRow[] = (draft.items ?? []).map((it: any) => ({
+      key: nextKey++,
+      qty: it.qty,
+      itemDescription: it.item_description,
+      uom: it.uom,
+      unitCost: it.unit_cost ? Number(it.unit_cost) : 0,
+    }));
+    setItems(draftItems.length > 0 ? draftItems : [emptyItem()]);
+    setError("");
+  }
+
+  function resetForm() {
+    setEditingDraftId(null);
+    setPurpose("");
+    setFundSource("");
+    setItems([emptyItem()]);
+    setError("");
+  }
+
+  async function handleDeleteDraft(id: string) {
+    try {
+      await deleteDraft(id);
+      setDrafts((prev) => prev.filter((d) => d.id !== id));
+      if (editingDraftId === id) resetForm();
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Failed to delete draft.");
     }
   }
 
@@ -132,14 +240,74 @@ export default function CreateRequest() {
     <div className="bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
-        <div className="mb-5">
-          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-            Create Procurement Request
-          </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Fill in the details to create a new procurement request
-          </p>
+        <div className="mb-5 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
+              {editingDraftId ? "Edit Draft" : "Create Procurement Request"}
+            </h1>
+            <p className="mt-1 text-sm text-gray-500">
+              {editingDraftId
+                ? "Continue editing your saved draft"
+                : "Fill in the details to create a new procurement request"}
+            </p>
+          </div>
+          {editingDraftId && (
+            <button
+              type="button"
+              onClick={resetForm}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+            >
+              <Plus className="h-4 w-4" />
+              New Request
+            </button>
+          )}
         </div>
+
+        {/* Drafts panel */}
+        {(drafts.length > 0 || loadingDrafts) && !editingDraftId && (
+          <div className="mb-5 rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
+            <h2 className="text-sm font-semibold text-gray-700 mb-3">
+              <FileEdit className="inline h-4 w-4 mr-1 -mt-0.5" />
+              Saved Drafts ({drafts.length})
+            </h2>
+            <div className="space-y-2">
+              {drafts.map((d) => (
+                <div
+                  key={d.id}
+                  className="flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 p-3"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {d.purpose || "Untitled draft"}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {(d.items?.length ?? 0)} item(s) · Last saved{" "}
+                      {new Date(d.updated_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 ml-3">
+                    <button
+                      type="button"
+                      onClick={() => loadDraft(d)}
+                      className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+                    >
+                      <FileEdit className="h-3.5 w-3.5" />
+                      Continue
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteDraft(d.id)}
+                      className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600"
+                      title="Delete draft"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -345,8 +513,17 @@ export default function CreateRequest() {
           {/* Footer Actions */}
           <div className="flex items-center justify-end gap-3 border-t border-gray-200 bg-white px-6 py-4 rounded-b-2xl">
             <button
+              type="button"
+              disabled={saving || submitting}
+              onClick={handleSaveDraft}
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              <Save className="h-4 w-4" />
+              {saving ? "Saving…" : editingDraftId ? "Update Draft" : "Save as Draft"}
+            </button>
+            <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || saving}
               className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
             >
               <Send className="h-4 w-4" />
