@@ -267,7 +267,11 @@ export default function Requests() {
                               className="inline-flex items-center gap-1 text-blue-600 font-semibold hover:text-blue-700 text-sm"
                               onClick={() => openView(r)}
                             >
-                              {viewLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                              {viewLoading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
                               View
                             </button>
                             {r.status === "issuance" && (

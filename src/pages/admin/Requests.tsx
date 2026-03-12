@@ -394,7 +394,11 @@ export default function Requests() {
                                 onClick={() => openView(r)}
                                 title="View details"
                               >
-                                {viewLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                                {viewLoading ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
                               </button>
 
                               {/* Download PR */}

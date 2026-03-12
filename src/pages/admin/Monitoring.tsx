@@ -1,9 +1,6 @@
 // src/pages/admin/Monitoring.tsx
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Check,
-  Loader2,
-} from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import {
   fetchRequestsLight,
   fetchRequestById,
@@ -78,7 +75,9 @@ export default function Monitoring() {
       setRequests(active);
       if (active.length > 0 && !selectedId) {
         setSelectedId(active[0].id);
-        fetchRequestById(active[0].id).then(setSelectedFull).catch(() => {});
+        fetchRequestById(active[0].id)
+          .then(setSelectedFull)
+          .catch(() => {});
       }
     } catch (err) {
       console.error("Failed to load monitoring data:", err);
@@ -94,7 +93,9 @@ export default function Monitoring() {
   function handleSelect(id: string) {
     setSelectedId(id);
     setSelectedFull(null);
-    fetchRequestById(id).then(setSelectedFull).catch(() => {});
+    fetchRequestById(id)
+      .then(setSelectedFull)
+      .catch(() => {});
   }
 
   const selected = useMemo(

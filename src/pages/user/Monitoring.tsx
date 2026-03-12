@@ -81,7 +81,9 @@ export default function Monitoring() {
       setRequests(display);
       if (display.length > 0 && !selectedId) {
         setSelectedId(display[0].id);
-        fetchRequestById(display[0].id).then(setSelectedFull).catch(() => {});
+        fetchRequestById(display[0].id)
+          .then(setSelectedFull)
+          .catch(() => {});
       }
     } catch (err) {
       console.error("Failed to load monitoring data:", err);
@@ -97,7 +99,9 @@ export default function Monitoring() {
   function handleSelect(id: string) {
     setSelectedId(id);
     setSelectedFull(null);
-    fetchRequestById(id).then(setSelectedFull).catch(() => {});
+    fetchRequestById(id)
+      .then(setSelectedFull)
+      .catch(() => {});
   }
 
   const selected = useMemo(

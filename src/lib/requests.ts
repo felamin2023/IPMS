@@ -2,10 +2,7 @@
 // Service layer for request CRUD operations via Supabase
 
 import { supabase } from "./supabase";
-import {
-  createNotification,
-  notifyUsersByRole,
-} from "./notifications";
+import { createNotification, notifyUsersByRole } from "./notifications";
 
 // ── Types ──────────────────────────────────────────────
 
@@ -144,7 +141,11 @@ export const STATUS_TONE: Record<RequestStatus, string> = {
 };
 
 /** Which role is responsible for advancing to each status. */
-export type UserRole = "department_user" | "twg" | "procurement_admin" | "supply_admin";
+export type UserRole =
+  | "department_user"
+  | "twg"
+  | "procurement_admin"
+  | "supply_admin";
 
 export const STATUS_RESPONSIBLE_ROLE: Record<RequestStatus, UserRole> = {
   draft: "department_user",
@@ -290,22 +291,23 @@ export async function saveDraft(params: {
     if (updateErr) throw updateErr;
 
     // Replace items: delete old, insert new
-    await supabase.from("request_items").delete().eq("request_id", params.draftId);
+    await supabase
+      .from("request_items")
+      .delete()
+      .eq("request_id", params.draftId);
   } else {
     // Create new draft (no PR number)
-    const { error: reqError } = await supabase
-      .from("requests")
-      .insert({
-        id: requestId,
-        pr_no: null,
-        college_id: params.collegeId,
-        program_id: params.programId,
-        purpose: params.purpose ?? null,
-        fund_source: params.fundSource ?? null,
-        status: "draft" as RequestStatus,
-        created_by: params.createdBy,
-        updated_at: new Date().toISOString(),
-      });
+    const { error: reqError } = await supabase.from("requests").insert({
+      id: requestId,
+      pr_no: null,
+      college_id: params.collegeId,
+      program_id: params.programId,
+      purpose: params.purpose ?? null,
+      fund_source: params.fundSource ?? null,
+      status: "draft" as RequestStatus,
+      created_by: params.createdBy,
+      updated_at: new Date().toISOString(),
+    });
     if (reqError) throw reqError;
   }
 
@@ -325,7 +327,9 @@ export async function saveDraft(params: {
       }));
 
     if (itemRows.length > 0) {
-      const { error: itemError } = await supabase.from("request_items").insert(itemRows);
+      const { error: itemError } = await supabase
+        .from("request_items")
+        .insert(itemRows);
       if (itemError) throw itemError;
     }
   }
@@ -389,7 +393,11 @@ export async function submitDraft(
     requestId: draftId,
   });
 
-  return { id: draftId, pr_no: prNo, status: "request_sent" as RequestStatus } as RequestRow;
+  return {
+    id: draftId,
+    pr_no: prNo,
+    status: "request_sent" as RequestStatus,
+  } as RequestRow;
 }
 
 /** Delete a draft. */
@@ -736,7 +744,8 @@ export async function updateRequestStatus(params: {
       await createNotification({
         userId: request.created_by,
         title: `${prLabel} — ${STATUS_SHORT_LABELS[params.newStatus]}`,
-        body: params.note || `Status updated to ${STATUS_LABELS[params.newStatus]}`,
+        body:
+          params.note || `Status updated to ${STATUS_LABELS[params.newStatus]}`,
         type: notifType,
         requestId: params.requestId,
       });
@@ -843,24 +852,45 @@ export async function fetchRequestStats(userId?: string) {
   const rows = data ?? [];
 
   // Group by phase for dashboard
-  const twgStatuses: RequestStatus[] = ["request_reviewed", "pr_number_assigned"];
+  const twgStatuses: RequestStatus[] = [
+    "request_reviewed",
+    "pr_number_assigned",
+  ];
   const procurementStatuses: RequestStatus[] = [
-    "notice_of_meeting", "endorsed_to_bac", "resolution_approved",
-    "under_supplier_quotation", "quotations_received", "under_quotation_evaluation",
-    "hope_approval", "abstract_prepared", "contract_awarded",
-    "po_issued", "ntp_issued", "noa_po_ntp_posted",
+    "notice_of_meeting",
+    "endorsed_to_bac",
+    "resolution_approved",
+    "under_supplier_quotation",
+    "quotations_received",
+    "under_quotation_evaluation",
+    "hope_approval",
+    "abstract_prepared",
+    "contract_awarded",
+    "po_issued",
+    "ntp_issued",
+    "noa_po_ntp_posted",
   ];
   const supplyStatuses: RequestStatus[] = [
-    "po_delivered", "po_received_supply", "items_for_inspection",
-    "under_inspection", "under_warehousing", "issuance",
+    "po_delivered",
+    "po_received_supply",
+    "items_for_inspection",
+    "under_inspection",
+    "under_warehousing",
+    "issuance",
   ];
 
   return {
     total: rows.length,
     requestSent: rows.filter((r) => r.status === "request_sent").length,
-    twgPhase: rows.filter((r) => twgStatuses.includes(r.status as RequestStatus)).length,
-    procurementPhase: rows.filter((r) => procurementStatuses.includes(r.status as RequestStatus)).length,
-    supplyPhase: rows.filter((r) => supplyStatuses.includes(r.status as RequestStatus)).length,
+    twgPhase: rows.filter((r) =>
+      twgStatuses.includes(r.status as RequestStatus),
+    ).length,
+    procurementPhase: rows.filter((r) =>
+      procurementStatuses.includes(r.status as RequestStatus),
+    ).length,
+    supplyPhase: rows.filter((r) =>
+      supplyStatuses.includes(r.status as RequestStatus),
+    ).length,
     completed: rows.filter((r) => r.status === "completed").length,
     returned: rows.filter((r) => r.status === "returned_for_revision").length,
   };
