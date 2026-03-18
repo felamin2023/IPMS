@@ -5,19 +5,22 @@ import { useAuth } from "../../context/AuthContext";
 import {
   fetchRequestsLight,
   fetchRequestById,
+  fetchUnreadChatCounts,
   type RequestRow,
   type RequestStatus,
   STATUS_SHORT_LABELS,
   STATUS_TONE,
   STATUS_FLOW,
 } from "../../lib/requests";
+import { supabase } from "../../lib/supabase";
 import StatusTimeline from "../../components/StatusTimeline";
+import RequestChatPanel from "../../components/RequestChatPanel";
 
 // ── helpers ────────────────────────────────────────────
 
 function progressFor(status: RequestStatus): { text: string; value: number } {
-  if (status === "returned_for_revision")
-    return { text: "Returned for Revision", value: 0 };
+  if (status === "returned_for_revision" || status === "returned_for_action")
+    return { text: "Returned to User", value: 0 };
   if (status === "completed")
     return {
       text: `${STATUS_FLOW.length} of ${STATUS_FLOW.length}`,
@@ -63,38 +66,170 @@ function ProgressBar({ value }: { value: number }) {
 }
 
 export default function Monitoring() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const [requests, setRequests] = useState<RequestRow[]>([]);
+  const [unreadByRequest, setUnreadByRequest] = useState<
+    Record<string, number>
+  >({});
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedFull, setSelectedFull] = useState<RequestRow | null>(null);
 
-  const loadData = useCallback(async () => {
-    if (!user?.id) return;
-    setLoading(true);
-    try {
-      const all = await fetchRequestsLight({ createdBy: user.id });
-      const active = all.filter(
-        (r) => r.status !== "completed" && r.status !== "returned_for_revision",
-      );
-      const display = active.length > 0 ? active : all;
-      setRequests(display);
-      if (display.length > 0 && !selectedId) {
-        setSelectedId(display[0].id);
-        fetchRequestById(display[0].id)
-          .then(setSelectedFull)
-          .catch(() => {});
+  const loadUnreadCounts = useCallback(
+    async (requestIds: string[]) => {
+      if (!user?.id || requestIds.length === 0) {
+        setUnreadByRequest({});
+        return;
       }
-    } catch (err) {
-      console.error("Failed to load monitoring data:", err);
-    } finally {
-      setLoading(false);
+
+      try {
+        const counts = await fetchUnreadChatCounts({
+          userId: user.id,
+          requestIds,
+        });
+        setUnreadByRequest(counts);
+      } catch (err) {
+        console.error("Failed to load unread chat counts:", err);
+      }
+    },
+    [user?.id, role],
+  );
+
+  const loadData = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (!user?.id) return;
+      if (!options?.silent) {
+        setLoading(true);
+      }
+      try {
+        const all = await fetchRequestsLight({ createdBy: user.id });
+        const active = all.filter(
+          (r) =>
+            r.status !== "completed" &&
+            r.status !== "returned_for_revision" &&
+            r.status !== "returned_for_action",
+        );
+        const display = active.length > 0 ? active : all;
+        setRequests(display);
+        void loadUnreadCounts(display.map((r) => r.id));
+        if (display.length > 0) {
+          const targetId = selectedId ?? display[0].id;
+          if (!selectedId) {
+            setSelectedId(targetId);
+          }
+          fetchRequestById(targetId)
+            .then(setSelectedFull)
+            .catch(() => {});
+        } else {
+          setSelectedFull(null);
+        }
+      } catch (err) {
+        console.error("Failed to load monitoring data:", err);
+      } finally {
+        if (!options?.silent) {
+          setLoading(false);
+        }
+      }
+    },
+    [user?.id, loadUnreadCounts, selectedId],
+  );
+
+  useEffect(() => {
+    if (!user?.id || requests.length === 0) {
+      return;
     }
-  }, [user?.id]);
+
+    const refresh = () => {
+      void loadUnreadCounts(requests.map((r) => r.id));
+    };
+
+    const channel = supabase
+      .channel(`user-monitoring-unread-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "request_messages",
+        },
+        refresh,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "request_message_reads",
+          filter: `user_id=eq.${user.id}`,
+        },
+        refresh,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "request_message_reads",
+          filter: `user_id=eq.${user.id}`,
+        },
+        refresh,
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [user?.id, requests, loadUnreadCounts]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const refresh = () => {
+      void loadData({ silent: true });
+    };
+
+    const channel = supabase
+      .channel(`user-monitoring-records-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "requests",
+          filter: `created_by=eq.${user.id}`,
+        },
+        refresh,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "requests",
+          filter: `created_by=eq.${user.id}`,
+        },
+        refresh,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "requests",
+          filter: `created_by=eq.${user.id}`,
+        },
+        refresh,
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [user?.id, loadData]);
 
   function handleSelect(id: string) {
     setSelectedId(id);
@@ -146,49 +281,60 @@ export default function Monitoring() {
         </div>
 
         {/* Top Cards */}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          {requests.slice(0, 6).map((r) => {
-            const active = r.id === selectedId;
-            const prog = progressFor(r.status);
-            return (
-              <button
-                key={r.id}
-                type="button"
-                onClick={() => handleSelect(r.id)}
-                className={[
-                  "rounded-2xl border bg-white p-5 text-left shadow-sm transition-colors",
-                  active
-                    ? "border-blue-200 ring-2 ring-blue-100"
-                    : "border-gray-200 hover:bg-gray-50",
-                ].join(" ")}
-              >
-                <div className="text-sm font-semibold text-blue-700">
-                  {r.pr_no ?? r.id.slice(0, 8)}
-                </div>
-                <div className="mt-2 text-lg font-semibold text-gray-900 line-clamp-1">
-                  {r.purpose || "No purpose"}
-                </div>
-                <div className="mt-2 text-sm text-gray-500">
-                  {r.college?.code ?? "—"}
-                </div>
+        <div className="overflow-x-auto pb-2">
+          <div className="flex min-w-max gap-4">
+            {requests.map((r) => {
+              const active = r.id === selectedId;
+              const prog = progressFor(r.status);
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => handleSelect(r.id)}
+                  className={[
+                    "w-[360px] shrink-0 rounded-2xl border bg-white p-5 text-left shadow-sm transition-colors",
+                    active
+                      ? "border-blue-200 ring-2 ring-blue-100"
+                      : "border-gray-200 hover:bg-gray-50",
+                  ].join(" ")}
+                >
+                  <div className="text-sm font-semibold text-blue-700">
+                    <div className="flex items-center justify-between gap-2">
+                      <span>{r.pr_no ?? r.id.slice(0, 8)}</span>
+                      {(unreadByRequest[r.id] ?? 0) > 0 && (
+                        <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-bold text-white">
+                          {unreadByRequest[r.id] > 99
+                            ? "99+"
+                            : unreadByRequest[r.id]}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-2 text-lg font-semibold text-gray-900 line-clamp-1">
+                    {r.purpose || "No purpose"}
+                  </div>
+                  <div className="mt-2 text-sm text-gray-500">
+                    {r.college?.code ?? "—"}
+                  </div>
 
-                <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
-                  <span>Progress</span>
-                  <span className="font-medium">{prog.text}</span>
-                </div>
-                <ProgressBar value={prog.value} />
+                  <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
+                    <span>Progress</span>
+                    <span className="font-medium">{prog.text}</span>
+                  </div>
+                  <ProgressBar value={prog.value} />
 
-                <div className="mt-5 flex items-center justify-between gap-3">
-                  <div className="text-sm text-gray-600">Current Status:</div>
-                  <Pill status={r.status} />
-                </div>
+                  <div className="mt-5 flex items-center justify-between gap-3">
+                    <div className="text-sm text-gray-600">Current Status:</div>
+                    <Pill status={r.status} />
+                  </div>
 
-                <div className="mt-2 text-xs text-gray-400">
-                  Last updated: {new Date(r.updated_at).toLocaleDateString()}
-                </div>
-              </button>
-            );
-          })}
+                  <div className="mt-2 text-xs text-gray-400">
+                    Last updated: {new Date(r.updated_at).toLocaleDateString()}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Detailed Tracking */}
@@ -204,10 +350,17 @@ export default function Monitoring() {
               </div>
             </div>
 
-            <div className="px-6 py-6">
-              <StatusTimeline
-                currentStatus={selected.status}
-                statusLogs={selected.status_logs}
+            <div className="grid grid-cols-1 lg:grid-cols-2">
+              <div className="border-b border-gray-200 px-6 py-6 lg:border-b-0 lg:border-r">
+                <StatusTimeline
+                  currentStatus={selected.status}
+                  statusLogs={selected.status_logs}
+                />
+              </div>
+              <RequestChatPanel
+                request={selected}
+                currentUserId={user?.id}
+                currentUserRole={role}
               />
             </div>
           </div>

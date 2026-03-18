@@ -1,6 +1,9 @@
 // src/components/navigation/UserNav.tsx
+import { useCallback, useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext"; // same style as AdminNav
+import { fetchMonitoringUnreadTotal } from "../../lib/requests";
+import { supabase } from "../../lib/supabase";
 import {
   Home,
   FilePlus2,
@@ -26,7 +29,75 @@ const navItems: NavItem[] = [
 ];
 
 export default function UserNav({ hideBrand }: { hideBrand?: boolean }) {
-  const { signOut } = useAuth();
+  const { signOut, user, role } = useAuth();
+  const [monitoringUnread, setMonitoringUnread] = useState(0);
+
+  const loadMonitoringUnread = useCallback(async () => {
+    if (!user?.id) {
+      setMonitoringUnread(0);
+      return;
+    }
+
+    try {
+      const total = await fetchMonitoringUnreadTotal({
+        userId: user.id,
+        role,
+      });
+      setMonitoringUnread(total);
+    } catch {
+      // no-op for nav badge
+    }
+  }, [user?.id, role]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setMonitoringUnread(0);
+      return;
+    }
+
+    void loadMonitoringUnread();
+
+    const refresh = () => {
+      void loadMonitoringUnread();
+    };
+
+    const channel = supabase
+      .channel(`user-nav-monitoring-unread-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "request_messages",
+        },
+        refresh,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "request_message_reads",
+          filter: `user_id=eq.${user.id}`,
+        },
+        refresh,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "request_message_reads",
+          filter: `user_id=eq.${user.id}`,
+        },
+        refresh,
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [user?.id, loadMonitoringUnread]);
 
   return (
     <aside className="h-full w-64 bg-white border-r border-gray-200 flex flex-col">
@@ -72,6 +143,11 @@ export default function UserNav({ hideBrand }: { hideBrand?: boolean }) {
                         ].join(" ")}
                       />
                       <span className="truncate">{item.label}</span>
+                      {item.to === "/monitoring" && monitoringUnread > 0 && (
+                        <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[11px] font-bold text-white">
+                          {monitoringUnread > 99 ? "99+" : monitoringUnread}
+                        </span>
+                      )}
                     </>
                   )}
                 </NavLink>

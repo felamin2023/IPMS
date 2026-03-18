@@ -1,0 +1,1 @@
+-- Keep RLS disabled for password_reset_otps (no sensitive data, just temp codes)

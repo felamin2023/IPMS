@@ -35,6 +35,8 @@ interface AuthContextType {
   resendOtp: (email: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<string>;
   signOut: () => Promise<void>;
+  sendPasswordResetOtp: (email: string) => Promise<string>;
+  resetPasswordWithOtp: (email: string, newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -215,52 +217,97 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    // Try normal Supabase auth first
+    // Use only Supabase Auth (the official authentication method)
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (!error) {
-      // Auth succeeded via Supabase — load the application role from `users` table.
-      const userId = data.user?.id ?? null;
-      let resolvedRole = "department_user";
-      if (userId) {
-        const { data: userRow, error: qErr } = await supabase
-          .from("users")
-          .select("role")
-          .eq("id", userId)
-          .maybeSingle();
-        if (!qErr && userRow?.role) resolvedRole = userRow.role as string;
-      }
-      setRole(resolvedRole);
-      return resolvedRole;
-    }
+    if (error) throw error;
 
-    // Fallback for legacy/seeded users: verify password against `users.password_hash`.
-    try {
+    // Auth succeeded — load the application role from `users` table.
+    const userId = data.user?.id ?? null;
+    let resolvedRole = "department_user";
+    if (userId) {
       const { data: userRow, error: qErr } = await supabase
         .from("users")
-        .select("id, password_hash, role")
-        .eq("email", email)
+        .select("role")
+        .eq("id", userId)
         .maybeSingle();
+      if (!qErr && userRow?.role) resolvedRole = userRow.role as string;
+    }
+    setRole(resolvedRole);
+    return resolvedRole;
+  };
 
-      if (qErr || !userRow) throw error;
+  /**
+   * Send a password reset OTP to the user's email via Brevo.
+   * Returns the OTP code (for testing) or success message.
+   * Calls the Supabase Edge Function: send-password-reset-otp
+   */
+  const sendPasswordResetOtp = async (email: string): Promise<string> => {
+    // First verify the email exists in the users table
+    const { data: userRow, error: checkError } = await supabase
+      .from("users")
+      .select("id, email, first_name, last_name")
+      .eq("email", email)
+      .maybeSingle();
 
-      const suppliedHash = await hashPassword(password);
-      if (!userRow.password_hash || suppliedHash !== userRow.password_hash) {
-        throw error;
-      }
+    if (checkError || !userRow) {
+      throw new Error("Email not found in system. Please sign up first.");
+    }
 
-      // Treat as authenticated locally: set user/session in context so app behaves as signed-in.
-      const fakeUser = { id: userRow.id, email } as unknown as User;
-      const resolvedRole = (userRow.role as string) ?? "department_user";
-      setUser(fakeUser);
-      setSession({} as Session);
-      setRole(resolvedRole);
-      return resolvedRole;
-    } catch (fallbackErr) {
-      throw error;
+    // Generate a random OTP code (8 digits)
+    const otpCode = Math.floor(10000000 + Math.random() * 90000000).toString();
+
+    // Call the Supabase Edge Function to send via Brevo
+    const { error } = await supabase.functions.invoke(
+      "send-password-reset-otp",
+      {
+        body: {
+          email,
+          recipientName:
+            `${userRow.first_name ?? ""} ${userRow.last_name ?? ""}`.trim(),
+          code: otpCode,
+        },
+      },
+    );
+
+    if (error) {
+      console.error("send-password-reset-otp error:", error);
+      throw new Error("Failed to send reset code. Please try again.");
+    }
+
+    // Return the OTP code so the modal can store it in state for verification
+    return otpCode;
+  };
+
+  /**
+   * Reset the user's password after OTP verification.
+   * Calls a Supabase Edge Function to update the password via Supabase Auth Admin API.
+   */
+  const resetPasswordWithOtp = async (
+    email: string,
+    newPassword: string,
+  ): Promise<void> => {
+    // Call the Supabase Edge Function to update password
+    const { data, error } = await supabase.functions.invoke(
+      "reset-password-with-otp",
+      {
+        body: {
+          email,
+          newPassword,
+        },
+      },
+    );
+
+    if (error) {
+      console.error("reset-password-with-otp error:", error);
+      throw new Error("Failed to update password. Please try again.");
+    }
+
+    if (data?.error) {
+      throw new Error(data.error);
     }
   };
 
@@ -283,6 +330,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         resendOtp,
         signIn,
         signOut,
+        sendPasswordResetOtp,
+        resetPasswordWithOtp,
       }}
     >
       {children}

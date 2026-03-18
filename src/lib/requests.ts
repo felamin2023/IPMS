@@ -30,7 +30,8 @@ export type RequestStatus =
   | "under_warehousing"
   | "issuance"
   | "completed"
-  | "returned_for_revision";
+  | "returned_for_revision"
+  | "returned_for_action";
 
 /** The ordered steps a request walks through (excluding returned_for_revision). */
 export const STATUS_FLOW: RequestStatus[] = [
@@ -83,6 +84,46 @@ export const STATUS_LABELS: Record<RequestStatus, string> = {
   issuance: "Issuance and Utilization to End-users",
   completed: "Issuance and Utilization Completed",
   returned_for_revision: "Returned to User for Revision",
+  returned_for_action: "Returned to User for Personal Action",
+};
+
+/** Default notes for each status step to be saved in logs or displayed to users. */
+export const DEFAULT_STATUS_NOTES: Record<RequestStatus, string> = {
+  draft: "Request is in draft mode.",
+  request_sent: "End-user has created and sent a purchase request.",
+  request_reviewed:
+    "The Technical Working Group (TWG) has reviewed and validated the request.",
+  pr_number_assigned: "PR Number has been assigned.",
+  notice_of_meeting: "BAC secretariat has sent a Notice of Meeting.",
+  endorsed_to_bac:
+    "Purchase request has been endorsed to BAC for approval of mode of purchase.",
+  resolution_approved:
+    "The resolution has been approved by HoPE/Campus Director.",
+  under_supplier_quotation: "Supplier identification in progress.",
+  quotations_received:
+    "The Procurement Office has received quotations from suppliers.",
+  under_quotation_evaluation: "Suppliers' quotations are under evaluation.",
+  hope_approval:
+    "Notice of Opening, Validation and Contract Awarding Meeting Issued.",
+  abstract_prepared: "Formal Abstract of Supplier Bids Issued.",
+  contract_awarded: "Notice of Award (NOA) issued to supplier.",
+  po_issued: "Contract signing and Purchase Order Issued.",
+  ntp_issued: "Notice to Proceed Issued to the winning supplier.",
+  noa_po_ntp_posted: "NOA, PO/Contract and NTP Issued in the PhilGEPS.",
+  po_delivered: "Purchase order is delivered/picked up.",
+  po_received_supply:
+    "Purchase Order Received by the Supply Office from the supplier.",
+  items_for_inspection:
+    "Items are endorsed for inspection for conformance of items to specifications.",
+  under_inspection:
+    "Items delivered are checked and inspected against the Purchase Order.",
+  under_warehousing:
+    "Items received are stored for book recording and inventory purposes.",
+  issuance: "Items are issued to the end-users.",
+  completed: "Procurement complete.",
+  returned_for_revision: "Request returned to user for revision.",
+  returned_for_action:
+    "Request returned to user for personal action outside the system.",
 };
 
 /** Short labels for compact displays (pills, table headers). */
@@ -111,7 +152,72 @@ export const STATUS_SHORT_LABELS: Record<RequestStatus, string> = {
   issuance: "Issuance",
   completed: "Completed",
   returned_for_revision: "Returned for Revision",
+  returned_for_action: "Returned for Personal Fix",
 };
+
+export const OLD_NOTES_MAP: Record<string, string> = {
+  "Request created and sent":
+    "End-user has created and sent a purchase request.",
+  "Request reviewed and validated by TWG":
+    "The Technical Working Group (TWG) has reviewed and validated the request.",
+  "Status updated to Request Reviewed and Validated":
+    "The Technical Working Group (TWG) has reviewed and validated the request.",
+  "Status updated to PR Number Assigned": "PR Number has been assigned.",
+  "Status updated to Notice of Meeting":
+    "BAC secretariat has sent a Notice of Meeting.",
+  "Status updated to Endorsed to BAC for Procurement Mode Evaluation":
+    "Purchase request has been endorsed to BAC for approval of mode of purchase.",
+  "Status updated to Resolution Approved":
+    "The resolution has been approved by HoPE/Campus Director.",
+  "Status updated to Under Supplier Quotation Process":
+    "Supplier identification in progress.",
+  "Status updated to Supplier Quotations Received":
+    "The Procurement Office has received quotations from suppliers.",
+  "Status updated to Under Quotation Evaluation":
+    "Suppliers' quotations are under evaluation.",
+  "Status updated to For HoPE Approval of BAC Recommendation":
+    "Notice of Opening, Validation and Contract Awarding Meeting Issued.",
+  "Status updated to Abstract Prepared":
+    "Formal Abstract of Supplier Bids Issued.",
+  "Status updated to Contract Awarded":
+    "Notice of Award (NOA) issued to supplier.",
+  "Status updated to Contract Signed and Purchase Order Issued":
+    "Contract signing and Purchase Order Issued.",
+  "Status updated to Notice to Proceed Issued":
+    "Notice to Proceed Issued to the winning supplier.",
+  "Status updated to NOA, PO/Contract and NTP Issued":
+    "NOA, PO/Contract and NTP Issued in the PhilGEPS.",
+  "Status updated to Purchase Order Delivered/Picked Up":
+    "Purchase order is delivered/picked up.",
+  "Status updated to Purchase Order Received by Supply Office":
+    "Purchase Order Received by the Supply Office from the supplier.",
+  "Status updated to Items Endorsed for Inspection":
+    "Items are endorsed for inspection for conformance of items to specifications.",
+  "Status updated to Under Checking and Inspection":
+    "Items delivered are checked and inspected against the Purchase Order.",
+  "Status updated to Under Storing and Warehousing for Inventory":
+    "Items received are stored for book recording and inventory purposes.",
+  "Status updated to Issuance and Utilization to End-users":
+    "Items are issued to the end-users.",
+  "Status updated to Issuance and Utilization Completed":
+    "Procurement complete.",
+};
+
+export function getDisplayNote(
+  status: RequestStatus | string,
+  note: string | null,
+) {
+  if (!note) return null;
+  if (OLD_NOTES_MAP[note]) return OLD_NOTES_MAP[note];
+  const asStatus = status as RequestStatus;
+  if (
+    STATUS_LABELS[asStatus] &&
+    note === `Status updated to ${STATUS_LABELS[asStatus]}`
+  ) {
+    return DEFAULT_STATUS_NOTES[asStatus] ?? note;
+  }
+  return note;
+}
 
 export const STATUS_TONE: Record<RequestStatus, string> = {
   draft: "slate",
@@ -138,6 +244,7 @@ export const STATUS_TONE: Record<RequestStatus, string> = {
   issuance: "emerald",
   completed: "emerald",
   returned_for_revision: "red",
+  returned_for_action: "red",
 };
 
 /** Which role is responsible for advancing to each status. */
@@ -172,7 +279,15 @@ export const STATUS_RESPONSIBLE_ROLE: Record<RequestStatus, UserRole> = {
   issuance: "supply_admin",
   completed: "department_user",
   returned_for_revision: "twg",
+  // Fallback owner for display only; authorization for this status is handled in updateRequestStatus.
+  returned_for_action: "procurement_admin",
 };
+
+const RETURN_STATUS_ALLOWED_ROLES: UserRole[] = [
+  "twg",
+  "procurement_admin",
+  "supply_admin",
+];
 
 /** Statuses grouped by responsible role (phase). */
 export const ROLE_LABELS: Record<UserRole, string> = {
@@ -181,6 +296,58 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   procurement_admin: "Procurement Office Administrator",
   supply_admin: "Supply Office Administrator",
 };
+
+export function normalizeUserRole(
+  role: string | null | undefined,
+): UserRole | null {
+  if (
+    role === "department_user" ||
+    role === "twg" ||
+    role === "procurement_admin" ||
+    role === "supply_admin"
+  ) {
+    return role;
+  }
+  return null;
+}
+
+/**
+ * Returns which role currently handles the request at its current status.
+ * This is computed from the next workflow status owner.
+ */
+export function getChatHandlerRole(status: RequestStatus): UserRole | null {
+  if (status === "completed") {
+    return null;
+  }
+
+  if (status === "returned_for_revision" || status === "returned_for_action") {
+    return "department_user";
+  }
+
+  const idx = STATUS_FLOW.indexOf(status);
+  if (idx < 0 || idx >= STATUS_FLOW.length - 1) {
+    return null;
+  }
+
+  const nextStatus = STATUS_FLOW[idx + 1];
+  return STATUS_RESPONSIBLE_ROLE[nextStatus];
+}
+
+export function shouldShowUnreadChatForStatus(params: {
+  role: string | null | undefined;
+  status: RequestStatus;
+}) {
+  const normalizedRole = normalizeUserRole(params.role);
+  if (!normalizedRole) {
+    return false;
+  }
+
+  if (normalizedRole === "department_user") {
+    return true;
+  }
+
+  return getChatHandlerRole(params.status) === normalizedRole;
+}
 
 export interface RequestItemInput {
   qty: number;
@@ -233,7 +400,47 @@ export interface StatusLogRow {
   note: string | null;
   updated_by: string;
   created_at: string;
-  updater?: { id: string; first_name: string; last_name: string };
+  updater?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    role?: UserRole;
+  };
+}
+
+export interface RequestMessageRow {
+  id: string;
+  request_id: string;
+  sender_id: string;
+  sender_role: UserRole;
+  message: string;
+  created_at: string;
+  sender?:
+    | {
+        id: string;
+        first_name: string;
+        last_name: string;
+        role: UserRole;
+      }[]
+    | {
+        id: string;
+        first_name: string;
+        last_name: string;
+        role: UserRole;
+      };
+}
+
+export type UnreadChatCountMap = Record<string, number>;
+
+function normalizeMessageSender(row: RequestMessageRow): RequestMessageRow {
+  const rawSender = row.sender as unknown;
+  if (Array.isArray(rawSender)) {
+    return {
+      ...row,
+      sender: (rawSender[0] ?? undefined) as RequestMessageRow["sender"],
+    };
+  }
+  return row;
 }
 
 // ── PR Number generation ───────────────────────────────
@@ -380,7 +587,7 @@ export async function submitDraft(
     id: crypto.randomUUID(),
     request_id: draftId,
     status: "request_sent",
-    note: "Request created and sent",
+    note: DEFAULT_STATUS_NOTES["request_sent"],
     updated_by: userId,
   });
 
@@ -467,7 +674,7 @@ export async function createRequest(params: {
     id: crypto.randomUUID(),
     request_id: request.id,
     status: "request_sent",
-    note: "Request created and sent",
+    note: DEFAULT_STATUS_NOTES["request_sent"],
     updated_by: params.createdBy,
   });
 
@@ -501,7 +708,16 @@ export async function fetchRequestsLight(filters?: {
       college:colleges(id, code, name),
       program:programs(id, code, name),
       creator:users!requests_created_by_fkey(id, first_name, last_name, email),
-      items:request_items(*)
+      items:request_items(*),
+      status_logs:request_status_logs(
+        id,
+        request_id,
+        status,
+        note,
+        updated_by,
+        created_at,
+        updater:users!request_status_logs_updated_by_fkey(id, first_name, last_name, role)
+      )
     `,
     )
     .order("created_at", { ascending: false });
@@ -536,7 +752,7 @@ export async function fetchRequests(filters?: {
       program:programs(*),
       creator:users!requests_created_by_fkey(id, first_name, last_name, email),
       items:request_items(*),
-      status_logs:request_status_logs(*, updater:users!request_status_logs_updated_by_fkey(id, first_name, last_name))
+      status_logs:request_status_logs(*, updater:users!request_status_logs_updated_by_fkey(id, first_name, last_name, role))
     `,
     )
     .order("created_at", { ascending: false });
@@ -566,7 +782,7 @@ export async function fetchRequestById(id: string) {
       program:programs(*),
       creator:users!requests_created_by_fkey(id, first_name, last_name, email),
       items:request_items(*),
-      status_logs:request_status_logs(*, updater:users!request_status_logs_updated_by_fkey(id, first_name, last_name))
+      status_logs:request_status_logs(*, updater:users!request_status_logs_updated_by_fkey(id, first_name, last_name, role))
     `,
     )
     .eq("id", id)
@@ -574,6 +790,223 @@ export async function fetchRequestById(id: string) {
 
   if (error) throw error;
   return data as RequestRow;
+}
+
+// ── Request Chat ─────────────────────────────────────
+
+export async function fetchRequestMessages(
+  requestId: string,
+): Promise<RequestMessageRow[]> {
+  const { data, error } = await supabase
+    .from("request_messages")
+    .select(
+      `
+      id,
+      request_id,
+      sender_id,
+      sender_role,
+      message,
+      created_at,
+      sender:users!request_messages_sender_id_fkey(id, first_name, last_name, role)
+    `,
+    )
+    .eq("request_id", requestId)
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  return ((data ?? []) as RequestMessageRow[]).map(normalizeMessageSender);
+}
+
+export async function sendRequestMessage(params: {
+  requestId: string;
+  senderId: string;
+  message: string;
+}) {
+  const cleanMessage = params.message.trim();
+  if (!cleanMessage) {
+    throw new Error("Message cannot be empty.");
+  }
+
+  const [
+    { data: request, error: reqError },
+    { data: sender, error: senderErr },
+  ] = await Promise.all([
+    supabase
+      .from("requests")
+      .select("id, created_by, status")
+      .eq("id", params.requestId)
+      .single(),
+    supabase
+      .from("users")
+      .select("id, role")
+      .eq("id", params.senderId)
+      .single(),
+  ]);
+
+  if (reqError || !request) {
+    throw new Error("Request not found.");
+  }
+
+  if (senderErr || !sender) {
+    throw new Error("Could not verify sender role.");
+  }
+
+  const senderRole = normalizeUserRole(sender.role);
+  if (!senderRole) {
+    throw new Error("Invalid sender role.");
+  }
+
+  const handlerRole = getChatHandlerRole(request.status as RequestStatus);
+  if (!handlerRole) {
+    throw new Error(
+      "This conversation is read-only because the request is completed.",
+    );
+  }
+
+  const isRequester = request.created_by === params.senderId;
+  const isCurrentHandler =
+    handlerRole !== "department_user" && senderRole === handlerRole;
+  const isRequestSentParticipant =
+    request.status === "request_sent" &&
+    (senderRole === "department_user" || senderRole === "twg");
+
+  if (!isRequester && !isCurrentHandler && !isRequestSentParticipant) {
+    throw new Error(
+      "You can only send messages if you are the request owner or the role currently handling this status.",
+    );
+  }
+
+  const { data, error } = await supabase
+    .from("request_messages")
+    .insert({
+      id: crypto.randomUUID(),
+      request_id: params.requestId,
+      sender_id: params.senderId,
+      sender_role: senderRole,
+      message: cleanMessage,
+    })
+    .select(
+      `
+      id,
+      request_id,
+      sender_id,
+      sender_role,
+      message,
+      created_at,
+      sender:users!request_messages_sender_id_fkey(id, first_name, last_name, role)
+    `,
+    )
+    .single();
+
+  if (error) throw error;
+  return normalizeMessageSender(data as RequestMessageRow);
+}
+
+export async function markRequestMessagesRead(params: {
+  requestId: string;
+  userId: string;
+}) {
+  const { error } = await supabase.from("request_message_reads").upsert(
+    {
+      user_id: params.userId,
+      request_id: params.requestId,
+      last_read_at: new Date().toISOString(),
+    },
+    {
+      onConflict: "user_id,request_id",
+    },
+  );
+
+  if (error) throw error;
+}
+
+export async function fetchUnreadChatCounts(params: {
+  userId: string;
+  requestIds: string[];
+}): Promise<UnreadChatCountMap> {
+  if (params.requestIds.length === 0) {
+    return {};
+  }
+
+  const [{ data: messages, error: msgErr }, { data: reads, error: readErr }] =
+    await Promise.all([
+      supabase
+        .from("request_messages")
+        .select("request_id, sender_id, created_at")
+        .in("request_id", params.requestIds)
+        .neq("sender_id", params.userId),
+      supabase
+        .from("request_message_reads")
+        .select("request_id, last_read_at")
+        .eq("user_id", params.userId)
+        .in("request_id", params.requestIds),
+    ]);
+
+  if (msgErr) throw msgErr;
+  if (readErr) throw readErr;
+
+  const readMap = new Map<string, number>();
+  for (const read of reads ?? []) {
+    readMap.set(
+      read.request_id as string,
+      new Date(read.last_read_at).getTime(),
+    );
+  }
+
+  const counts: UnreadChatCountMap = {};
+  for (const message of messages ?? []) {
+    const requestId = message.request_id as string;
+    const sentAt = new Date(message.created_at as string).getTime();
+    const readAt = readMap.get(requestId) ?? 0;
+
+    if (sentAt > readAt) {
+      counts[requestId] = (counts[requestId] ?? 0) + 1;
+    }
+  }
+
+  return counts;
+}
+
+export async function fetchMonitoringUnreadTotal(params: {
+  userId: string;
+  role: string | null | undefined;
+}): Promise<number> {
+  const normalizedRole = normalizeUserRole(params.role);
+
+  let query = supabase
+    .from("requests")
+    .select("id, status")
+    .neq("status", "draft");
+
+  if (normalizedRole === "department_user") {
+    query = query.eq("created_by", params.userId);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const requestIds = (data ?? [])
+    .filter((row) => {
+      if (normalizedRole === "department_user") {
+        return true;
+      }
+      return shouldShowUnreadChatForStatus({
+        role: normalizedRole,
+        status: row.status as RequestStatus,
+      });
+    })
+    .map((row) => row.id as string);
+
+  if (requestIds.length === 0) {
+    return 0;
+  }
+
+  const counts = await fetchUnreadChatCounts({
+    userId: params.userId,
+    requestIds,
+  });
+
+  return Object.values(counts).reduce((total, value) => total + value, 0);
 }
 
 // ── Report-specific lightweight fetch ──────────────────
@@ -647,6 +1080,60 @@ async function sendStatusEmail(params: {
   }
 }
 
+export interface SpecialStatusNoticeParams {
+  status: "notice_of_meeting" | "hope_approval" | "issuance";
+  prNo: string;
+  ownerName: string;
+  ownerEmail?: string | null;
+  additionalEmails?: string[];
+  meetingDate?: string;
+  meetingTime?: string;
+  venue?: string;
+}
+
+/**
+ * Sends an additional formal notice email for selected workflow statuses.
+ * This supplements (does not replace) the default status-update email.
+ */
+export async function sendSpecialStatusNotice(
+  params: SpecialStatusNoticeParams,
+) {
+  const dedupedRecipients = Array.from(
+    new Set(
+      [params.ownerEmail ?? "", ...(params.additionalEmails ?? [])]
+        .map((email) => email.trim())
+        .filter(Boolean),
+    ),
+  );
+
+  if (dedupedRecipients.length === 0) {
+    return;
+  }
+
+  const { data, error } = await supabase.functions.invoke(
+    "send-special-status-email",
+    {
+      body: {
+        status: params.status,
+        prNo: params.prNo,
+        ownerName: params.ownerName,
+        recipients: dedupedRecipients,
+        meetingDate: params.meetingDate ?? null,
+        meetingTime: params.meetingTime ?? null,
+        venue: params.venue ?? null,
+      },
+    },
+  );
+
+  if (error) {
+    throw new Error(error.message || "Failed to send additional notice email.");
+  }
+
+  if (data?.error) {
+    throw new Error(data.error);
+  }
+}
+
 // ── Update Request Status ──────────────────────────────
 
 export async function updateRequestStatus(params: {
@@ -669,12 +1156,21 @@ export async function updateRequestStatus(params: {
   const userRole = updater.role as UserRole;
   const responsibleRole = STATUS_RESPONSIBLE_ROLE[params.newStatus];
 
-  // Role must match the responsible role for the target status
-  if (userRole !== responsibleRole) {
-    throw new Error(
-      `Your role (${ROLE_LABELS[userRole]}) is not authorized to set status to "${STATUS_LABELS[params.newStatus]}". ` +
-        `This action requires: ${ROLE_LABELS[responsibleRole]}.`,
-    );
+  // Some statuses can be set by multiple admin roles.
+  if (params.newStatus === "returned_for_action") {
+    if (!RETURN_STATUS_ALLOWED_ROLES.includes(userRole)) {
+      throw new Error(
+        `Your role (${ROLE_LABELS[userRole]}) is not authorized to return requests for personal action.`,
+      );
+    }
+  } else {
+    // Role must match the responsible role for the target status.
+    if (userRole !== responsibleRole) {
+      throw new Error(
+        `Your role (${ROLE_LABELS[userRole]}) is not authorized to set status to "${STATUS_LABELS[params.newStatus]}". ` +
+          `This action requires: ${ROLE_LABELS[responsibleRole]}.`,
+      );
+    }
   }
 
   const { error: updateError } = await supabase
@@ -737,15 +1233,15 @@ export async function updateRequestStatus(params: {
       // ── In-app notification to the request creator ──
       const prLabel = request.pr_no ?? "Request";
       const notifType =
-        params.newStatus === "returned_for_revision"
+        params.newStatus === "returned_for_revision" ||
+        params.newStatus === "returned_for_action"
           ? "return_note"
           : "status_update";
 
       await createNotification({
         userId: request.created_by,
         title: `${prLabel} — ${STATUS_SHORT_LABELS[params.newStatus]}`,
-        body:
-          params.note || `Status updated to ${STATUS_LABELS[params.newStatus]}`,
+        body: params.note || DEFAULT_STATUS_NOTES[params.newStatus],
         type: notifType,
         requestId: params.requestId,
       });
@@ -785,7 +1281,7 @@ export async function approveRequest(
     requestId,
     newStatus: "request_reviewed",
     updatedBy: userId,
-    note: note || "Request reviewed and validated by TWG",
+    note: note || DEFAULT_STATUS_NOTES["request_reviewed"],
   });
 }
 
@@ -802,6 +1298,19 @@ export async function returnForRevision(
   });
 }
 
+export async function returnForAction(
+  requestId: string,
+  userId: string,
+  note?: string,
+) {
+  await updateRequestStatus({
+    requestId,
+    newStatus: "returned_for_action",
+    updatedBy: userId,
+    note: note || "Returned to end user for personal action",
+  });
+}
+
 /** Advance a request to the next status in the flow. */
 export async function advanceStatus(
   requestId: string,
@@ -813,7 +1322,7 @@ export async function advanceStatus(
     requestId,
     newStatus: nextStatus,
     updatedBy: userId,
-    note: note ?? `Status updated to ${STATUS_LABELS[nextStatus]}`,
+    note: note ?? DEFAULT_STATUS_NOTES[nextStatus],
   });
 }
 
@@ -892,7 +1401,11 @@ export async function fetchRequestStats(userId?: string) {
       supplyStatuses.includes(r.status as RequestStatus),
     ).length,
     completed: rows.filter((r) => r.status === "completed").length,
-    returned: rows.filter((r) => r.status === "returned_for_revision").length,
+    returned: rows.filter(
+      (r) =>
+        r.status === "returned_for_revision" ||
+        r.status === "returned_for_action",
+    ).length,
   };
 }
 
@@ -953,4 +1466,167 @@ export async function confirmReceipt(
     updatedBy: userId,
     note: summaryNote,
   });
+}
+
+// ── Edit eligibility check ────────────────────────────
+
+/**
+ * Determines if a request can be edited by the department user.
+ * Returns true only if:
+ * - Current status is "returned_for_revision"
+ * - Previous status (before the return) was "request_sent"
+ * - The user who returned it for revision has role "twg"
+ */
+export function canEditReturnedRequest(request: RequestRow): boolean {
+  if (request.status !== "returned_for_revision") {
+    return false;
+  }
+
+  if (!request.status_logs || request.status_logs.length < 2) {
+    return false;
+  }
+
+  // Sort by created_at descending to get the most recent first.
+  const sortedLogs = [...request.status_logs].sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
+
+  // Find the most recent "returned_for_revision" log
+  const returnLog = sortedLogs.find(
+    (l) => l.status === "returned_for_revision",
+  );
+  if (!returnLog || !returnLog.updater) {
+    return false;
+  }
+
+  // Check if the returner has "twg" role.
+  if (returnLog.updater.role !== "twg") {
+    return false;
+  }
+
+  // Find the status BEFORE the return (should be "request_sent").
+  const returnLogIndex = sortedLogs.findIndex(
+    (l) =>
+      l.status === "returned_for_revision" &&
+      l.created_at === returnLog.created_at,
+  );
+
+  // Look for the previous status (chronologically after, in descending order)
+  if (returnLogIndex + 1 < sortedLogs.length) {
+    const previousLog = sortedLogs[returnLogIndex + 1];
+    return previousLog.status === "request_sent";
+  }
+
+  return false;
+}
+
+/**
+ * Returns the status immediately before the latest return log for a request.
+ */
+export function getPreviousStatusBeforeReturn(
+  request: RequestRow,
+  returnStatus: "returned_for_revision" | "returned_for_action",
+): RequestStatus | null {
+  if (!request.status_logs || request.status_logs.length < 2) {
+    return null;
+  }
+
+  const sortedLogs = [...request.status_logs].sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
+
+  const returnLogIndex = sortedLogs.findIndex((l) => l.status === returnStatus);
+  if (returnLogIndex < 0 || returnLogIndex + 1 >= sortedLogs.length) {
+    return null;
+  }
+
+  const previous = sortedLogs[returnLogIndex + 1]?.status as RequestStatus;
+  return previous ?? null;
+}
+
+/**
+ * Computes the next workflow status that should be used when validating a
+ * request returned for personal action.
+ */
+export function getResumeStatusAfterReturnForAction(
+  request: RequestRow,
+): RequestStatus | null {
+  const previous = getPreviousStatusBeforeReturn(
+    request,
+    "returned_for_action",
+  );
+  if (!previous) return null;
+  const previousIdx = STATUS_FLOW.indexOf(previous);
+  if (previousIdx < 0 || previousIdx >= STATUS_FLOW.length - 1) {
+    return null;
+  }
+  return STATUS_FLOW[previousIdx + 1];
+}
+
+// ── Resubmit returned request ──────────────────────────
+
+/**
+ * Allows a department user to resubmit a returned request.
+ * Updates items and sets status back to "request_sent".
+ */
+export async function resubmitReturnedRequest(params: {
+  requestId: string;
+  userId: string;
+  items: RequestItemInput[];
+}): Promise<RequestRow> {
+  // Delete old items and insert new ones
+  await supabase
+    .from("request_items")
+    .delete()
+    .eq("request_id", params.requestId);
+
+  if (params.items.length > 0) {
+    const itemRows = params.items
+      .filter((it) => it.itemDescription.trim())
+      .map((item, idx) => ({
+        id: crypto.randomUUID(),
+        request_id: params.requestId,
+        stock_no: String(idx + 1),
+        qty: item.qty,
+        item_description: item.itemDescription,
+        uom: item.uom,
+        unit_cost: item.unitCost ?? null,
+        total_cost: item.unitCost ? item.unitCost * item.qty : null,
+      }));
+
+    if (itemRows.length > 0) {
+      const { error: itemError } = await supabase
+        .from("request_items")
+        .insert(itemRows);
+      if (itemError) throw itemError;
+    }
+  }
+
+  // Update request status back to "request_sent"
+  const { error: updateErr } = await supabase
+    .from("requests")
+    .update({
+      status: "request_sent" as RequestStatus,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", params.requestId);
+
+  if (updateErr) throw updateErr;
+
+  // Insert status log
+  const { error: logError } = await supabase
+    .from("request_status_logs")
+    .insert({
+      id: crypto.randomUUID(),
+      request_id: params.requestId,
+      status: "request_sent",
+      note: "Resubmitted by department user after revision",
+      updated_by: params.userId,
+    });
+
+  if (logError) throw logError;
+
+  return fetchRequestById(params.requestId);
 }

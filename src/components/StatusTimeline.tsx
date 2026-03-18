@@ -5,6 +5,7 @@ import {
   STATUS_TONE,
   STATUS_RESPONSIBLE_ROLE,
   ROLE_LABELS,
+  getDisplayNote,
   type RequestStatus,
   type StatusLogRow,
 } from "../lib/requests";
@@ -74,10 +75,17 @@ export default function StatusTimeline({
 }: StatusTimelineProps) {
   const logMap = buildLogMap(statusLogs);
   const currentIdx = STATUS_FLOW.indexOf(currentStatus);
-  const isReturned = currentStatus === "returned_for_revision";
+  const isReturned =
+    currentStatus === "returned_for_revision" ||
+    currentStatus === "returned_for_action";
+  const currentReturnStatus = isReturned
+    ? (currentStatus as "returned_for_revision" | "returned_for_action")
+    : null;
 
-  // Also check if there's a "returned_for_revision" log entry
-  const returnedLog = logMap.get("returned_for_revision");
+  // Also check if there's a return log entry.
+  const returnedLog = currentReturnStatus
+    ? logMap.get(currentReturnStatus)
+    : null;
 
   return (
     <div className="relative">
@@ -86,7 +94,7 @@ export default function StatusTimeline({
       </div>
 
       <ol className="relative">
-        {/* Show returned_for_revision at the top if it's the current status */}
+        {/* Show return status at the top if it's the current status */}
         {isReturned && (
           <li className="relative pl-8 pb-6">
             {/* Connector line */}
@@ -98,7 +106,7 @@ export default function StatusTimeline({
             {/* Content */}
             <div className="ml-2">
               <p className="text-sm font-semibold text-red-700">
-                {STATUS_LABELS.returned_for_revision}
+                {STATUS_LABELS[currentReturnStatus!]}
               </p>
               {returnedLog && (
                 <>
@@ -109,7 +117,9 @@ export default function StatusTimeline({
                   </p>
                   {returnedLog.note && (
                     <p className="text-xs text-red-600 mt-0.5 italic">
-                      &ldquo;{returnedLog.note}&rdquo;
+                      &ldquo;
+                      {getDisplayNote(currentReturnStatus!, returnedLog.note)}
+                      &rdquo;
                     </p>
                   )}
                 </>
@@ -204,7 +214,7 @@ export default function StatusTimeline({
                     </p>
                     {log.note && (
                       <p className="text-xs text-gray-500 mt-0.5 italic">
-                        &ldquo;{log.note}&rdquo;
+                        &ldquo;{getDisplayNote(status, log.note)}&rdquo;
                       </p>
                     )}
                   </>

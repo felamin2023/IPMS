@@ -35,6 +35,7 @@ const NEW_STATUS_VALUES = [
   "under_warehousing",
   "completed",
   "returned_for_revision",
+  "returned_for_action",
 ];
 
 // Old → New status mapping

@@ -1,5 +1,6 @@
 // src/pages/user/Requests.tsx
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Search,
   Filter,
@@ -8,18 +9,22 @@ import {
   Loader2,
   X,
   PackageCheck,
+  Edit,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import {
   fetchRequestsLight,
   fetchRequestById,
   confirmReceipt,
+  canEditReturnedRequest,
   type RequestRow,
   type RequestStatus,
   STATUS_SHORT_LABELS,
   STATUS_TONE,
   STATUS_FLOW,
+  getDisplayNote,
 } from "../../lib/requests";
+import { supabase } from "../../lib/supabase";
 import { generatePrDocument } from "../../lib/generatePr.ts";
 import StatusTimeline from "../../components/StatusTimeline";
 
@@ -66,6 +71,10 @@ export default function Requests() {
   const [statusFilter, setStatusFilter] = useState<"" | RequestStatus>("");
   const [viewRequest, setViewRequest] = useState<RequestRow | null>(null);
   const [viewLoading, setViewLoading] = useState(false);
+  const [noteModal, setNoteModal] = useState<{
+    title: string;
+    note: string;
+  } | null>(null);
   const [receiptRequest, setReceiptRequest] = useState<RequestRow | null>(null);
   const [receiptItems, setReceiptItems] = useState<
     { id: string; receivedQty: number; damageNotes: string }[]
@@ -100,6 +109,52 @@ export default function Requests() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const refresh = () => {
+      void loadData();
+    };
+
+    const channel = supabase
+      .channel(`user-requests-records-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "requests",
+          filter: `created_by=eq.${user.id}`,
+        },
+        refresh,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "requests",
+          filter: `created_by=eq.${user.id}`,
+        },
+        refresh,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "requests",
+          filter: `created_by=eq.${user.id}`,
+        },
+        refresh,
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [user?.id, loadData]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -186,6 +241,9 @@ export default function Requests() {
                   <option value="returned_for_revision">
                     Returned for Revision
                   </option>
+                  <option value="returned_for_action">
+                    Returned for Personal Fix
+                  </option>
                 </select>
               </div>
             </div>
@@ -235,23 +293,38 @@ export default function Requests() {
                         <td className="px-5 py-4">
                           <div className="flex flex-col items-center gap-1">
                             <StatusPill status={r.status} />
-                            {r.status === "returned_for_revision" &&
+                            {(r.status === "returned_for_revision" ||
+                              r.status === "returned_for_action") &&
                               (() => {
-                                const note = r.status_logs
+                                const latestLog = r.status_logs
                                   ?.filter(
-                                    (l) => l.status === "returned_for_revision",
+                                    (l) => l.note && l.status === r.status,
                                   )
                                   .sort(
                                     (a, b) =>
                                       new Date(b.created_at).getTime() -
                                       new Date(a.created_at).getTime(),
-                                  )[0]?.note;
+                                  )[0];
+                                const note = latestLog
+                                  ? getDisplayNote(
+                                      latestLog.status,
+                                      latestLog.note,
+                                    )
+                                  : null;
                                 return note ? (
                                   <button
                                     type="button"
                                     className="text-xs text-red-600 hover:text-red-800 underline underline-offset-2 max-w-[140px] truncate"
                                     title={note}
-                                    onClick={() => openView(r)}
+                                    onClick={() =>
+                                      setNoteModal({
+                                        title:
+                                          r.status === "returned_for_revision"
+                                            ? "Return Note (For Revision)"
+                                            : "Return Note (For Personal Fix)",
+                                        note,
+                                      })
+                                    }
                                   >
                                     View Note
                                   </button>
@@ -302,6 +375,15 @@ export default function Requests() {
                                 <Download className="h-4 w-4" />
                                 PR
                               </button>
+                            )}
+                            {canEditReturnedRequest(r) && (
+                              <Link
+                                to={`/user/edit-request/${r.id}`}
+                                className="inline-flex items-center gap-1 text-orange-600 font-semibold hover:text-orange-700 text-sm"
+                              >
+                                <Edit className="h-4 w-4" />
+                                Edit & Resubmit
+                              </Link>
                             )}
                           </div>
                         </td>
@@ -484,10 +566,12 @@ export default function Requests() {
             )}
 
             {/* Return Note Banner */}
-            {viewRequest.status === "returned_for_revision" &&
+            {(viewRequest.status === "returned_for_revision" ||
+              viewRequest.status === "returned_for_action") &&
               (() => {
+                const returnStatus = viewRequest.status;
                 const returnLog = viewRequest.status_logs
-                  ?.filter((l) => l.status === "returned_for_revision")
+                  ?.filter((l) => l.status === returnStatus)
                   .sort(
                     (a, b) =>
                       new Date(b.created_at).getTime() -
@@ -503,11 +587,13 @@ export default function Requests() {
                       </div>
                       <div>
                         <div className="text-sm font-semibold text-red-800">
-                          Returned for Revision
+                          {returnStatus === "returned_for_revision"
+                            ? "Returned for Revision"
+                            : "Returned for Personal Fix"}
                         </div>
                         <p className="mt-1 text-sm text-red-700">
-                          {returnLog.note ||
-                            "This request has been returned. Please coordinate with TWG for details."}
+                          {getDisplayNote(returnStatus, returnLog.note) ||
+                            "This request has been returned. Please coordinate with the assigned office for details."}
                         </p>
                         <div className="mt-2 text-xs text-red-500">
                           {returnLog.updater
@@ -577,6 +663,39 @@ export default function Requests() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Note-only Modal */}
+      {noteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            <div className="flex items-start justify-between gap-3">
+              <div className="text-lg font-semibold text-gray-900">
+                {noteModal.title}
+              </div>
+              <button
+                onClick={() => setNoteModal(null)}
+                className="rounded-lg p-1 hover:bg-gray-100"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 whitespace-pre-wrap">
+              {noteModal.note}
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setNoteModal(null)}
+                className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

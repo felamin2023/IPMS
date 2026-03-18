@@ -17,16 +17,53 @@ import {
   fetchRequestsLight,
   fetchRequestById,
   updateRequestStatus,
+  getResumeStatusAfterReturnForAction,
+  sendSpecialStatusNotice,
   type RequestRow,
   type RequestStatus,
-  STATUS_LABELS,
   STATUS_SHORT_LABELS,
+  DEFAULT_STATUS_NOTES,
   STATUS_TONE,
   STATUS_FLOW,
   STATUS_RESPONSIBLE_ROLE,
 } from "../../lib/requests";
+import { supabase } from "../../lib/supabase";
 import { generatePrDocument } from "../../lib/generatePr";
 import StatusTimeline from "../../components/StatusTimeline";
+
+type SpecialNoticeStatus = "notice_of_meeting" | "hope_approval" | "issuance";
+
+function isSpecialNoticeStatus(
+  status: RequestStatus,
+): status is SpecialNoticeStatus {
+  return (
+    status === "notice_of_meeting" ||
+    status === "hope_approval" ||
+    status === "issuance"
+  );
+}
+
+function parseEmailList(raw: string) {
+  return raw
+    .split(/[\n,;]+/)
+    .map((email) => email.trim())
+    .filter(Boolean);
+}
+
+function validateEmails(emails: string[]) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emails.every((email) => emailRegex.test(email));
+}
+
+function getSpecialNoticeTitle(status: SpecialNoticeStatus) {
+  if (status === "notice_of_meeting") {
+    return "Notice of Meeting Notification";
+  }
+  if (status === "hope_approval") {
+    return "HoPE Approval Meeting Notification";
+  }
+  return "Issuance Availability Notification";
+}
 
 function StatusPill({ status }: { status: RequestStatus }) {
   const toneMap: Record<string, string> = {
@@ -68,7 +105,7 @@ function itemsTotal(items?: { unit_cost: number | null; qty: number }[]) {
  * Only shows actions if the user's role is responsible for the next status.
  */
 function getActions(
-  current: RequestStatus,
+  request: RequestRow,
   userRole: string | null,
 ): {
   primary?: {
@@ -84,16 +121,22 @@ function getActions(
     tone: string;
   };
 } {
+  const current = request.status;
   const idx = STATUS_FLOW.indexOf(current);
 
-  // Special case: returned requests can be re-validated by TWG
-  if (current === "returned_for_revision" && userRole === "twg") {
+  // Special case: requests returned for personal action can be validated and
+  // advanced by the role responsible for the next status after the return point.
+  if (current === "returned_for_action") {
+    const resumeStatus = getResumeStatusAfterReturnForAction(request);
+    if (!resumeStatus) return {};
+    const responsibleRole = STATUS_RESPONSIBLE_ROLE[resumeStatus];
+    if (userRole !== responsibleRole) return {};
     return {
       primary: {
         label: "Validate & Approve",
-        status: "request_reviewed" as RequestStatus,
+        status: resumeStatus,
         icon: PlayCircle,
-        tone: "amber",
+        tone: "blue",
       },
     };
   }
@@ -108,9 +151,12 @@ function getActions(
   const canAdvance = userRole === responsibleRole;
 
   // Return button: only the role responsible for advancing can also return,
-  // and only TWG and procurement_admin have return capability
+  // and only workflow actors (TWG / Procurement / Supply) have return capability.
   const canReturn =
-    canAdvance && (userRole === "twg" || userRole === "procurement_admin");
+    canAdvance &&
+    (userRole === "twg" ||
+      userRole === "procurement_admin" ||
+      userRole === "supply_admin");
 
   if (!canAdvance && !canReturn) return {};
 
@@ -133,7 +179,10 @@ function getActions(
       ? {
           negative: {
             label: "Return",
-            status: "returned_for_revision" as RequestStatus,
+            status:
+              current === "request_sent"
+                ? ("returned_for_revision" as RequestStatus)
+                : ("returned_for_action" as RequestStatus),
             icon: RotateCcw,
             tone: "red",
           },
@@ -151,6 +200,16 @@ export default function Requests() {
   const [viewRequest, setViewRequest] = useState<RequestRow | null>(null);
   const [advancing, setAdvancing] = useState<string | null>(null);
   const [viewLoading, setViewLoading] = useState(false);
+  const [actionError, setActionError] = useState<string>("");
+  const [specialNoticeModal, setSpecialNoticeModal] = useState<{
+    request: RequestRow;
+    newStatus: SpecialNoticeStatus;
+  } | null>(null);
+  const [extraEmails, setExtraEmails] = useState("");
+  const [meetingDate, setMeetingDate] = useState("");
+  const [meetingTime, setMeetingTime] = useState("");
+  const [meetingVenue, setMeetingVenue] = useState("");
+  const [specialNoticeError, setSpecialNoticeError] = useState("");
 
   async function openView(r: RequestRow) {
     setViewLoading(true);
@@ -187,6 +246,49 @@ export default function Requests() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const refresh = () => {
+      void loadData();
+    };
+
+    const channel = supabase
+      .channel(`admin-requests-records-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "requests",
+        },
+        refresh,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "requests",
+        },
+        refresh,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "requests",
+        },
+        refresh,
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [user?.id, loadData]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -229,19 +331,59 @@ export default function Requests() {
     requestId: string,
     newStatus: RequestStatus,
     note?: string,
+    additionalNotice?: {
+      status: SpecialNoticeStatus;
+      ownerName: string;
+      ownerEmail?: string | null;
+      prNo: string;
+      additionalEmails: string[];
+      meetingDate?: string;
+      meetingTime?: string;
+      venue?: string;
+    },
   ) {
     if (!user?.id) return;
     setAdvancing(requestId);
+    setActionError("");
     try {
       await updateRequestStatus({
         requestId,
         newStatus,
         updatedBy: user.id,
-        note: note || `Status updated to ${STATUS_LABELS[newStatus]}`,
+        note: note || DEFAULT_STATUS_NOTES[newStatus],
       });
+
+      if (additionalNotice) {
+        try {
+          await sendSpecialStatusNotice({
+            status: additionalNotice.status,
+            prNo: additionalNotice.prNo,
+            ownerName: additionalNotice.ownerName,
+            ownerEmail: additionalNotice.ownerEmail,
+            additionalEmails: additionalNotice.additionalEmails,
+            meetingDate: additionalNotice.meetingDate,
+            meetingTime: additionalNotice.meetingTime,
+            venue: additionalNotice.venue,
+          });
+        } catch (extraNoticeError) {
+          const message =
+            extraNoticeError instanceof Error
+              ? extraNoticeError.message
+              : "Failed to send additional email notification.";
+          setActionError(
+            `Status updated, but additional email failed: ${message}`,
+          );
+        }
+      }
+
       await loadData();
     } catch (err) {
       console.error("Status update failed:", err);
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to update request status. Please try again.";
+      setActionError(message);
     } finally {
       setAdvancing(null);
     }
@@ -266,6 +408,66 @@ export default function Requests() {
     );
     setNoteModal(null);
     setNoteText("");
+  }
+
+  async function submitSpecialNoticeModal() {
+    if (!specialNoticeModal) return;
+
+    const ownerEmail = specialNoticeModal.request.creator?.email;
+    if (!ownerEmail) {
+      setSpecialNoticeError(
+        "Cannot send additional notice because the request owner has no email address.",
+      );
+      return;
+    }
+
+    const parsedEmails = parseEmailList(extraEmails);
+    if (parsedEmails.length > 0 && !validateEmails(parsedEmails)) {
+      setSpecialNoticeError(
+        "One or more additional email addresses are invalid.",
+      );
+      return;
+    }
+
+    if (
+      (specialNoticeModal.newStatus === "notice_of_meeting" ||
+        specialNoticeModal.newStatus === "hope_approval") &&
+      (!meetingDate || !meetingTime || !meetingVenue.trim())
+    ) {
+      setSpecialNoticeError(
+        "Please provide date, time, and venue for this meeting notice.",
+      );
+      return;
+    }
+
+    setSpecialNoticeError("");
+
+    const ownerName = specialNoticeModal.request.creator
+      ? `${specialNoticeModal.request.creator.first_name} ${specialNoticeModal.request.creator.last_name}`
+      : "Request Owner";
+
+    await handleAdvanceStatus(
+      specialNoticeModal.request.id,
+      specialNoticeModal.newStatus,
+      undefined,
+      {
+        status: specialNoticeModal.newStatus,
+        ownerName,
+        ownerEmail,
+        prNo: specialNoticeModal.request.pr_no ?? specialNoticeModal.request.id,
+        additionalEmails: parsedEmails,
+        meetingDate: meetingDate || undefined,
+        meetingTime: meetingTime || undefined,
+        venue: meetingVenue.trim() || undefined,
+      },
+    );
+
+    setSpecialNoticeModal(null);
+    setExtraEmails("");
+    setMeetingDate("");
+    setMeetingTime("");
+    setMeetingVenue("");
+    setSpecialNoticeError("");
   }
 
   return (
@@ -323,10 +525,19 @@ export default function Requests() {
                   <option value="returned_for_revision">
                     Returned for Revision
                   </option>
+                  <option value="returned_for_action">
+                    Returned for Personal Fix
+                  </option>
                 </select>
               </div>
             </div>
           </div>
+
+          {actionError && (
+            <div className="mx-4 mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {actionError}
+            </div>
+          )}
 
           {loading ? (
             <div className="flex items-center justify-center py-20">
@@ -352,7 +563,7 @@ export default function Requests() {
 
                   <tbody className="divide-y divide-gray-100">
                     {current.map((r) => {
-                      const actions = getActions(r.status, role);
+                      const actions = getActions(r, role);
                       return (
                         <tr key={r.id} className="text-sm text-gray-700">
                           <td className="px-5 py-4">
@@ -428,12 +639,23 @@ export default function Requests() {
                                           ? "bg-green-50 text-green-700 hover:bg-green-100"
                                           : "bg-violet-50 text-violet-700 hover:bg-violet-100",
                                   ].join(" ")}
-                                  onClick={() =>
-                                    handleAdvanceStatus(
-                                      r.id,
-                                      actions.primary!.status,
-                                    )
-                                  }
+                                  onClick={() => {
+                                    const nextStatus = actions.primary!.status;
+                                    if (isSpecialNoticeStatus(nextStatus)) {
+                                      setSpecialNoticeModal({
+                                        request: r,
+                                        newStatus: nextStatus,
+                                      });
+                                      setExtraEmails("");
+                                      setMeetingDate("");
+                                      setMeetingTime("");
+                                      setMeetingVenue("");
+                                      setSpecialNoticeError("");
+                                      return;
+                                    }
+
+                                    handleAdvanceStatus(r.id, nextStatus);
+                                  }}
                                   title={actions.primary.label}
                                 >
                                   <actions.primary.icon className="h-3.5 w-3.5" />
@@ -654,6 +876,146 @@ export default function Requests() {
               currentStatus={viewRequest.status}
               statusLogs={viewRequest.status_logs}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Additional Notice Modal for Selected Statuses */}
+      {specialNoticeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            <div className="flex items-start justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                {getSpecialNoticeTitle(specialNoticeModal.newStatus)}
+              </h3>
+              <button
+                onClick={() => setSpecialNoticeModal(null)}
+                className="rounded-lg p-1 hover:bg-gray-100"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+
+            <p className="text-sm text-gray-600 mb-3">
+              This action sends an automated notice to the request owner. You
+              may add additional recipients for this update.
+            </p>
+
+            {specialNoticeError && (
+              <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {specialNoticeError}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Owner Email (auto)
+                </label>
+                <input
+                  type="text"
+                  readOnly
+                  value={
+                    specialNoticeModal.request.creator?.email ??
+                    "No owner email"
+                  }
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Additional Recipient Emails (optional)
+                </label>
+                <textarea
+                  value={extraEmails}
+                  onChange={(e) => setExtraEmails(e.target.value)}
+                  placeholder="name1@email.com, name2@email.com"
+                  className="w-full min-h-[84px] resize-y rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+
+              {(specialNoticeModal.newStatus === "notice_of_meeting" ||
+                specialNoticeModal.newStatus === "hope_approval") && (
+                <>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Meeting Date
+                      </label>
+                      <input
+                        type="date"
+                        value={meetingDate}
+                        onChange={(e) => setMeetingDate(e.target.value)}
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Meeting Time
+                      </label>
+                      <input
+                        type="time"
+                        value={meetingTime}
+                        onChange={(e) => setMeetingTime(e.target.value)}
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Venue / Platform
+                    </label>
+                    <input
+                      type="text"
+                      value={meetingVenue}
+                      onChange={(e) => setMeetingVenue(e.target.value)}
+                      placeholder="Conference Room / Online Link"
+                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                </>
+              )}
+
+              {specialNoticeModal.newStatus === "issuance" && (
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Pick-up / Delivery Venue (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={meetingVenue}
+                    onChange={(e) => setMeetingVenue(e.target.value)}
+                    placeholder="Supply Office / Delivery Point"
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setSpecialNoticeModal(null)}
+                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={advancing === specialNoticeModal.request.id}
+                onClick={submitSpecialNoticeModal}
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {advancing === specialNoticeModal.request.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <PlayCircle className="h-4 w-4" />
+                )}
+                Confirm & Send Notice
+              </button>
+            </div>
           </div>
         </div>
       )}

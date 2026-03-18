@@ -38,6 +38,10 @@ export default function App() {
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<Home />} />
               <Route path="/create-request" element={<CreateRequestUser />} />
+              <Route
+                path="/user/edit-request/:requestId"
+                element={<CreateRequestUser />}
+              />
               <Route path="/requests" element={<RequestsUser />} />
               <Route path="/monitoring" element={<MonitoringUser />} />
               <Route path="/settings" element={<SettingsUser />} />

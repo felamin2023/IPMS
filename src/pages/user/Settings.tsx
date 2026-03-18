@@ -1,7 +1,23 @@
 // src/pages/user/Settings.tsx
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { User, Key, Globe, Settings2 } from "lucide-react";
+import { Loader2, User, Key } from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import SettingsPasswordSecurity from "../../components/SettingsPasswordSecurity";
+
+const ROLE_POSITION_LABEL: Record<string, string> = {
+  department_user: "Department User",
+  twg: "Technical Working Group",
+  procurement_admin: "Procurement Administrator",
+  supply_admin: "Supply Administrator",
+};
+
+const ROLE_DEPARTMENT_LABEL: Record<string, string> = {
+  department_user: "Department",
+  twg: "Technical Working Group",
+  procurement_admin: "Procurement & Supply Office",
+  supply_admin: "Supply Office",
+};
 
 export default function Settings() {
   const { user } = useAuth();
@@ -9,25 +25,141 @@ export default function Settings() {
   const [profile, setProfile] = useState({
     fullName: (user?.user_metadata?.full_name as string) ?? "",
     email: user?.email ?? "",
-    position: "Procurement Officer",
-    department: "Procurement & Supply Office",
+    position: "",
+    department: "",
   });
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileMessage, setProfileMessage] = useState("");
+  const [profileError, setProfileError] = useState("");
 
-  const [toggles, setToggles] = useState({
-    newRequests: true,
-    approvalReminders: true,
-    statusUpdates: true,
-    emailDigest: false,
-  });
+  const splitFullName = (value: string) => {
+    const normalized = value.trim().replace(/\s+/g, " ");
+    const [firstName, ...rest] = normalized.split(" ");
+    const lastName = rest.join(" ");
+    return {
+      normalized,
+      firstName,
+      lastName,
+    };
+  };
 
-  const [security, setSecurity] = useState({
-    current: "",
-    next: "",
-    confirm: "",
-  });
+  useEffect(() => {
+    if (!user?.id) return;
 
-  const languages = useMemo(() => ["English", "Filipino"], []);
-  const timezones = useMemo(() => ["UTC-8", "UTC-5 (ET)", "UTC+8 (PHT)"], []);
+    let active = true;
+
+    const loadProfile = async () => {
+      const { data } = await supabase
+        .from("users")
+        .select(
+          "first_name, last_name, email, role, college:colleges(code, name), program:programs(code, name)",
+        )
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (!active) return;
+
+      const dbFullName = data
+        ? `${data.first_name ?? ""} ${data.last_name ?? ""}`.trim()
+        : "";
+      const metaFullName =
+        (user.user_metadata?.full_name as string | undefined) ||
+        `${(user.user_metadata?.first_name as string | undefined) ?? ""} ${(user.user_metadata?.last_name as string | undefined) ?? ""}`.trim();
+
+      const roleKey = (data?.role as string | undefined) ?? "";
+      const program = Array.isArray(data?.program)
+        ? data.program[0]
+        : data?.program;
+      const college = Array.isArray(data?.college)
+        ? data.college[0]
+        : data?.college;
+      const programName = (program?.name as string | undefined) ?? "";
+      const programCode = (program?.code as string | undefined) ?? "";
+      const collegeName = (college?.name as string | undefined) ?? "";
+      const collegeCode = (college?.code as string | undefined) ?? "";
+
+      let resolvedDepartment = "";
+      if (programName && collegeName) {
+        resolvedDepartment = `${programName} (${collegeName})`;
+      } else if (programName) {
+        resolvedDepartment = programName;
+      } else if (programCode) {
+        resolvedDepartment = programCode;
+      } else if (collegeName) {
+        resolvedDepartment = collegeName;
+      } else if (collegeCode) {
+        resolvedDepartment = collegeCode;
+      }
+
+      setProfile((prev) => ({
+        ...prev,
+        fullName: dbFullName || metaFullName || prev.fullName,
+        email: data?.email || user.email || prev.email,
+        position: ROLE_POSITION_LABEL[roleKey] || prev.position,
+        department:
+          resolvedDepartment ||
+          ROLE_DEPARTMENT_LABEL[roleKey] ||
+          prev.department,
+      }));
+    };
+
+    void loadProfile();
+
+    return () => {
+      active = false;
+    };
+  }, [user?.id, user?.email, user?.user_metadata]);
+
+  const handleSaveProfile = async () => {
+    if (!user?.id) return;
+
+    const { normalized, firstName, lastName } = splitFullName(profile.fullName);
+
+    if (!normalized || !firstName) {
+      setProfileError("Please enter a valid full name.");
+      setProfileMessage("");
+      return;
+    }
+
+    setSavingProfile(true);
+    setProfileError("");
+    setProfileMessage("");
+
+    try {
+      const { error } = await supabase
+        .from("users")
+        .update({
+          first_name: firstName,
+          last_name: lastName,
+        })
+        .eq("id", user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      const { error: metadataError } = await supabase.auth.updateUser({
+        data: {
+          full_name: normalized,
+          first_name: firstName,
+          last_name: lastName,
+        },
+      });
+
+      if (metadataError) {
+        console.error("Failed to sync auth metadata:", metadataError);
+      }
+
+      setProfile((prev) => ({ ...prev, fullName: normalized }));
+      setProfileMessage("Profile updated successfully.");
+    } catch (err) {
+      setProfileError(
+        err instanceof Error ? err.message : "Failed to save profile.",
+      );
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   return (
     <div className="bg-gray-50">
@@ -78,11 +210,10 @@ export default function Settings() {
                     Email
                   </label>
                   <input
-                    className="mt-2 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    className="mt-2 w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-500"
                     value={profile.email}
-                    onChange={(e) =>
-                      setProfile((p) => ({ ...p, email: e.target.value }))
-                    }
+                    readOnly
+                    disabled
                   />
                 </div>
 
@@ -91,11 +222,10 @@ export default function Settings() {
                     Position
                   </label>
                   <input
-                    className="mt-2 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    className="mt-2 w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-500"
                     value={profile.position}
-                    onChange={(e) =>
-                      setProfile((p) => ({ ...p, position: e.target.value }))
-                    }
+                    readOnly
+                    disabled
                   />
                 </div>
 
@@ -104,76 +234,38 @@ export default function Settings() {
                     Department
                   </label>
                   <input
-                    className="mt-2 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    className="mt-2 w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-500"
                     value={profile.department}
-                    onChange={(e) =>
-                      setProfile((p) => ({ ...p, department: e.target.value }))
-                    }
+                    readOnly
+                    disabled
                   />
                 </div>
               </div>
 
+              {profileError && (
+                <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {profileError}
+                </div>
+              )}
+
+              {profileMessage && (
+                <div className="mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                  {profileMessage}
+                </div>
+              )}
+
               <div className="mt-4 flex items-center justify-end">
-                <button className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+                <button
+                  type="button"
+                  onClick={handleSaveProfile}
+                  disabled={savingProfile || !profile.fullName.trim()}
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {savingProfile ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : null}
                   Save profile
                 </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Notifications */}
-          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-amber-50 flex items-center justify-center">
-                <Settings2 className="h-4 w-4 text-amber-600" />
-              </div>
-              <div>
-                <div className="text-sm font-semibold text-gray-900">
-                  Notifications
-                </div>
-                <div className="text-xs text-gray-500">
-                  Control email and in-app alerts
-                </div>
-              </div>
-            </div>
-
-            <div className="px-6 py-6">
-              <div className="space-y-3">
-                {(
-                  [
-                    { key: "newRequests", label: "New requests" },
-                    { key: "approvalReminders", label: "Approval reminders" },
-                    { key: "statusUpdates", label: "Status updates" },
-                    { key: "emailDigest", label: "Email digest (daily)" },
-                  ] as { key: keyof typeof toggles; label: string }[]
-                ).map((t) => (
-                  <div
-                    key={t.key}
-                    className="flex items-center justify-between"
-                  >
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {t.label}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        Enable or disable {t.label.toLowerCase()}.
-                      </div>
-                    </div>
-                    <div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="sr-only peer"
-                          checked={toggles[t.key]}
-                          onChange={() =>
-                            setToggles((s) => ({ ...s, [t.key]: !s[t.key] }))
-                          }
-                        />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" />
-                      </label>
-                    </div>
-                  </div>
-                ))}
               </div>
             </div>
           </div>
@@ -189,128 +281,11 @@ export default function Settings() {
                   Security
                 </div>
                 <div className="text-xs text-gray-500">
-                  Change your password
+                  Reset your password via OTP
                 </div>
               </div>
             </div>
-
-            <div className="px-6 py-6">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div>
-                  <label className="text-sm font-medium text-gray-700">
-                    Current password
-                  </label>
-                  <input
-                    type="password"
-                    className="mt-2 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-                    value={security.current}
-                    onChange={(e) =>
-                      setSecurity((s) => ({ ...s, current: e.target.value }))
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-700">
-                    New password
-                  </label>
-                  <input
-                    type="password"
-                    className="mt-2 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-                    value={security.next}
-                    onChange={(e) =>
-                      setSecurity((s) => ({ ...s, next: e.target.value }))
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-700">
-                    Confirm new
-                  </label>
-                  <input
-                    type="password"
-                    className="mt-2 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-                    value={security.confirm}
-                    onChange={(e) =>
-                      setSecurity((s) => ({ ...s, confirm: e.target.value }))
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center justify-end">
-                <button className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
-                  Change password
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Preferences */}
-          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-violet-50 flex items-center justify-center">
-                <Globe className="h-4 w-4 text-violet-600" />
-              </div>
-              <div>
-                <div className="text-sm font-semibold text-gray-900">
-                  Preferences
-                </div>
-                <div className="text-xs text-gray-500">
-                  Locale and display settings
-                </div>
-              </div>
-            </div>
-
-            <div className="px-6 py-6">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div>
-                  <label className="text-sm font-medium text-gray-700">
-                    Language
-                  </label>
-                  <select
-                    className="mt-2 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                    value={languages[0]}
-                  >
-                    {languages.map((l) => (
-                      <option key={l} value={l}>
-                        {l}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-700">
-                    Timezone
-                  </label>
-                  <select
-                    className="mt-2 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                    value={timezones[0]}
-                  >
-                    {timezones.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-700">
-                    Currency
-                  </label>
-                  <select
-                    className="mt-2 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                    defaultValue="USD"
-                  >
-                    <option value="USD">USD ($)</option>
-                    <option value="PHP">PHP (₱)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
+            <SettingsPasswordSecurity email={profile.email} />
           </div>
         </div>
       </div>

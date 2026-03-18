@@ -116,10 +116,7 @@ export default function Approvals() {
     setLoading(true);
     try {
       const all = await fetchRequestsLight();
-      const pendingList = all.filter(
-        (r) =>
-          r.status === "request_sent" || r.status === "returned_for_revision",
-      );
+      const pendingList = all.filter((r) => r.status === "request_sent");
       const actionedList = all
         .filter((r) => r.status === "request_reviewed")
         .slice(0, 5);
@@ -432,45 +429,43 @@ export default function Approvals() {
               </div>
 
               {/* Action Buttons — only show for pending requests if user has TWG role */}
-              {(selected.status === "request_sent" ||
-                selected.status === "returned_for_revision") &&
-                canAct && (
-                  <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                    <div className="text-sm font-semibold text-gray-900">
-                      TWG Decision
-                    </div>
-                    <p className="mt-1 text-sm text-gray-500">
-                      Ensure item descriptions are correct and complete, then
-                      approve or return for revision
-                    </p>
-
-                    <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <button
-                        type="button"
-                        disabled={acting}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-300 bg-white px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
-                        onClick={() => setShowRejectModal(true)}
-                      >
-                        <XCircle className="h-5 w-5" />
-                        Return for Revision
-                      </button>
-
-                      <button
-                        type="button"
-                        disabled={acting}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50"
-                        onClick={handleApprove}
-                      >
-                        {acting ? (
-                          <Loader2 className="h-5 w-5 animate-spin" />
-                        ) : (
-                          <CheckCircle2 className="h-5 w-5" />
-                        )}
-                        Validate & Approve
-                      </button>
-                    </div>
+              {selected.status === "request_sent" && canAct && (
+                <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                  <div className="text-sm font-semibold text-gray-900">
+                    TWG Decision
                   </div>
-                )}
+                  <p className="mt-1 text-sm text-gray-500">
+                    Ensure item descriptions are correct and complete, then
+                    approve or return for revision
+                  </p>
+
+                  <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      disabled={acting}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-300 bg-white px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+                      onClick={() => setShowRejectModal(true)}
+                    >
+                      <XCircle className="h-5 w-5" />
+                      Return for Revision
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={acting}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+                      onClick={handleApprove}
+                    >
+                      {acting ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="h-5 w-5" />
+                      )}
+                      Validate & Approve
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex items-center justify-center rounded-2xl border border-gray-200 bg-white p-20 shadow-sm">

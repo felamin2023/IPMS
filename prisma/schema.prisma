@@ -44,6 +44,7 @@ enum RequestStatus {
   issuance
   completed
   returned_for_revision
+  returned_for_action
 }
 
 // ── Colleges / Programs ─────────────────────────────
@@ -86,16 +87,18 @@ model User {
   email        String?  @unique
   passwordHash String   @map("password_hash")
   role         UserRole
-  collegeId    String?  @map("college_id")  // NULL for admin
-  programId    String?  @map("program_id")  // NULL for admin
+  collegeId    String?  @map("college_id") // NULL for admin
+  programId    String?  @map("program_id") // NULL for admin
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  college  College? @relation(fields: [collegeId], references: [id])
-  program  Program? @relation(fields: [programId], references: [id])
+  college College? @relation(fields: [collegeId], references: [id])
+  program Program? @relation(fields: [programId], references: [id])
 
   createdRequests  Request[]          @relation("RequestCreator")
   statusLogEntries RequestStatusLog[] @relation("StatusLogUpdater")
   notifications    Notification[]     @relation("UserNotifications")
+  requestMessages  RequestMessage[]   @relation("RequestMessageSender")
+  messageReadStates RequestMessageRead[]
 
   @@map("users")
 }
@@ -121,6 +124,8 @@ model Request {
   items         RequestItem[]
   statusLogs    RequestStatusLog[]
   notifications Notification[]
+  messages      RequestMessage[]
+  messageReadStates RequestMessageRead[]
 
   @@map("requests")
 }
@@ -133,7 +138,7 @@ model RequestItem {
   stockNo         String?  @map("stock_no")
   qty             Int
   itemDescription String   @map("item_description")
-  uom             String   // pcs, box, ream, etc.
+  uom             String // pcs, box, ream, etc.
   unitCost        Decimal? @map("unit_cost") @db.Decimal(12, 2)
   totalCost       Decimal? @map("total_cost") @db.Decimal(12, 2)
   receivedQty     Int?     @map("received_qty")
@@ -149,8 +154,8 @@ model RequestItem {
 model RequestStatusLog {
   id        String   @id @default(uuid())
   requestId String   @map("request_id")
-  status    String   // same values as RequestStatus
-  note      String?  // e.g., "Forwarded to admin for receiving"
+  status    String // same values as RequestStatus
+  note      String? // e.g., "Forwarded to admin for receiving"
   updatedBy String   @map("updated_by")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
 
@@ -160,6 +165,36 @@ model RequestStatusLog {
   @@map("request_status_logs")
 }
 
+// ── Request Messages (Monitoring Chat) ──────────────
+
+model RequestMessage {
+  id         String   @id @default(uuid())
+  requestId  String   @map("request_id")
+  senderId   String   @map("sender_id")
+  senderRole UserRole @map("sender_role")
+  message    String
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  sender  User    @relation("RequestMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([requestId, createdAt])
+  @@map("request_messages")
+}
+
+model RequestMessageRead {
+  userId     String   @map("user_id")
+  requestId  String   @map("request_id")
+  lastReadAt DateTime @default(now()) @map("last_read_at") @db.Timestamptz
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@id([userId, requestId])
+  @@index([requestId])
+  @@map("request_message_reads")
+}
+
 // ── Notifications ───────────────────────────────────
 
 model Notification {
@@ -167,7 +202,7 @@ model Notification {
   userId    String   @map("user_id")
   title     String
   body      String
-  type      String   // status_update, return_note, new_request, receipt_confirmed
+  type      String // status_update, return_note, new_request, receipt_confirmed
   requestId String?  @map("request_id")
   read      Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz

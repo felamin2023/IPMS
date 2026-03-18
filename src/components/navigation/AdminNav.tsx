@@ -1,5 +1,8 @@
+import { useCallback, useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext"; // <-- adjust path if needed
+import { fetchMonitoringUnreadTotal } from "../../lib/requests";
+import { supabase } from "../../lib/supabase";
 import {
   LayoutDashboard,
   FilePlus2,
@@ -46,7 +49,75 @@ const navItems: NavItem[] = [
 ];
 
 export default function AdminNav({ hideBrand }: { hideBrand?: boolean }) {
-  const { signOut, role } = useAuth();
+  const { signOut, role, user } = useAuth();
+  const [monitoringUnread, setMonitoringUnread] = useState(0);
+
+  const loadMonitoringUnread = useCallback(async () => {
+    if (!user?.id) {
+      setMonitoringUnread(0);
+      return;
+    }
+
+    try {
+      const total = await fetchMonitoringUnreadTotal({
+        userId: user.id,
+        role,
+      });
+      setMonitoringUnread(total);
+    } catch {
+      // no-op for nav badge
+    }
+  }, [user?.id, role]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setMonitoringUnread(0);
+      return;
+    }
+
+    void loadMonitoringUnread();
+
+    const refresh = () => {
+      void loadMonitoringUnread();
+    };
+
+    const channel = supabase
+      .channel(`admin-nav-monitoring-unread-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "request_messages",
+        },
+        refresh,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "request_message_reads",
+          filter: `user_id=eq.${user.id}`,
+        },
+        refresh,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "request_message_reads",
+          filter: `user_id=eq.${user.id}`,
+        },
+        refresh,
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [user?.id, loadMonitoringUnread]);
 
   const visibleItems = navItems.filter(
     (item) => !item.roles || (role && item.roles.includes(role)),
@@ -95,6 +166,12 @@ export default function AdminNav({ hideBrand }: { hideBrand?: boolean }) {
                         ].join(" ")}
                       />
                       <span className="truncate">{item.label}</span>
+                      {item.to === "/admin/monitoring" &&
+                        monitoringUnread > 0 && (
+                          <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[11px] font-bold text-white">
+                            {monitoringUnread > 99 ? "99+" : monitoringUnread}
+                          </span>
+                        )}
                     </>
                   )}
                 </NavLink>

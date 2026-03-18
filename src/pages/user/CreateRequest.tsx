@@ -1,6 +1,6 @@
 // src/pages/user/CreateRequest.tsx
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Send, Plus, Trash2, Save, FileEdit, X } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -10,6 +10,9 @@ import {
   saveDraft,
   submitDraft,
   deleteDraft,
+  fetchRequestById,
+  canEditReturnedRequest,
+  resubmitReturnedRequest,
   type RequestItemInput,
   type RequestRow,
 } from "../../lib/requests";
@@ -31,6 +34,7 @@ function emptyItem(): ItemRow {
 export default function CreateRequest() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { requestId } = useParams<{ requestId?: string }>();
 
   const [purpose, setPurpose] = useState("");
   const [fundSource, setFundSource] = useState("");
@@ -38,6 +42,12 @@ export default function CreateRequest() {
   const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  // Returned request editing state
+  const [editingReturnedRequestId, setEditingReturnedRequestId] = useState<
+    string | null
+  >(null);
+  const [loadingReturnedRequest, setLoadingReturnedRequest] = useState(false);
 
   // Draft state
   const [drafts, setDrafts] = useState<RequestRow[]>([]);
@@ -60,15 +70,50 @@ export default function CreateRequest() {
     fetchUserProfile(user.id).then(setProfile).catch(console.error);
   }, [user?.id]);
 
+  // Load returned request if coming from edit link
+  useEffect(() => {
+    if (!requestId) return;
+    setLoadingReturnedRequest(true);
+    fetchRequestById(requestId)
+      .then((req) => {
+        if (!canEditReturnedRequest(req)) {
+          setError(
+            "This request cannot be edited. It may have already been approved or is not eligible for revision.",
+          );
+          setTimeout(() => navigate("/requests"), 3000);
+          return;
+        }
+        setEditingReturnedRequestId(requestId);
+        setPurpose(req.purpose || "");
+        setFundSource(req.fund_source || "");
+        // Map items to form items with keys
+        if (req.items && req.items.length > 0) {
+          const mappedItems = req.items.map((item) => ({
+            key: nextKey++,
+            qty: item.qty,
+            itemDescription: item.item_description,
+            uom: item.uom,
+            unitCost: item.unit_cost ? Number(item.unit_cost) : 0,
+          }));
+          setItems(mappedItems);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load returned request:", err);
+        setError("Failed to load the request. Please try again.");
+      })
+      .finally(() => setLoadingReturnedRequest(false));
+  }, [requestId, navigate]);
+
   // Load drafts
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || requestId) return; // Don't load drafts if editing a returned request
     setLoadingDrafts(true);
     fetchDrafts(user.id)
       .then(setDrafts)
       .catch(console.error)
       .finally(() => setLoadingDrafts(false));
-  }, [user?.id]);
+  }, [user?.id, requestId]);
 
   const uomOptions = useMemo(
     () => [
@@ -121,7 +166,19 @@ export default function CreateRequest() {
     setSubmitting(true);
     setError("");
     try {
-      if (editingDraftId) {
+      if (editingReturnedRequestId) {
+        // Resubmit returned request
+        await resubmitReturnedRequest({
+          requestId: editingReturnedRequestId,
+          userId: user.id,
+          items: items.map((it) => ({
+            qty: it.qty,
+            itemDescription: it.itemDescription,
+            uom: it.uom,
+            unitCost: it.unitCost || undefined,
+          })),
+        });
+      } else if (editingDraftId) {
         // Update the draft first, then submit it
         await saveDraft({
           draftId: editingDraftId,
@@ -213,6 +270,7 @@ export default function CreateRequest() {
 
   function resetForm() {
     setEditingDraftId(null);
+    setEditingReturnedRequestId(null);
     setPurpose("");
     setFundSource("");
     setItems([emptyItem()]);
@@ -243,15 +301,21 @@ export default function CreateRequest() {
         <div className="mb-5 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-              {editingDraftId ? "Edit Draft" : "Create Procurement Request"}
+              {editingReturnedRequestId
+                ? "Resubmit Returned Request"
+                : editingDraftId
+                  ? "Edit Draft"
+                  : "Create Procurement Request"}
             </h1>
             <p className="mt-1 text-sm text-gray-500">
-              {editingDraftId
-                ? "Continue editing your saved draft"
-                : "Fill in the details to create a new procurement request"}
+              {editingReturnedRequestId
+                ? "Make corrections and resubmit your request"
+                : editingDraftId
+                  ? "Continue editing your saved draft"
+                  : "Fill in the details to create a new procurement request"}
             </p>
           </div>
-          {editingDraftId && (
+          {(editingDraftId || editingReturnedRequestId) && (
             <button
               type="button"
               onClick={resetForm}
@@ -264,54 +328,84 @@ export default function CreateRequest() {
         </div>
 
         {/* Drafts panel */}
-        {(drafts.length > 0 || loadingDrafts) && !editingDraftId && (
-          <div className="mb-5 rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
-            <h2 className="text-sm font-semibold text-gray-700 mb-3">
-              <FileEdit className="inline h-4 w-4 mr-1 -mt-0.5" />
-              Saved Drafts ({drafts.length})
-            </h2>
-            <div className="space-y-2">
-              {drafts.map((d) => (
-                <div
-                  key={d.id}
-                  className="flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 p-3"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {d.purpose || "Untitled draft"}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {(d.items?.length ?? 0)} item(s) · Last saved{" "}
-                      {new Date(d.updated_at).toLocaleDateString()}
-                    </p>
+        {(drafts.length > 0 || loadingDrafts) &&
+          !editingDraftId &&
+          !editingReturnedRequestId && (
+            <div className="mb-5 rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
+              <h2 className="text-sm font-semibold text-gray-700 mb-3">
+                <FileEdit className="inline h-4 w-4 mr-1 -mt-0.5" />
+                Saved Drafts ({drafts.length})
+              </h2>
+              <div className="space-y-2">
+                {drafts.map((d) => (
+                  <div
+                    key={d.id}
+                    className="flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 p-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {d.purpose || "Untitled draft"}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {d.items?.length ?? 0} item(s) · Last saved{" "}
+                        {new Date(d.updated_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 ml-3">
+                      <button
+                        type="button"
+                        onClick={() => loadDraft(d)}
+                        className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+                      >
+                        <FileEdit className="h-3.5 w-3.5" />
+                        Continue
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteDraft(d.id)}
+                        className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600"
+                        title="Delete draft"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 ml-3">
-                    <button
-                      type="button"
-                      onClick={() => loadDraft(d)}
-                      className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
-                    >
-                      <FileEdit className="h-3.5 w-3.5" />
-                      Continue
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteDraft(d.id)}
-                      className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600"
-                      title="Delete draft"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {error && (
           <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
+          </div>
+        )}
+
+        {loadingReturnedRequest && (
+          <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 flex items-center gap-2">
+            <div className="animate-spin">
+              <svg
+                className="h-4 w-4"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+            </div>
+            Loading returned request...
           </div>
         )}
 
@@ -512,22 +606,32 @@ export default function CreateRequest() {
 
           {/* Footer Actions */}
           <div className="flex items-center justify-end gap-3 border-t border-gray-200 bg-white px-6 py-4 rounded-b-2xl">
-            <button
-              type="button"
-              disabled={saving || submitting}
-              onClick={handleSaveDraft}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-            >
-              <Save className="h-4 w-4" />
-              {saving ? "Saving…" : editingDraftId ? "Update Draft" : "Save as Draft"}
-            </button>
+            {!editingReturnedRequestId && (
+              <button
+                type="button"
+                disabled={saving || submitting}
+                onClick={handleSaveDraft}
+                className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                <Save className="h-4 w-4" />
+                {saving
+                  ? "Saving…"
+                  : editingDraftId
+                    ? "Update Draft"
+                    : "Save as Draft"}
+              </button>
+            )}
             <button
               type="submit"
               disabled={submitting || saving}
               className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
             >
               <Send className="h-4 w-4" />
-              {submitting ? "Submitting…" : "Submit Request"}
+              {submitting
+                ? "Submitting…"
+                : editingReturnedRequestId
+                  ? "Resubmit Request"
+                  : "Submit Request"}
             </button>
           </div>
         </form>
