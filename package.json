@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "cleanup:request-sent-pr": "tsx prisma/clear-request-sent-pr-numbers.ts"
   },
   "devDependencies": {
     "@types/pg": "^8.16.0",

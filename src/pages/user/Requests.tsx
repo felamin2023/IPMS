@@ -274,7 +274,7 @@ export default function Requests() {
                     {current.map((r) => (
                       <tr key={r.id} className="text-sm text-gray-700">
                         <td className="px-5 py-4 font-medium text-gray-900">
-                          {r.pr_no ?? "—"}
+                          {r.pr_no ?? "No PR yet"}
                         </td>
                         <td className="px-5 py-4 max-w-[200px] truncate">
                           {r.purpose || "—"}
@@ -463,7 +463,7 @@ export default function Requests() {
             <div className="flex items-start justify-between gap-3 mb-4">
               <div>
                 <div className="text-lg font-semibold text-gray-900">
-                  {viewRequest.pr_no ?? "—"}
+                  {viewRequest.pr_no ?? "No PR yet"}
                 </div>
                 <div className="text-sm text-gray-500">
                   {viewRequest.purpose || "No purpose"}
@@ -710,7 +710,7 @@ export default function Requests() {
                   Confirm Receipt of Items
                 </div>
                 <div className="text-sm text-gray-500">
-                  {receiptRequest.pr_no ?? "—"} —{" "}
+                  {receiptRequest.pr_no ?? "No PR yet"} —{" "}
                   {receiptRequest.purpose || "No purpose"}
                 </div>
               </div>

@@ -564,17 +564,15 @@ export async function fetchDrafts(userId: string): Promise<RequestRow[]> {
   return (data ?? []) as RequestRow[];
 }
 
-/** Submit a draft: assign PR number, change status to request_sent. */
+/** Submit a draft: change status to request_sent (no PR number yet). */
 export async function submitDraft(
   draftId: string,
   userId: string,
 ): Promise<RequestRow> {
-  const prNo = await generatePrNo();
-
   const { error: updateErr } = await supabase
     .from("requests")
     .update({
-      pr_no: prNo,
+      pr_no: null,
       status: "request_sent" as RequestStatus,
       updated_at: new Date().toISOString(),
     })
@@ -594,7 +592,7 @@ export async function submitDraft(
   // Notify TWG users
   await notifyUsersByRole({
     role: "twg",
-    title: `New request ${prNo} submitted`,
+    title: "New request submitted",
     body: "A new procurement request needs review",
     type: "new_request",
     requestId: draftId,
@@ -602,7 +600,7 @@ export async function submitDraft(
 
   return {
     id: draftId,
-    pr_no: prNo,
+    pr_no: null,
     status: "request_sent" as RequestStatus,
   } as RequestRow;
 }
@@ -627,8 +625,6 @@ export async function createRequest(params: {
   createdBy: string;
   items: RequestItemInput[];
 }) {
-  const prNo = await generatePrNo();
-
   const requestId = crypto.randomUUID();
 
   // Insert the request
@@ -636,7 +632,7 @@ export async function createRequest(params: {
     .from("requests")
     .insert({
       id: requestId,
-      pr_no: prNo,
+      pr_no: null,
       college_id: params.collegeId,
       program_id: params.programId,
       purpose: params.purpose,
@@ -681,13 +677,13 @@ export async function createRequest(params: {
   // Notify TWG users that a new request needs review
   await notifyUsersByRole({
     role: "twg",
-    title: `New request ${prNo} submitted`,
+    title: "New request submitted",
     body: params.purpose || "A new procurement request needs review",
     type: "new_request",
     requestId: request.id,
   });
 
-  return { ...request, pr_no: prNo } as RequestRow;
+  return request as RequestRow;
 }
 
 // ── Fetch Requests ────────────────────────────────────
@@ -1173,9 +1169,37 @@ export async function updateRequestStatus(params: {
     }
   }
 
+  const { data: existingRequest, error: existingRequestError } = await supabase
+    .from("requests")
+    .select("pr_no")
+    .eq("id", params.requestId)
+    .single();
+
+  if (existingRequestError || !existingRequest) {
+    throw new Error("Request not found.");
+  }
+
+  let prNo = existingRequest.pr_no as string | null;
+  if (params.newStatus === "pr_number_assigned" && !prNo) {
+    prNo = await generatePrNo();
+  }
+
+  const requestUpdates: {
+    status: RequestStatus;
+    updated_at: string;
+    pr_no?: string | null;
+  } = {
+    status: params.newStatus,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (params.newStatus === "pr_number_assigned") {
+    requestUpdates.pr_no = prNo;
+  }
+
   const { error: updateError } = await supabase
     .from("requests")
-    .update({ status: params.newStatus, updated_at: new Date().toISOString() })
+    .update(requestUpdates)
     .eq("id", params.requestId);
 
   if (updateError) throw updateError;

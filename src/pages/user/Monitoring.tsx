@@ -345,7 +345,7 @@ export default function Monitoring() {
                 Detailed Tracking
               </div>
               <div className="mt-1 text-sm text-gray-500">
-                Request: {selected.pr_no ?? "—"} —{" "}
+                Request: {selected.pr_no ?? "No PR yet"} —{" "}
                 {selected.purpose || "No purpose"}
               </div>
             </div>

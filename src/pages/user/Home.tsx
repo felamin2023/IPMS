@@ -306,7 +306,7 @@ export default function Home() {
                   {recent.map((r) => (
                     <tr key={r.id} className="text-sm text-gray-700">
                       <td className="px-6 py-4 font-medium text-gray-900">
-                        {r.pr_no ?? "—"}
+                        {r.pr_no ?? "No PR yet"}
                       </td>
                       <td className="px-6 py-4 max-w-[180px] truncate">
                         {r.purpose || "—"}
@@ -362,7 +362,7 @@ export default function Home() {
                   2) TWG Review & Validation
                 </div>
                 <div className="mt-1 text-sm text-gray-600">
-                  Technical Working Group reviews items and assigns PR number.
+                  Technical Working Group reviews and validates request details.
                 </div>
               </div>
               <div className="rounded-xl bg-blue-50 p-4">
@@ -370,7 +370,8 @@ export default function Home() {
                   3) Procurement Processing
                 </div>
                 <div className="mt-1 text-sm text-gray-600">
-                  BAC evaluation, quotations, contract award and PO issuance.
+                  Procurement Office assigns the PR number, then handles BAC
+                  evaluation, quotations, contract award and PO issuance.
                 </div>
               </div>
               <div className="rounded-xl bg-violet-50 p-4">

@@ -318,7 +318,7 @@ export default function Dashboard() {
                 {recent.map((r) => (
                   <tr key={r.id} className="text-sm text-gray-700">
                     <td className="px-5 py-4 font-medium text-gray-900">
-                      {r.pr_no ?? "—"}
+                      {r.pr_no ?? "No PR yet"}
                     </td>
                     <td className="px-5 py-4 max-w-[200px] truncate">
                       {r.purpose || "—"}

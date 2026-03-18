@@ -221,7 +221,7 @@ export default function Approvals() {
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <div className="text-sm font-semibold text-blue-700">
-                              {q.pr_no ?? "—"}
+                              {q.pr_no ?? "No PR yet"}
                             </div>
                             <div className="mt-1 text-sm font-semibold text-gray-900 line-clamp-2">
                               {q.purpose || "No purpose specified"}
@@ -266,7 +266,7 @@ export default function Approvals() {
                     >
                       <div>
                         <div className="text-xs text-gray-500">
-                          {a.pr_no ?? "—"}
+                          {a.pr_no ?? "No PR yet"}
                         </div>
                         <div className="mt-1 text-sm font-semibold text-gray-900 line-clamp-1">
                           {a.purpose || "No purpose"}
@@ -299,7 +299,7 @@ export default function Approvals() {
                       {selected.purpose || "No purpose specified"}
                     </div>
                     <div className="mt-1 text-sm text-gray-500">
-                      {selected.pr_no ?? "—"}
+                      {selected.pr_no ?? "No PR yet"}
                     </div>
                   </div>
                   <Badge text={STATUS_LABELS[selected.status]} />
