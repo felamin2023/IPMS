@@ -28,7 +28,7 @@ export default function TopBar({ onOpenMobile }: TopBarProps) {
 
   const roleLabels: Record<string, string> = {
     department_user: "End User (Department)",
-    twg: "Technical Working Group",
+    accounting_admin: "Accounting Administrator",
     procurement_admin: "Procurement Administrator",
     supply_admin: "Supply Administrator",
   };
@@ -47,7 +47,12 @@ export default function TopBar({ onOpenMobile }: TopBarProps) {
     if (!user?.id) return;
     try {
       // Look up internal user id from auth id
-      const { data: profile } = await (await import("../lib/requests")).fetchUserProfile(user.id).then((p: any) => ({ data: p })).catch(() => ({ data: null }));
+      const { data: profile } = await (
+        await import("../lib/requests")
+      )
+        .fetchUserProfile(user.id)
+        .then((p: any) => ({ data: p }))
+        .catch(() => ({ data: null }));
       const internalId = profile?.id;
       if (!internalId) return;
       const rows = await fetchNotifications(internalId);
@@ -82,7 +87,11 @@ export default function TopBar({ onOpenMobile }: TopBarProps) {
       case "new_request":
         return { icon: Inbox, bg: "bg-amber-100", color: "text-amber-600" };
       case "receipt_confirmed":
-        return { icon: CheckCircle2, bg: "bg-green-100", color: "text-green-600" };
+        return {
+          icon: CheckCircle2,
+          bg: "bg-green-100",
+          color: "text-green-600",
+        };
       default:
         return { icon: FileText, bg: "bg-blue-100", color: "text-blue-600" };
     }
@@ -102,7 +111,9 @@ export default function TopBar({ onOpenMobile }: TopBarProps) {
   async function handleNotifClick(n: NotificationRow) {
     if (!n.read) {
       await markNotificationRead(n.id);
-      setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
+      setNotifications((prev) =>
+        prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)),
+      );
     }
     setNotifOpen(false);
     // Navigate to appropriate page based on role

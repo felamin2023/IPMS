@@ -10,7 +10,11 @@ if (!DIRECT_URL) {
   process.exit(1);
 }
 
-const NEW_ROLE_VALUES = ["twg", "procurement_admin", "supply_admin"];
+const NEW_ROLE_VALUES = [
+  "accounting_admin",
+  "procurement_admin",
+  "supply_admin",
+];
 
 const NEW_STATUS_VALUES = [
   "request_sent",

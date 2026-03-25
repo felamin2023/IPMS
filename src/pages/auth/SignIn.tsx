@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { setRememberMe } from "../../lib/supabase";
 import ForgotPasswordModal from "../../components/ForgotPasswordModal";
 
 export default function SignIn() {
@@ -10,6 +11,7 @@ export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMeState] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
@@ -20,6 +22,7 @@ export default function SignIn() {
 
     try {
       setLoading(true);
+      setRememberMe(rememberMe);
       const role = await signIn(email, password);
       if (role === "department_user") {
         navigate("/");
@@ -161,7 +164,16 @@ export default function SignIn() {
                   <div className="mt-0.5 text-xs min-h-[0.75rem]"></div>
                 </div>
 
-                <div className="flex justify-center mb-3">
+                <div className="flex items-center justify-between mb-3 text-xs">
+                  <label className="inline-flex items-center gap-2 text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMeState(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    Remember me
+                  </label>
                   <button
                     type="button"
                     onClick={() => setShowForgotPasswordModal(true)}

@@ -1,0 +1,2816 @@
+[
+  {
+    "part": "PART I",
+    "category": "PESTICIDES OR PEST REPELLENTS",
+    "items": [
+      {
+        "description": "INSECTICIDE, aerosol type",
+        "uom": "can",
+        "unitPrice": "400"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "PERFUMES OR COLOGNES OR FRAGRANCES",
+    "items": [
+      {
+        "description": "LIQUID HAND SANITIZER, 500mL",
+        "uom": "bottle",
+        "unitPrice": "250"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "ALCOHOL OR ACETONE BASED ANTISEPTICS",
+    "items": [
+      {
+        "description": "ALCOHOL, Ethyl, 68%-72%, 500 ml",
+        "uom": "bottle",
+        "unitPrice": "200"
+      },
+      {
+        "description": "ALCOHOL, ethyl, 68%-72%, 1 Gallon",
+        "uom": "gallon",
+        "unitPrice": "650"
+      },
+      {
+        "description": "ALCOHOL, isopropyl, 68%- 72%, 500ml (-5ml)",
+        "uom": "bottle",
+        "unitPrice": "200"
+      },
+      {
+        "description": "ALCOHOL, isopropyl, 68%-72%, scented, 3.785 liters",
+        "uom": "gallon",
+        "unitPrice": "650"
+      },
+      {
+        "description": "POVIDONE IODINE, 10 % solution, 120 ml",
+        "uom": "gallon",
+        "unitPrice": "300"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "COLOR COMPOUNDS AND DISPERSIONS",
+    "items": [
+      {
+        "description": "INK, for stamp pad",
+        "uom": "bottle",
+        "unitPrice": "50"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "FILMS",
+    "items": [
+      {
+        "description": "ACETATE",
+        "uom": "roll",
+        "unitPrice": "1000"
+      },
+      {
+        "description": "CARBON FILM, A4",
+        "uom": "box",
+        "unitPrice": "250"
+      },
+      {
+        "description": "CARBON FILM, legal",
+        "uom": "box",
+        "unitPrice": "250"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "INFORMATION AND COMMUNICATION TECHNOLOGY (ICT) EQUIPMENT AND DEVICES AND ACCESSORIES",
+    "items": [
+      {
+        "description": "CARTOLINA, assorted colors,",
+        "uom": "pack",
+        "unitPrice": "150"
+      },
+      {
+        "description": "LOOSELEAF COVER, legal",
+        "uom": "bundle",
+        "unitPrice": "1000"
+      },
+      {
+        "description": "NOTE PAD, stick on, 50mm x 76mm (2\" x 3\") min",
+        "uom": "pad",
+        "unitPrice": "38"
+      },
+      {
+        "description": "NOTE PAD, stick on, 76mm x 100mm (3\" x 4\") min",
+        "uom": "pad",
+        "unitPrice": "60"
+      },
+      {
+        "description": "NOTE PAD, stick on, 3\" x 3\"",
+        "uom": "pad",
+        "unitPrice": "55"
+      },
+      {
+        "description": "NOTEBOOK, stenographer",
+        "uom": "piece",
+        "unitPrice": "20"
+      },
+      {
+        "description": "PAPER, MULTICOPY, A4, 80 gsm",
+        "uom": "reams",
+        "unitPrice": "250"
+      },
+      {
+        "description": "PAPER, MULTICOPY, Legal, 80gsm",
+        "uom": "reams",
+        "unitPrice": "280"
+      },
+      {
+        "description": "Desktop Computer for Mid Range User (Ryzen 55600, Motherboard b450m RAM 8GB; SSD 512HDD; 27 inch monitor",
+        "uom": "units",
+        "unitPrice": "35000"
+      },
+      {
+        "description": "DESKTOP FOR BASIC USERS",
+        "uom": "unit",
+        "unitPrice": "30000"
+      },
+      {
+        "description": "DESKTOP FOR MID-RANGE USERS",
+        "uom": "unit",
+        "unitPrice": "50000"
+      },
+      {
+        "description": "LAPTOP FOR MID-RANGE USERS",
+        "uom": "unit",
+        "unitPrice": "55000"
+      },
+      {
+        "description": "EXTERNAL HARD DRIVE, 1 TB",
+        "uom": "piece",
+        "unitPrice": "3000"
+      },
+      {
+        "description": "FLASH DRIVE, 16 GB",
+        "uom": "piece",
+        "unitPrice": "200"
+      },
+      {
+        "description": "MOUSE, OPTICAL, USB connection type",
+        "uom": "unit",
+        "unitPrice": "150"
+      },
+      {
+        "description": "MOUSE, WIRELESS, USB",
+        "uom": "unit",
+        "unitPrice": "200"
+      },
+      {
+        "description": "PRINTER, impact, dot matrix, 24 pins, 136 columns",
+        "uom": "unit",
+        "unitPrice": "38100.97"
+      },
+      {
+        "description": "PRINTER, impact, dot matrix, 9 pins, 80 columns",
+        "uom": "unit",
+        "unitPrice": "9191.52"
+      },
+      {
+        "description": "PRINTER, laser, monochrome",
+        "uom": "unit",
+        "unitPrice": "15000"
+      },
+      {
+        "description": "PRINTER, laser, colored",
+        "uom": "unit",
+        "unitPrice": "30000"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "BATTERIES AND CELLS AND ACCESSORIES",
+    "items": [
+      {
+        "description": "BATTERY, dry Cell, size AA",
+        "uom": "pack",
+        "unitPrice": "150"
+      },
+      {
+        "description": "BATTERY, dry Cell, size AAA",
+        "uom": "pack",
+        "unitPrice": "200"
+      },
+      {
+        "description": "BATTERY, dry Cell, size D",
+        "uom": "pack",
+        "unitPrice": "250"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "MANUFACTURING COMPONENTS AND SUPPLIES",
+    "items": [
+      {
+        "description": "GLUE, all purpose",
+        "uom": "jar",
+        "unitPrice": "80"
+      },
+      {
+        "description": "STAPLE WIRE, heavy duty, binder type, 23/13",
+        "uom": "box",
+        "unitPrice": "60"
+      },
+      {
+        "description": "STAPLE WIRE, standard",
+        "uom": "box",
+        "unitPrice": "50"
+      },
+      {
+        "description": "TAPE, electrical",
+        "uom": "roll",
+        "unitPrice": "50"
+      },
+      {
+        "description": "TAPE, masking, 24mm, 50m",
+        "uom": "roll",
+        "unitPrice": "60"
+      },
+      {
+        "description": "TAPE, MASKING, 48mm, 50m",
+        "uom": "roll",
+        "unitPrice": "100"
+      },
+      {
+        "description": "TAPE, packaging, 48mm, 50m",
+        "uom": "roll",
+        "unitPrice": "100"
+      },
+      {
+        "description": "TAPE, transparent, 24mm, 50m",
+        "uom": "roll",
+        "unitPrice": "50"
+      },
+      {
+        "description": "TAPE, transparent, 48mm, 50m",
+        "uom": "roll",
+        "unitPrice": "100"
+      },
+      {
+        "description": "TWINE, plastic",
+        "uom": "roll",
+        "unitPrice": "100"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "HEATING AND VENTILATION AND AIR CIRCULATION",
+    "items": [
+      {
+        "description": "ELECTRIC FAN, industrial, ground type, 18\"",
+        "uom": "unit",
+        "unitPrice": "2500"
+      },
+      {
+        "description": "ELECTRIC FAN, ceiling mount, orbit type",
+        "uom": "unit",
+        "unitPrice": "2500"
+      },
+      {
+        "description": "ELECTRIC FAN, stand type",
+        "uom": "unit",
+        "unitPrice": "2000"
+      },
+      {
+        "description": "ELECTRIC FAN, wall mount, plastic blade",
+        "uom": "unit",
+        "unitPrice": "1500"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "MEDICAL THERMOMETERS AND ACCESSORIES",
+    "items": [
+      {
+        "description": "THERMOGUN",
+        "uom": "piece",
+        "unitPrice": "2600"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "LIGHTING AND FIXTURES AND ACCESSORIES",
+    "items": [
+      {
+        "description": "LINEAR TUBE, Light Emitting Diode (LED), 18 watts",
+        "uom": "piece",
+        "unitPrice": "208"
+      },
+      {
+        "description": "LIGHT BULB, Light Emitting Diode (LED)",
+        "uom": "piece",
+        "unitPrice": "90"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "MEASURING AND OBSERVING AND TESTING EQUIPMENT",
+    "items": [
+      {
+        "description": "RULER, plastic, 450mm",
+        "uom": "piece",
+        "unitPrice": "18"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "CLEANING EQUIPMENT AND SUPPLIES",
+    "items": [
+      {
+        "description": "AIR FRESHENER, aerosol type",
+        "uom": "can",
+        "unitPrice": "300"
+      },
+      {
+        "description": "BROOM, soft, tambo",
+        "uom": "piece",
+        "unitPrice": "140"
+      },
+      {
+        "description": "BROOM, stick, ting-ting",
+        "uom": "piece",
+        "unitPrice": "20"
+      },
+      {
+        "description": "CLEANER, toilet and urinal, 1liter",
+        "uom": "bottle",
+        "unitPrice": "80"
+      },
+      {
+        "description": "CLEANSER, scouring powder",
+        "uom": "can",
+        "unitPrice": "60"
+      },
+      {
+        "description": "DETERGENT BAR, 140g",
+        "uom": "piece",
+        "unitPrice": "10"
+      },
+      {
+        "description": "DETERGENT POWDER, all-purpose, 1kg",
+        "uom": "pack",
+        "unitPrice": "80"
+      },
+      {
+        "description": "DISINFECTANT SPRAY, aerosol type",
+        "uom": "can",
+        "unitPrice": "250"
+      },
+      {
+        "description": "DUST PAN, non-rigid plastic",
+        "uom": "piece",
+        "unitPrice": "50"
+      },
+      {
+        "description": "SODIUM HYPOCHLORITE, 3.785 liters",
+        "uom": "gallon",
+        "unitPrice": "180"
+      },
+      {
+        "description": "LIQUID HAND SOAP, 500mL",
+        "uom": "bottle",
+        "unitPrice": "130"
+      },
+      {
+        "description": "FLOOR WAX, paste type, red",
+        "uom": "can",
+        "unitPrice": "350"
+      },
+      {
+        "description": "FURNITURE CLEANER, aerosol type",
+        "uom": "can",
+        "unitPrice": "150"
+      },
+      {
+        "description": "MOP BUCKET, heavy duty, hard plastic",
+        "uom": "unit",
+        "unitPrice": "2000"
+      },
+      {
+        "description": "MOPHANDLE, heavy duty, screw type",
+        "uom": "piece",
+        "unitPrice": "130"
+      },
+      {
+        "description": "MOPHEAD, made of rayon",
+        "uom": "piece",
+        "unitPrice": "150"
+      },
+      {
+        "description": "RAGS, all cotton, 32s",
+        "uom": "bundle",
+        "unitPrice": "64"
+      },
+      {
+        "description": "SCOURING PAD, with foam, 3s",
+        "uom": "pack",
+        "unitPrice": "100"
+      },
+      {
+        "description": "TRASHBAG, GPP specs, black, 940mmx1016mm",
+        "uom": "pack",
+        "unitPrice": "150"
+      },
+      {
+        "description": "WASTEBASKET, non-rigid plastic",
+        "uom": "piece",
+        "unitPrice": "100"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "OFFICE EQUIPMENT AND ACCESSORIES AND SUPPLIES",
+    "items": [
+      {
+        "description": "CHALK, white enamel",
+        "uom": "box",
+        "unitPrice": "40"
+      },
+      {
+        "description": "CLIP, backfold, 19mm",
+        "uom": "box",
+        "unitPrice": "10"
+      },
+      {
+        "description": "CLIP, backfold, 25mm",
+        "uom": "box",
+        "unitPrice": "20"
+      },
+      {
+        "description": "CLIP, backfold, 32mm",
+        "uom": "box",
+        "unitPrice": "30"
+      },
+      {
+        "description": "CLIP, backfold, 50mm",
+        "uom": "box",
+        "unitPrice": "60"
+      },
+      {
+        "description": "CORRECTION TAPE, 8m",
+        "uom": "piece",
+        "unitPrice": "35"
+      },
+      {
+        "description": "DATA FILE BOX",
+        "uom": "piece",
+        "unitPrice": "200"
+      },
+      {
+        "description": "DATA FOLDER",
+        "uom": "piece",
+        "unitPrice": "170"
+      },
+      {
+        "description": "ENVELOPE, documentary, A4",
+        "uom": "box",
+        "unitPrice": "1000"
+      },
+      {
+        "description": "ENVELOPE, DOCUMENTARY, for legal size document",
+        "uom": "box",
+        "unitPrice": "1500"
+      },
+      {
+        "description": "ENVELOPE, expanding, kraft, legal",
+        "uom": "box",
+        "unitPrice": "2800"
+      },
+      {
+        "description": "ENVELOPE, expanding, plastic",
+        "uom": "piece",
+        "unitPrice": "60"
+      },
+      {
+        "description": "ENVELOPE, mailing",
+        "uom": "box",
+        "unitPrice": "500"
+      },
+      {
+        "description": "ENVELOPE, mailing, with window",
+        "uom": "box",
+        "unitPrice": "600"
+      },
+      {
+        "description": "ERASER, FELT, for blackboard/whiteboard",
+        "uom": "piece",
+        "unitPrice": "15"
+      },
+      {
+        "description": "FASTENER, metal, non-sharp edges",
+        "uom": "box",
+        "unitPrice": "100"
+      },
+      {
+        "description": "FILE ORGANIZER, expanding, plastic, legal",
+        "uom": "piece",
+        "unitPrice": "170"
+      },
+      {
+        "description": "FILE TAB DIVIDER, bristol board, for A4, 5s",
+        "uom": "set",
+        "unitPrice": "25"
+      },
+      {
+        "description": "FILE TAB DIVIDER, legal, 5s",
+        "uom": "set",
+        "unitPrice": "50"
+      },
+      {
+        "description": "FOLDER, fancy, with slide, A4",
+        "uom": "bundle",
+        "unitPrice": "350"
+      },
+      {
+        "description": "FOLDER, fancy, with slide, legal",
+        "uom": "bundle",
+        "unitPrice": "450"
+      },
+      {
+        "description": "FOLDER, L-type, A4",
+        "uom": "pack",
+        "unitPrice": "200"
+      },
+      {
+        "description": "FOLDER, L-type, legal",
+        "uom": "pack",
+        "unitPrice": "300"
+      },
+      {
+        "description": "FOLDER, pressboard",
+        "uom": "box",
+        "unitPrice": "2000"
+      },
+      {
+        "description": "FOLDER, with tab, A4",
+        "uom": "pack",
+        "unitPrice": "300"
+      },
+      {
+        "description": "FOLDER, with tab, legal",
+        "uom": "pack",
+        "unitPrice": "350"
+      },
+      {
+        "description": "INDEX TAB, self-adhesive, transparent",
+        "uom": "box",
+        "unitPrice": "80"
+      },
+      {
+        "description": "MAGAZINE FILE BOX, large",
+        "uom": "piece",
+        "unitPrice": "200"
+      },
+      {
+        "description": "MARKER, fluorescent",
+        "uom": "set",
+        "unitPrice": "100"
+      },
+      {
+        "description": "MARKER, whiteboard, black",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "MARKER, whiteboard, blue",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "MARKER, whiteboard, red",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "MARKER, permanent, black, bullet type",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "MARKER, permanent, blue, bullet type",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "MARKER, permanent, red, bullet type",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "PAPER CLIP, vinyl/plastic coated, 33mm",
+        "uom": "box",
+        "unitPrice": "20"
+      },
+      {
+        "description": "PAPER CLIP, vinyl/plastic coated, 50mm",
+        "uom": "box",
+        "unitPrice": "30"
+      },
+      {
+        "description": "PENCIL, lead, with eraser",
+        "uom": "box",
+        "unitPrice": "100"
+      },
+      {
+        "description": "RING BINDER, plastic, 32mm",
+        "uom": "bundle",
+        "unitPrice": "250"
+      },
+      {
+        "description": "RUBBER BAND, No. 18",
+        "uom": "box",
+        "unitPrice": "130"
+      },
+      {
+        "description": "STAMP PAD, felt",
+        "uom": "piece",
+        "unitPrice": "45"
+      },
+      {
+        "description": "BLADE, for general purpose cutter / utility knife",
+        "uom": "piece",
+        "unitPrice": "14.82"
+      },
+      {
+        "description": "CUTTER/UTILITY KNIFE, for general purpose",
+        "uom": "piece",
+        "unitPrice": "33.43"
+      },
+      {
+        "description": "DATING AND STAMPING MACHINE",
+        "uom": "piece",
+        "unitPrice": "500"
+      },
+      {
+        "description": "PENCIL SHARPENER, manual, single cutter head",
+        "uom": "piece",
+        "unitPrice": "300"
+      },
+      {
+        "description": "PUNCHER, paper, heavy duty",
+        "uom": "piece",
+        "unitPrice": "250"
+      },
+      {
+        "description": "SCISSORS, symmetrical",
+        "uom": "pair",
+        "unitPrice": "200"
+      },
+      {
+        "description": "STAPLER, standard type",
+        "uom": "piece",
+        "unitPrice": "1000"
+      },
+      {
+        "description": "STAPLER, heavy duty, binder type",
+        "uom": "unit",
+        "unitPrice": "2000"
+      },
+      {
+        "description": "STAPLE REMOVER, plier type",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "TAPE DISPENSER, table top",
+        "uom": "piece",
+        "unitPrice": "180"
+      },
+      {
+        "description": "BINDING AND PUNCHING MACHINE, 50mm binding capacit",
+        "uom": "unit",
+        "unitPrice": "15000"
+      },
+      {
+        "description": "CALCULATOR, compact",
+        "uom": "unit",
+        "unitPrice": "1000"
+      },
+      {
+        "description": "FACSIMILE MACHINE",
+        "uom": "unit",
+        "unitPrice": "6000"
+      },
+      {
+        "description": "PAPER TRIMMER / CUTTING MACHINE, table top",
+        "uom": "unit",
+        "unitPrice": "13000"
+      },
+      {
+        "description": "PAPER SHREDDER",
+        "uom": "unit",
+        "unitPrice": "15000"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "PRINTER OR FACSIMILE OR PHOTOCOPIER SUPPLIES",
+    "items": [
+      {
+        "description": "INK CART, CANON CL-741,Colored",
+        "uom": "cart",
+        "unitPrice": "989.04"
+      },
+      {
+        "description": "INK CART, CANON CL-811, Colored",
+        "uom": "cart",
+        "unitPrice": "1029.6"
+      },
+      {
+        "description": "INK CART, CANON PG-740, Black",
+        "uom": "cart",
+        "unitPrice": "754"
+      },
+      {
+        "description": "INK CART, CANON PG-810, Black",
+        "uom": "cart",
+        "unitPrice": "780"
+      },
+      {
+        "description": "INK CART, EPSON C13T664100 (T6641), Black",
+        "uom": "cart",
+        "unitPrice": "300"
+      },
+      {
+        "description": "INK CART, EPSON C13T664200 (T6642), Cyan",
+        "uom": "cart",
+        "unitPrice": "300"
+      },
+      {
+        "description": "INK CART, EPSON C13T664300 (T6643), Magenta",
+        "uom": "cart",
+        "unitPrice": "300"
+      },
+      {
+        "description": "INK CART, EPSON C13T664400 (T6644), Yellow",
+        "uom": "cart",
+        "unitPrice": "300"
+      },
+      {
+        "description": "Ink Cartridge, HP C2P04AA (HP62) Black",
+        "uom": "cart",
+        "unitPrice": "773.76"
+      },
+      {
+        "description": "Ink Cartridge, HP C2P06AA (HP62) Tri-color",
+        "uom": "cart",
+        "unitPrice": "950.56"
+      },
+      {
+        "description": "INK CART, HP C9351AA, (HP21), Black",
+        "uom": "cart",
+        "unitPrice": "800"
+      },
+      {
+        "description": "INK CART, HP C9352AA, (HP22), Tri-color",
+        "uom": "cart",
+        "unitPrice": "950"
+      },
+      {
+        "description": "Ink Cartridge, HP C9397A (HP72) 69ml Photo Black",
+        "uom": "cart",
+        "unitPrice": "1996.8"
+      },
+      {
+        "description": "Ink Cartridge, HP C9398A (HP72) 69ml Cyan",
+        "uom": "cart",
+        "unitPrice": "1996.8"
+      },
+      {
+        "description": "Ink Cartridge, HP C9399A (HP72) 69ml Magenta",
+        "uom": "cart",
+        "unitPrice": "1996.8"
+      },
+      {
+        "description": "Ink Cartridge, HP C9400A (HP72) 69ml Yellow",
+        "uom": "cart",
+        "unitPrice": "1996.8"
+      },
+      {
+        "description": "Ink Cartridge, HP C9401A (HP72) 69ml Gray",
+        "uom": "cart",
+        "unitPrice": "1996.8"
+      },
+      {
+        "description": "Ink Cartridge, HP C9403A (HP72) 130ml Matte Black",
+        "uom": "cart",
+        "unitPrice": "3016"
+      },
+      {
+        "description": "INK CART, HP CN692AA, (HP704), Black",
+        "uom": "cart",
+        "unitPrice": "450"
+      },
+      {
+        "description": "INK CART, HP CN693AA, (HP704), Tri-color",
+        "uom": "cart",
+        "unitPrice": "450"
+      },
+      {
+        "description": "INK CART, HP CZ107AA, (HP678), Black",
+        "uom": "cart",
+        "unitPrice": "366.08"
+      },
+      {
+        "description": "INK CART, HP CZ108AA, (HP678), Tricolor",
+        "uom": "cart",
+        "unitPrice": "366.08"
+      },
+      {
+        "description": "INK CART, HP CZ121A (HP685A), Black",
+        "uom": "cart",
+        "unitPrice": "312"
+      },
+      {
+        "description": "INK CART, HP CZ122A (HP685A), Cyan",
+        "uom": "cart",
+        "unitPrice": "256.88"
+      },
+      {
+        "description": "INK CART, HP CZ123A (HP685A), Magenta",
+        "uom": "cart",
+        "unitPrice": "256.88"
+      },
+      {
+        "description": "INK CART, HP CZ124A (HP685A), Yellow",
+        "uom": "cart",
+        "unitPrice": "256.88"
+      },
+      {
+        "description": "RIBBON CART, EPSON C13S015516 (#8750), Black",
+        "uom": "cart",
+        "unitPrice": "77.43"
+      },
+      {
+        "description": "RIBBON CART, EPSON C13S015531 (S015086), Black",
+        "uom": "cart",
+        "unitPrice": "736.32"
+      },
+      {
+        "description": "RIBBON CART, EPSON C13S015632, Black",
+        "uom": "cart",
+        "unitPrice": "77.94"
+      },
+      {
+        "description": "TONER CART, BROTHER TN-2025, Black",
+        "uom": "cart",
+        "unitPrice": "2685.28"
+      },
+      {
+        "description": "TONER CART, BROTHER TN-2130, Black",
+        "uom": "cart",
+        "unitPrice": "1892.8"
+      },
+      {
+        "description": "TONER CART, BROTHER TN-2150, Black",
+        "uom": "cart",
+        "unitPrice": "2685.28"
+      },
+      {
+        "description": "TONER CART, BROTHER TN-3320, Black",
+        "uom": "cart",
+        "unitPrice": "3567.2"
+      },
+      {
+        "description": "TONER CART, BROTHER TN-3350, Black",
+        "uom": "cart",
+        "unitPrice": "5002.4"
+      },
+      {
+        "description": "TONER CART, HP CB435A, Black",
+        "uom": "cart",
+        "unitPrice": "3380"
+      },
+      {
+        "description": "TONER CART, HP CB540A, Black",
+        "uom": "cart",
+        "unitPrice": "3337.36"
+      },
+      {
+        "description": "TONER CART, HP CE255A, Black",
+        "uom": "cart",
+        "unitPrice": "7332"
+      },
+      {
+        "description": "TONER CART, HP CE278A, Black",
+        "uom": "cart",
+        "unitPrice": "3952"
+      },
+      {
+        "description": "TONER CART, HP CE285A (HP85A), Black",
+        "uom": "cart",
+        "unitPrice": "3432"
+      },
+      {
+        "description": "TONER CART, HP Q2612A, Black",
+        "uom": "cart",
+        "unitPrice": "4000"
+      },
+      {
+        "description": "TONER CART, HP Q7553A, Black",
+        "uom": "cart",
+        "unitPrice": "4399.2"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "AUDIO AND VISUAL EQUIPMENT AND SUPPLIES",
+    "items": [
+      {
+        "description": "DOCUMENT CAMERA, 8 MP",
+        "uom": "unit",
+        "unitPrice": "25000"
+      },
+      {
+        "description": "MULTIMEDIA PROJECTOR",
+        "uom": "unit",
+        "unitPrice": "25000"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "FLAG OR ACCESSORIES",
+    "items": [
+      {
+        "description": "PHILIPPINE NATIONAL FLAG",
+        "uom": "piece",
+        "unitPrice": "300"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "PRINTED PUBLICATIONS",
+    "items": [
+      {
+        "description": "HANDBOOK (RA 9184), 8th edition",
+        "uom": "book",
+        "unitPrice": "37.21"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "FIRE FIGHTING EQUIPMENT",
+    "items": [
+      {
+        "description": "FIRE EXTINGUISHER, dry chemical",
+        "uom": "unit",
+        "unitPrice": "1300"
+      },
+      {
+        "description": "FIRE EXTINGUISHER, pure HCFC",
+        "uom": "unit",
+        "unitPrice": "6000"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "CONSUMER ELECTRONICS",
+    "items": [
+      {
+        "description": "DIGITAL VOICE RECORDER",
+        "uom": "unit",
+        "unitPrice": "7000"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "FURNITURE AND FURNISHINGS",
+    "items": [
+      {
+        "description": "MONOBLOC CHAIR, beige",
+        "uom": "piece",
+        "unitPrice": "400"
+      },
+      {
+        "description": "MONOBLOC CHAIR, white",
+        "uom": "piece",
+        "unitPrice": "400"
+      },
+      {
+        "description": "MONOBLOC TABLE, white",
+        "uom": "unit",
+        "unitPrice": "1500"
+      },
+      {
+        "description": "MONOBLOC TABLE, beige",
+        "uom": "unit",
+        "unitPrice": "1500"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "ARTS AND CRAFTS EQUIPMENT AND ACCESSORIES AND SUPPLIES",
+    "items": [
+      {
+        "description": "CLEARBOOK, 20 Transparent pockets, A4",
+        "uom": "piece",
+        "unitPrice": "80"
+      },
+      {
+        "description": "CLEARBOOK, 20 Transparent pockets, Legal",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "ERASER, plastic/rubber",
+        "uom": "piece",
+        "unitPrice": "20"
+      },
+      {
+        "description": "SIGN PEN, black",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "SIGN PEN, blue",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "SIGN PEN, red",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "WRAPPING PAPER, kraft",
+        "uom": "pack",
+        "unitPrice": "200"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "FACE MASK",
+    "items": [
+      {
+        "description": "KN95 FACE MASK",
+        "uom": "piece",
+        "unitPrice": "150"
+      },
+      {
+        "description": "SURGICAL MASK, 3 ply",
+        "uom": "piece",
+        "unitPrice": "3"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "SOFTWARE",
+    "items": [
+      {
+        "description": "Scite",
+        "uom": "lic",
+        "unitPrice": "12000"
+      },
+      {
+        "description": "Chatgpt",
+        "uom": "lic",
+        "unitPrice": "24000"
+      },
+      {
+        "description": "Computer game or entertainment software",
+        "uom": "license",
+        "unitPrice": "0"
+      },
+      {
+        "description": "Content authoring and editing software",
+        "uom": "license",
+        "unitPrice": "0"
+      },
+      {
+        "description": "Content management software",
+        "uom": "license",
+        "unitPrice": "0"
+      },
+      {
+        "description": "Data management and query software",
+        "uom": "license",
+        "unitPrice": "0"
+      },
+      {
+        "description": "Development software",
+        "uom": "license",
+        "unitPrice": "0"
+      },
+      {
+        "description": "Educational or reference software",
+        "uom": "license",
+        "unitPrice": "0"
+      },
+      {
+        "description": "Industry specific software",
+        "uom": "license",
+        "unitPrice": "0"
+      },
+      {
+        "description": "Network applications software",
+        "uom": "license",
+        "unitPrice": "0"
+      },
+      {
+        "description": "Network management software",
+        "uom": "license",
+        "unitPrice": "0"
+      },
+      {
+        "description": "Networking software",
+        "uom": "license",
+        "unitPrice": "0"
+      },
+      {
+        "description": "Operating environment software",
+        "uom": "license",
+        "unitPrice": "0"
+      },
+      {
+        "description": "Security and protection software",
+        "uom": "license",
+        "unitPrice": "0"
+      },
+      {
+        "description": "Utility and device driver software",
+        "uom": "license",
+        "unitPrice": "0"
+      },
+      {
+        "description": "Information exchange software",
+        "uom": "license",
+        "unitPrice": "0"
+      },
+      {
+        "description": "SOFTWARE, Anti-virus, 2-year protection,  3 devices",
+        "uom": "lic",
+        "unitPrice": "1500"
+      },
+      {
+        "description": "Statistical Software (SPSS)",
+        "uom": "lic",
+        "unitPrice": "170000"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "COMMON ELECTRICAL SUPPLIES",
+    "items": [
+      {
+        "description": "BALLAST, electronic, 20 watts",
+        "uom": "piece",
+        "unitPrice": "600"
+      },
+      {
+        "description": "BALLAST, electronic, 40 watts",
+        "uom": "piece",
+        "unitPrice": "700"
+      },
+      {
+        "description": "BULB, ESL, U-bulb, 18 watts",
+        "uom": "box",
+        "unitPrice": "300"
+      },
+      {
+        "description": "EMERGENCY LIGHT LED",
+        "uom": "unit",
+        "unitPrice": "2500"
+      },
+      {
+        "description": "EXTENSION WIRE, 3 gang, 10m wire, heavy duty",
+        "uom": "set",
+        "unitPrice": "1000"
+      },
+      {
+        "description": "EXTENSION WIRE, 4 gang, 10m wire, heavy duty",
+        "uom": "set",
+        "unitPrice": "1000"
+      },
+      {
+        "description": "FLASHLIGHT, cs-5671 LED Rechargeable Emergency Lamp, 100,000 hour Life Span, 4000mah rechargeable battery, used in patrol, camping, hiking, etc\u2026",
+        "uom": "unit",
+        "unitPrice": "1500"
+      },
+      {
+        "description": "FLUORESCENT HOLDER",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "FLUORESCENT STARTER",
+        "uom": "box",
+        "unitPrice": "300"
+      },
+      {
+        "description": "FLUORESCENT TUBE, 20 watts",
+        "uom": "box",
+        "unitPrice": "200"
+      },
+      {
+        "description": "FLUORESCENT TUBE, 40 watts",
+        "uom": "box",
+        "unitPrice": "250"
+      },
+      {
+        "description": "FUSE, 200 ampere",
+        "uom": "piece",
+        "unitPrice": "650"
+      },
+      {
+        "description": "FUSE, 200 ampere (knife)",
+        "uom": "piece",
+        "unitPrice": "850"
+      },
+      {
+        "description": "FUSE, 400 ampere",
+        "uom": "piece",
+        "unitPrice": "700"
+      },
+      {
+        "description": "FUSE, 400 ampere (knife)",
+        "uom": "piece",
+        "unitPrice": "900"
+      },
+      {
+        "description": "MAGNETIC CONTRACTOR, 90 amp",
+        "uom": "piece",
+        "unitPrice": "1500"
+      },
+      {
+        "description": "SOLDERING LEAD, 0.3mm Dia",
+        "uom": "roll",
+        "unitPrice": "1600"
+      },
+      {
+        "description": "TAPE, electrical, 24mm, 50m",
+        "uom": "roll",
+        "unitPrice": "150"
+      },
+      {
+        "description": "THHN #10 (stranded)",
+        "uom": "box",
+        "unitPrice": "7500"
+      },
+      {
+        "description": "THHN #12 (stranded)",
+        "uom": "box",
+        "unitPrice": "6000"
+      },
+      {
+        "description": "WIRE, duplex, # 16",
+        "uom": "spool",
+        "unitPrice": "4500"
+      },
+      {
+        "description": "WIRE, duplex, # 18",
+        "uom": "spool",
+        "unitPrice": "5500"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "COMMON OFFICE EQUIPMENT",
+    "items": [
+      {
+        "description": "COPIER, Monochrome",
+        "uom": "unit",
+        "unitPrice": "100000"
+      },
+      {
+        "description": "DISPENSER, Water, Hot and Cold",
+        "uom": "unit",
+        "unitPrice": "6000"
+      },
+      {
+        "description": "LAMINATING MACHINE, heavy duty",
+        "uom": "unit",
+        "unitPrice": "8000"
+      },
+      {
+        "description": "REFRIGERATOR, 8 cu. ft",
+        "uom": "set",
+        "unitPrice": "20000"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "COMMON OFFICE SUPPLIES",
+    "items": [
+      {
+        "description": "AIR FRESHENER, aerosol, 330 mL",
+        "uom": "bottle",
+        "unitPrice": "350"
+      },
+      {
+        "description": "CARTOLINA BOARD, assorted colors, 250gsm",
+        "uom": "piece",
+        "unitPrice": "30"
+      },
+      {
+        "description": "CARTOLINA, white color, 20s/pack",
+        "uom": "pack",
+        "unitPrice": "200"
+      },
+      {
+        "description": "CERTIFICATE HOLDER, 8.5 x 11, board w/ plastic",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "CERTIFICATE HOLDER, FRAME, 8.5 x 11, wooden",
+        "uom": "piece",
+        "unitPrice": "200"
+      },
+      {
+        "description": "CHALK, colored, 12 colors per box",
+        "uom": "box",
+        "unitPrice": "200"
+      },
+      {
+        "description": "CLASS RECORD, Secondary Level: Rubric",
+        "uom": "piece",
+        "unitPrice": "60"
+      },
+      {
+        "description": "CLIP, backfold, 25mm",
+        "uom": "piece",
+        "unitPrice": "5"
+      },
+      {
+        "description": "CLIP, backfold, 32mm",
+        "uom": "piece",
+        "unitPrice": "8"
+      },
+      {
+        "description": "CLIP, backfold, 41mm",
+        "uom": "piece",
+        "unitPrice": "10"
+      },
+      {
+        "description": "CLIP, backfold, 50mm",
+        "uom": "piece",
+        "unitPrice": "15"
+      },
+      {
+        "description": "COLUMNAR BOOK, 3 columns",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "CORK BOARD, with metal frame, 2' x 3'",
+        "uom": "unit",
+        "unitPrice": "1000"
+      },
+      {
+        "description": "CORRECTION FLUID, 30mL",
+        "uom": "bottle",
+        "unitPrice": "40"
+      },
+      {
+        "description": "CORRECTION PEN, 3.5mL",
+        "uom": "piece",
+        "unitPrice": "80"
+      },
+      {
+        "description": "CORRECTION PEN, 7mL",
+        "uom": "piece",
+        "unitPrice": "90"
+      },
+      {
+        "description": "DATA FILE BOX, made with clip board, with close ends, short, double",
+        "uom": "piece",
+        "unitPrice": "150"
+      },
+      {
+        "description": "DATA FILE BOX, made with clip board, with close ends, legal, double",
+        "uom": "piece",
+        "unitPrice": "200"
+      },
+      {
+        "description": "ENVELOPE, BROWN, for legal size document",
+        "uom": "piece",
+        "unitPrice": "13"
+      },
+      {
+        "description": "ENVELOPE, BROWN, for short size document",
+        "uom": "piece",
+        "unitPrice": "9"
+      },
+      {
+        "description": "ENVELOPE, EXPANDING, for legal size documents",
+        "uom": "piece",
+        "unitPrice": "30"
+      },
+      {
+        "description": "ENVELOPE, PLASTIC, for legal size document",
+        "uom": "piece",
+        "unitPrice": "25"
+      },
+      {
+        "description": "ENVELOPE, PLASTIC, for short size document",
+        "uom": "piece",
+        "unitPrice": "20"
+      },
+      {
+        "description": "ERASER, Rubber, ordinary",
+        "uom": "piece",
+        "unitPrice": "5"
+      },
+      {
+        "description": "ERASER, Rubber, white",
+        "uom": "piece",
+        "unitPrice": "30"
+      },
+      {
+        "description": "FASTENER, for paper, vinyl coated, 50 sets per box",
+        "uom": "box",
+        "unitPrice": "60"
+      },
+      {
+        "description": "FILER, Lever Arch, 3\"",
+        "uom": "piece",
+        "unitPrice": "300"
+      },
+      {
+        "description": "FOLDER JACKET, Plastic, legal size",
+        "uom": "piece",
+        "unitPrice": "20"
+      },
+      {
+        "description": "FOLDER JACKET, Plastic, short size",
+        "uom": "piece",
+        "unitPrice": "15"
+      },
+      {
+        "description": "FOLDER, 14pt, colored, 8.5\" x 11\"",
+        "uom": "piece",
+        "unitPrice": "6"
+      },
+      {
+        "description": "FOLDER, 14pt, colored, 8.5\" x 13\"",
+        "uom": "piece",
+        "unitPrice": "8"
+      },
+      {
+        "description": "FOLDER, 14pt, dark green, 8.5\" x 13\"",
+        "uom": "piece",
+        "unitPrice": "8"
+      },
+      {
+        "description": "FOLDER, 14pt, pink, 8.5\" x 13\"",
+        "uom": "piece",
+        "unitPrice": "8"
+      },
+      {
+        "description": "FOLDER, 14pt, white, 8.5\" x 11\"",
+        "uom": "piece",
+        "unitPrice": "6"
+      },
+      {
+        "description": "FOLDER, 14pt, white, 8.5\" x 13\"",
+        "uom": "piece",
+        "unitPrice": "8"
+      },
+      {
+        "description": "FOLDER, EXPANDING, for legal size document, green",
+        "uom": "piece",
+        "unitPrice": "50"
+      },
+      {
+        "description": "GLUE, all purpose, 130g",
+        "uom": "jar",
+        "unitPrice": "60"
+      },
+      {
+        "description": "ID SLING",
+        "uom": "each",
+        "unitPrice": "25"
+      },
+      {
+        "description": "INK, Refill, PERMANENT MARKER blue",
+        "uom": "bottle",
+        "unitPrice": "150"
+      },
+      {
+        "description": "INK, Refill, PERMANENT MARKER red",
+        "uom": "bottle",
+        "unitPrice": "150"
+      },
+      {
+        "description": "INK, Refill, PERMANENT MARKER, black",
+        "uom": "bottle",
+        "unitPrice": "150"
+      },
+      {
+        "description": "INK, Refill, WHITEBOARD black",
+        "uom": "bottle",
+        "unitPrice": "200"
+      },
+      {
+        "description": "INK, Refill, WHITEBOARD blue",
+        "uom": "bottle",
+        "unitPrice": "200"
+      },
+      {
+        "description": "INK, Refill, WHITEBOARD red",
+        "uom": "bottle",
+        "unitPrice": "200"
+      },
+      {
+        "description": "LAMINATING POUCH, 250mic-80mm-110mm, 100s per box",
+        "uom": "box",
+        "unitPrice": "600"
+      },
+      {
+        "description": "LAMINATING POUCH, A4 size, 250 microns",
+        "uom": "box",
+        "unitPrice": "1500"
+      },
+      {
+        "description": "MARKER, Flourescent, blue",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "MARKER, Flourescent, green",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "MARKER, Flourescent, neon green",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "MARKER, Flourescent, neon orange",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "MARKER, Flourescent, neon yellow",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "MARKER, Flourescent, orange",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "MARKER, Flourescent, pink",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "MARKER, Flourescent, yellow",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "MARKER, Flourescent, yellow green",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "MARKER, PERMANENT, broad type, black",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "MARKER, PERMANENT, broad type, blue",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "MARKER, PERMANENT, broad type, red",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "MARKER, PERMANENT, REFILLABLE bullet type, black",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "MARKER, PERMANENT, REFILLABLE bullet type, blue",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "MARKER, PERMANENT, REFILLABLE bullet type, red",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "MARKER, WHITEBOARD, REFILLABLE bullet type, black",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "MARKER, WHITEBOARD, REFILLABLE bullet type, blue",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "MARKER, WHITEBOARD, REFILLABLE bullet type, red",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "NOTE PAD, stick on, 2\" x 3\", assorted colors per pad",
+        "uom": "pad",
+        "unitPrice": "40"
+      },
+      {
+        "description": "NOTE PAD, stick on, 2\" x 3\", one color",
+        "uom": "pad",
+        "unitPrice": "40"
+      },
+      {
+        "description": "NOTE PAD, stick on, 3\" x 3\", assorted colors per pad",
+        "uom": "pad",
+        "unitPrice": "50"
+      },
+      {
+        "description": "NOTE PAD, stick on, 3\" x 4\", assorted colors per pad",
+        "uom": "pad",
+        "unitPrice": "60"
+      },
+      {
+        "description": "NOTE PAD, stick on, 3\" x 4\", one color",
+        "uom": "pad",
+        "unitPrice": "60"
+      },
+      {
+        "description": "NOTEBOOK, spring, 80 leaves, small",
+        "uom": "piece",
+        "unitPrice": "30"
+      },
+      {
+        "description": "NOTEBOOK, with yarn, 80 pages, big",
+        "uom": "piece",
+        "unitPrice": "50"
+      },
+      {
+        "description": "PADLOCK, bronze, big",
+        "uom": "piece",
+        "unitPrice": "300"
+      },
+      {
+        "description": "PAPER for Transcript of Records",
+        "uom": "ream",
+        "unitPrice": "8000"
+      },
+      {
+        "description": "PAPER, COLORED, 80 gsm, 8.5\" x 11\", assorted color per pack, 250 sheets",
+        "uom": "pack",
+        "unitPrice": "300"
+      },
+      {
+        "description": "PAPER, COLORED, 80 gsm, 8.5\" x 13\", assorted color per pack, 250 sheets",
+        "uom": "pack",
+        "unitPrice": "400"
+      },
+      {
+        "description": "PAPER, COLORED, 80 gsm, 8.5\" x 13\", Blue, 250 sheets",
+        "uom": "pack",
+        "unitPrice": "400"
+      },
+      {
+        "description": "PAPER, COLORED, 80 gsm, 8.5\" x 13\", Green, 250 sheets",
+        "uom": "pack",
+        "unitPrice": "400"
+      },
+      {
+        "description": "PAPER, COLORED, 80 gsm, 8.5\" x 13\", Orange, 250 sheets",
+        "uom": "pack",
+        "unitPrice": "400"
+      },
+      {
+        "description": "PAPER, COLORED, 80 gsm, 8.5\" x 13\", Pink, 250 sheets",
+        "uom": "pack",
+        "unitPrice": "400"
+      },
+      {
+        "description": "PAPER, COLORED, 80 gsm, 8.5\" x 13\", Yellow, 250 sheets",
+        "uom": "pack",
+        "unitPrice": "400"
+      },
+      {
+        "description": "PAPER, mimeo, 8.5\" x 13\"",
+        "uom": "ream",
+        "unitPrice": "200"
+      },
+      {
+        "description": "PAPER, Multi-Purpose (COPY) Letter, 70 gsm",
+        "uom": "ream",
+        "unitPrice": "220"
+      },
+      {
+        "description": "PAPER, w/ Page Border, 80gsm, A4, 10s/pack",
+        "uom": "pack",
+        "unitPrice": "100"
+      },
+      {
+        "description": "PEN, ballpoint, metal tip 0.3mm, black",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "PEN, ballpoint, metal tip 0.3mm, blue",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "PEN, ballpoint, metal tip 0.3mm, red",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "PEN, ballpoint, metal tip 0.4mm, black",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "PEN, ballpoint, metal tip 0.4mm, blue",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "PEN, ballpoint, metal tip 0.4mm, red",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "PEN, ballpoint, metal tip 0.5mm, liquid gel, black",
+        "uom": "piece",
+        "unitPrice": "30"
+      },
+      {
+        "description": "PEN, ballpoint, metal tip 0.5mm, liquid gel, blue",
+        "uom": "piece",
+        "unitPrice": "30"
+      },
+      {
+        "description": "PEN, ballpoint, metal tip 0.5mm, liquid gel, red",
+        "uom": "piece",
+        "unitPrice": "30"
+      },
+      {
+        "description": "PEN, ballpoint, metal tip 0.5mm, ordinary, black",
+        "uom": "piece",
+        "unitPrice": "15"
+      },
+      {
+        "description": "PEN, ballpoint, metal tip 0.5mm, ordinary, blue",
+        "uom": "piece",
+        "unitPrice": "15"
+      },
+      {
+        "description": "PEN, ballpoint, metal tip 0.5mm, ordinary, red",
+        "uom": "piece",
+        "unitPrice": "15"
+      },
+      {
+        "description": "PEN, Fine Line 0.8mm",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "PEN, Rollerball, 1.0mm",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "PEN, REFILL, ballpoint, metal tip 0.3mm, black",
+        "uom": "piece",
+        "unitPrice": "95"
+      },
+      {
+        "description": "PEN, REFILL, ballpoint, metal tip 0.3mm, blue",
+        "uom": "piece",
+        "unitPrice": "95"
+      },
+      {
+        "description": "PEN, REFILL, ballpoint, metal tip 0.3mm, red",
+        "uom": "piece",
+        "unitPrice": "95"
+      },
+      {
+        "description": "PEN, REFILL, ballpoint, metal tip 0.4mm, black",
+        "uom": "piece",
+        "unitPrice": "95"
+      },
+      {
+        "description": "PEN, REFILL, ballpoint, metal tip 0.4mm, blue",
+        "uom": "piece",
+        "unitPrice": "95"
+      },
+      {
+        "description": "PEN, REFILL, ballpoint, metal tip 0.4mm, red",
+        "uom": "piece",
+        "unitPrice": "95"
+      },
+      {
+        "description": "PEN, REFILL, ballpoint, metal tip 0.5mm, liquid gel, black",
+        "uom": "piece",
+        "unitPrice": "30"
+      },
+      {
+        "description": "PEN, REFILL, ballpoint, metal tip 0.5mm, liquid gel, blue",
+        "uom": "piece",
+        "unitPrice": "30"
+      },
+      {
+        "description": "PEN, REFILL, ballpoint, metal tip 0.5mm, liquid gel, red",
+        "uom": "piece",
+        "unitPrice": "30"
+      },
+      {
+        "description": "PENCIL, lead, w/ eraser, #2",
+        "uom": "piece",
+        "unitPrice": "15"
+      },
+      {
+        "description": "PENCIL, lead, w/ eraser, #2, 0ne(1) dozen per box",
+        "uom": "box",
+        "unitPrice": "150"
+      },
+      {
+        "description": "PHOTOPAPER, semi glossy, 20s, 230gsm",
+        "uom": "pack",
+        "unitPrice": "200"
+      },
+      {
+        "description": "PLASTIC COVER, G-8 thickness, hard",
+        "uom": "meter",
+        "unitPrice": "25"
+      },
+      {
+        "description": "PUSH PIN, assorted color, 50 pieces per case",
+        "uom": "case",
+        "unitPrice": "50"
+      },
+      {
+        "description": "RING BINDER, adventure, (1/2\u201ddia; 1 m long)",
+        "uom": "piece",
+        "unitPrice": "25"
+      },
+      {
+        "description": "RING BINDER, adventure, (1/4\u201d dia; 1 m long)",
+        "uom": "piece",
+        "unitPrice": "20"
+      },
+      {
+        "description": "RING BINDER, adventure, (3/4\u201d dia; 1 m long)",
+        "uom": "piece",
+        "unitPrice": "30"
+      },
+      {
+        "description": "RING BINDER, adventure, (3/8\u201d dia; 1 m long)",
+        "uom": "piece",
+        "unitPrice": "20"
+      },
+      {
+        "description": "RULER, 40cm 16 Inches Length Measure Clear Plastic Straight Edge",
+        "uom": "piece",
+        "unitPrice": "95"
+      },
+      {
+        "description": "RULER, plastic, 450mm, 1 piece in individual plastic",
+        "uom": "piece",
+        "unitPrice": "30"
+      },
+      {
+        "description": "RULER, stainless/aluminum, 12inches",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "SCISSORS, 6\", stainless steel",
+        "uom": "pair",
+        "unitPrice": "200"
+      },
+      {
+        "description": "SPECIAL PAPER, 200 gsm, 8.5\" x 11\"",
+        "uom": "pack",
+        "unitPrice": "50"
+      },
+      {
+        "description": "SPECIAL PAPER, 200 gsm, 8.5\u201d x 13\u201d, white",
+        "uom": "pack",
+        "unitPrice": "60"
+      },
+      {
+        "description": "SPECIAL PAPER, 200 gsm, 8.5\u201d x 13\u201d, blue",
+        "uom": "pack",
+        "unitPrice": "60"
+      },
+      {
+        "description": "SPECIAL PAPER, 200 gsm, 8.5\u201d x 13\u201d, cream",
+        "uom": "pack",
+        "unitPrice": "60"
+      },
+      {
+        "description": "SPECIAL PAPER, 200 gsm, 8.5\u201d x 13\u201d, ivory",
+        "uom": "pack",
+        "unitPrice": "60"
+      },
+      {
+        "description": "SPECIAL PAPER, 80 gsm, light blue, 8.5\" x 11\"",
+        "uom": "pack",
+        "unitPrice": "50"
+      },
+      {
+        "description": "SPECIAL PAPER, 80 gsm, light green, 8.5\" x 11\"",
+        "uom": "pack",
+        "unitPrice": "50"
+      },
+      {
+        "description": "SPECIAL PAPER, 90 gsm, white, 8.5\" x 13\"",
+        "uom": "pack",
+        "unitPrice": "60"
+      },
+      {
+        "description": "STAPLE WIRE, #10",
+        "uom": "box",
+        "unitPrice": "12"
+      },
+      {
+        "description": "STAPLER, Standard, Long Arm",
+        "uom": "unit",
+        "unitPrice": "2000"
+      },
+      {
+        "description": "STICKER, PAPER, non-glossy, 8.5\" x 13\", 10pcs/pack",
+        "uom": "pack",
+        "unitPrice": "80"
+      },
+      {
+        "description": "STYROFOAM, 1/2 x 24 , 48",
+        "uom": "sheet",
+        "unitPrice": "250"
+      },
+      {
+        "description": "TAPE, Double-sided adhesive, 24mm x 5m, with foam",
+        "uom": "roll",
+        "unitPrice": "200"
+      },
+      {
+        "description": "TAPE, Double-sided adhesive, 24mm x 5m, without foam",
+        "uom": "roll",
+        "unitPrice": "150"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "COMMON JANITORIAL SUPPLIES",
+    "items": [
+      {
+        "description": "AIR FRESHENER, liquid",
+        "uom": "gallon",
+        "unitPrice": "350"
+      },
+      {
+        "description": "CONDITIONER, Fabric, 900ml",
+        "uom": "bottle",
+        "unitPrice": "450"
+      },
+      {
+        "description": "FACE MASK, Disposable, Anti Dust/Pollution Mouth & Nose, 3 ply, 50pcs/box",
+        "uom": "box",
+        "unitPrice": "250"
+      },
+      {
+        "description": "FLOOR WAX, liquid type,",
+        "uom": "can",
+        "unitPrice": "300"
+      },
+      {
+        "description": "FLOOR WAX, Paste",
+        "uom": "box",
+        "unitPrice": "150"
+      },
+      {
+        "description": "GLASS CLEANER, 320mL",
+        "uom": "bottle",
+        "unitPrice": "150"
+      },
+      {
+        "description": "GLASS WIPER",
+        "uom": "piece",
+        "unitPrice": "200"
+      },
+      {
+        "description": "MOP set, head and handle",
+        "uom": "set",
+        "unitPrice": "250"
+      },
+      {
+        "description": "MOP HEAD, Universal Mop Head Refill Rotating Spin Mops Microfibers Round 16mm Mopping Head Microfiber",
+        "uom": "piece",
+        "unitPrice": "100"
+      },
+      {
+        "description": "MOPHANDLE, screw type, wooden handle",
+        "uom": "piece",
+        "unitPrice": "200"
+      },
+      {
+        "description": "MURIATIC ACID, 1liter",
+        "uom": "liter",
+        "unitPrice": "150"
+      },
+      {
+        "description": "PAIL, Plastic, Medium Size",
+        "uom": "piece",
+        "unitPrice": "150"
+      },
+      {
+        "description": "RAG, all cotton, oval, big (doormat)",
+        "uom": "piece",
+        "unitPrice": "60"
+      },
+      {
+        "description": "RAG, all cotton, round, small",
+        "uom": "piece",
+        "unitPrice": "2"
+      },
+      {
+        "description": "SOAP, Liquid, for hands",
+        "uom": "bottle",
+        "unitPrice": "200"
+      },
+      {
+        "description": "SPIN MOP SET, Microfiber head, with Bucket",
+        "uom": "set",
+        "unitPrice": "1500"
+      },
+      {
+        "description": "TOILET TISSUE, 3-ply",
+        "uom": "roll",
+        "unitPrice": "20"
+      },
+      {
+        "description": "TRASHBAG, plastic, black, XL, 10 pcs per pack per roll",
+        "uom": "roll",
+        "unitPrice": "200"
+      },
+      {
+        "description": "TRASHBIN, big",
+        "uom": "piece",
+        "unitPrice": "400"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "CONSUMABLES",
+    "items": [
+      {
+        "description": "INK CART, Epson, T664",
+        "uom": "set",
+        "unitPrice": "1300"
+      },
+      {
+        "description": "INK CART, Epson, T003",
+        "uom": "set",
+        "unitPrice": "1500"
+      },
+      {
+        "description": "INK CART, Epson, T003, Cyan",
+        "uom": "cart",
+        "unitPrice": "350"
+      },
+      {
+        "description": "INK CART, Epson, T003, Magenta",
+        "uom": "cart",
+        "unitPrice": "350"
+      },
+      {
+        "description": "INK CART, Epson, T003, Yellow",
+        "uom": "cart",
+        "unitPrice": "350"
+      },
+      {
+        "description": "INK CART, Epson, T003, Black",
+        "uom": "cart",
+        "unitPrice": "350"
+      },
+      {
+        "description": "INK CART, Epson, C13T03Y200, Cyan",
+        "uom": "cart",
+        "unitPrice": "380"
+      },
+      {
+        "description": "INK CART, Epson, C13T03Y300, Magenta",
+        "uom": "cart",
+        "unitPrice": "380"
+      },
+      {
+        "description": "INK CART, Epson, C13T03Y400, Yellow",
+        "uom": "cart",
+        "unitPrice": "380"
+      },
+      {
+        "description": "INK CART, Epson, C13T03Y100, Black",
+        "uom": "cart",
+        "unitPrice": "600"
+      },
+      {
+        "description": "RIBBON CART, for LX300",
+        "uom": "cart",
+        "unitPrice": "250"
+      },
+      {
+        "description": "TONER CART, HP CF219A, Black",
+        "uom": "cart",
+        "unitPrice": "3800"
+      },
+      {
+        "description": "TONER CART, HP126A",
+        "uom": "cart",
+        "unitPrice": "3000"
+      },
+      {
+        "description": "TONER CART, Kyocera Toner for 221/220/181/180 (TK-439)",
+        "uom": "cart",
+        "unitPrice": "7000"
+      },
+      {
+        "description": "TONER CART, Kyocera-TK 4109",
+        "uom": "cart",
+        "unitPrice": "7000"
+      },
+      {
+        "description": "TONER CART, OPT210A, Black",
+        "uom": "cart",
+        "unitPrice": "3000"
+      },
+      {
+        "description": "TONER CART, OPT211A, Cyan",
+        "uom": "cart",
+        "unitPrice": "3300"
+      },
+      {
+        "description": "TONER CART, OPT212A, Yellow",
+        "uom": "cart",
+        "unitPrice": "3300"
+      },
+      {
+        "description": "TONER CART, OPT213A, Magenta",
+        "uom": "cart",
+        "unitPrice": "3300"
+      },
+      {
+        "description": "TONER CART, PRISTINE, TN2380 (Free use machine)",
+        "uom": "cart",
+        "unitPrice": "2500"
+      },
+      {
+        "description": "TONER CART, ORITE, TN-18 (Free use machine)",
+        "uom": "cart",
+        "unitPrice": "3500"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "INKS AND ROLL MASTER",
+    "items": [
+      {
+        "description": "Duplication Ink (Duplo Ink, 514K Black)",
+        "uom": "cart",
+        "unitPrice": "900"
+      },
+      {
+        "description": "Duplicator Master [Duplo Roll Master DR-875 ( 2 rolls/bx)]",
+        "uom": "roll",
+        "unitPrice": "4000"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "RAIN GEAR",
+    "items": [
+      {
+        "description": "Rain Boots",
+        "uom": "pair",
+        "unitPrice": "400"
+      },
+      {
+        "description": "Rain Coat",
+        "uom": "unit",
+        "unitPrice": "600"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "PAPER MATERIALS & PRODUCTS",
+    "items": [
+      {
+        "description": "Answer Sheets, KA",
+        "uom": "sheet",
+        "unitPrice": "35"
+      },
+      {
+        "description": "Answer Sheets, SATT",
+        "uom": "sheet",
+        "unitPrice": "35"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "ICT ACCESSORIES AND PERIPHERALS",
+    "items": [
+      {
+        "description": "ADAPTOR, HDMI - VGA",
+        "uom": "piece",
+        "unitPrice": "1000"
+      },
+      {
+        "description": "BLOWER, for  computer dust cleaner, 600watts",
+        "uom": "unit",
+        "unitPrice": "2700"
+      },
+      {
+        "description": "CABLE, UTP, CAT6",
+        "uom": "box",
+        "unitPrice": "3000"
+      },
+      {
+        "description": "CCTV Camera, 4-channel with harddrive and memory",
+        "uom": "set",
+        "unitPrice": "15000"
+      },
+      {
+        "description": "HDD, 500GB",
+        "uom": "unit",
+        "unitPrice": "3000"
+      },
+      {
+        "description": "KEYBOARD, USB type",
+        "uom": "unit",
+        "unitPrice": "300"
+      },
+      {
+        "description": "MOUSE, PS2 type",
+        "uom": "unit",
+        "unitPrice": "300"
+      },
+      {
+        "description": "PRINTER, color, 3 in 1, continuous ink system",
+        "uom": "unit",
+        "unitPrice": "8000"
+      },
+      {
+        "description": "RAM, 4GB, DDR3",
+        "uom": "unit",
+        "unitPrice": "3000"
+      },
+      {
+        "description": "SWITCH, 24 ports",
+        "uom": "unit",
+        "unitPrice": "4000"
+      },
+      {
+        "description": "Uninterrupted Power Supply (UPS)",
+        "uom": "unit",
+        "unitPrice": "3500"
+      },
+      {
+        "description": "USB Hub, 4 or more ports",
+        "uom": "unit",
+        "unitPrice": "500"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "ACCOUNTABLE FORMS",
+    "items": [
+      {
+        "description": "Official Receipts",
+        "uom": "box",
+        "unitPrice": "16000"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "AGRICULTURAL SUPPLIES",
+    "items": [
+      {
+        "description": "ANTIBIOTIC",
+        "uom": "bottle",
+        "unitPrice": ""
+      },
+      {
+        "description": "BAG, polyethelene, assorted, for potting",
+        "uom": "kilo",
+        "unitPrice": ""
+      },
+      {
+        "description": "CHICK, day old, broiler",
+        "uom": "head",
+        "unitPrice": ""
+      },
+      {
+        "description": "CONTAINER, drum",
+        "uom": "unit",
+        "unitPrice": ""
+      },
+      {
+        "description": "CYMBUSH",
+        "uom": "liter",
+        "unitPrice": ""
+      },
+      {
+        "description": "DEWORMER",
+        "uom": "bottle",
+        "unitPrice": ""
+      },
+      {
+        "description": "EMPTY SACK",
+        "uom": "piece",
+        "unitPrice": ""
+      },
+      {
+        "description": "FEED SUPPLEMENTS & MEDICAMENTS",
+        "uom": "lot",
+        "unitPrice": ""
+      },
+      {
+        "description": "FEED, BAGASO",
+        "uom": "sack",
+        "unitPrice": ""
+      },
+      {
+        "description": "FEED, Finisher Mash",
+        "uom": "sack",
+        "unitPrice": ""
+      },
+      {
+        "description": "FEED, Fish Food",
+        "uom": "bag",
+        "unitPrice": ""
+      },
+      {
+        "description": "FEED, Grower Mash",
+        "uom": "bag",
+        "unitPrice": ""
+      },
+      {
+        "description": "FEED, Hog Gestating",
+        "uom": "bag",
+        "unitPrice": ""
+      },
+      {
+        "description": "FEED, Hog Grower",
+        "uom": "bag",
+        "unitPrice": ""
+      },
+      {
+        "description": "FEED, Hog Lactating",
+        "uom": "bag",
+        "unitPrice": ""
+      },
+      {
+        "description": "FEED, Hog Starter",
+        "uom": "bag",
+        "unitPrice": ""
+      },
+      {
+        "description": "FEED, Layer Mash",
+        "uom": "bag",
+        "unitPrice": ""
+      },
+      {
+        "description": "FEED, Pelleted based",
+        "uom": "bag",
+        "unitPrice": ""
+      },
+      {
+        "description": "FEED, Protein based",
+        "uom": "bag",
+        "unitPrice": ""
+      },
+      {
+        "description": "FEED, Starter Mash",
+        "uom": "sack",
+        "unitPrice": ""
+      },
+      {
+        "description": "FERTILIZER, Complete (14-14-14)",
+        "uom": "bag",
+        "unitPrice": ""
+      },
+      {
+        "description": "FERTILIZER, Urea (46-0-0)",
+        "uom": "bag",
+        "unitPrice": ""
+      },
+      {
+        "description": "GARDEN HOSE",
+        "uom": "meter",
+        "unitPrice": ""
+      },
+      {
+        "description": "GARDEN SOIL",
+        "uom": "cu.m.",
+        "unitPrice": ""
+      },
+      {
+        "description": "IRON",
+        "uom": "bottle",
+        "unitPrice": ""
+      },
+      {
+        "description": "KARATE",
+        "uom": "liter",
+        "unitPrice": ""
+      },
+      {
+        "description": "MOLASSES",
+        "uom": "gallon",
+        "unitPrice": ""
+      },
+      {
+        "description": "NYLON",
+        "uom": "kilo",
+        "unitPrice": ""
+      },
+      {
+        "description": "PESTICIDE",
+        "uom": "liter",
+        "unitPrice": ""
+      },
+      {
+        "description": "PULLET, ready to lay",
+        "uom": "head",
+        "unitPrice": ""
+      },
+      {
+        "description": "ROCK SALT",
+        "uom": "block",
+        "unitPrice": ""
+      },
+      {
+        "description": "SEED, Assorted",
+        "uom": "pack",
+        "unitPrice": ""
+      },
+      {
+        "description": "SEED, Certified",
+        "uom": "kilo",
+        "unitPrice": ""
+      },
+      {
+        "description": "STOCKS, Tilapia fry",
+        "uom": "fry",
+        "unitPrice": ""
+      },
+      {
+        "description": "SUPPLEMENTS & MEDICAMENTS",
+        "uom": "lot",
+        "unitPrice": ""
+      },
+      {
+        "description": "VITAMINS",
+        "uom": "bottle",
+        "unitPrice": ""
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "BOOKS",
+    "items": [
+      {
+        "description": "Books, Audio-Visual Materials and Serial Publications",
+        "uom": "lot",
+        "unitPrice": ""
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "FUELS AND GAS",
+    "items": [
+      {
+        "description": "FUEL, Diesel, for Mitsubishi Adventure",
+        "uom": "liter",
+        "unitPrice": ""
+      },
+      {
+        "description": "FUEL, Diesel, for Van",
+        "uom": "liter",
+        "unitPrice": ""
+      },
+      {
+        "description": "FUEL, Gasoline, for Multi-Cab",
+        "uom": "liter",
+        "unitPrice": ""
+      },
+      {
+        "description": "FUEL, Gasoline, for Lawn Mower",
+        "uom": "liter",
+        "unitPrice": ""
+      },
+      {
+        "description": "LPG 11 kg. tank and content",
+        "uom": "tank",
+        "unitPrice": ""
+      },
+      {
+        "description": "LPG 50 kg. cylinder refill",
+        "uom": "cylinder",
+        "unitPrice": ""
+      },
+      {
+        "description": "LPG, 11 kg refill",
+        "uom": "tank",
+        "unitPrice": ""
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "FURNITURE",
+    "items": []
+  },
+  {
+    "part": "PART I",
+    "category": "FIXTURE",
+    "items": []
+  },
+  {
+    "part": "PART I",
+    "category": "LABORATORY SUPPLIES",
+    "items": []
+  },
+  {
+    "part": "PART I",
+    "category": "LABORATORY EQUIPMENT",
+    "items": [
+      {
+        "description": "Sound Level Meter",
+        "uom": "",
+        "unitPrice": "5000"
+      },
+      {
+        "description": "Lux Meter",
+        "uom": "",
+        "unitPrice": "5000"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "ACTIVITIES",
+    "items": [
+      {
+        "description": "Registration Fee (PIIE Conventions)",
+        "uom": "pax",
+        "unitPrice": "7500"
+      },
+      {
+        "description": "Per Diem (PIIE Conventions)",
+        "uom": "pax",
+        "unitPrice": "5000"
+      },
+      {
+        "description": "Airline Tickets (PIIE Conventions)",
+        "uom": "pax",
+        "unitPrice": "5000"
+      },
+      {
+        "description": "Registration (NRCP Conventions)",
+        "uom": "pax",
+        "unitPrice": "5000"
+      },
+      {
+        "description": "Per Diem (NRCP Conventions)",
+        "uom": "pax",
+        "unitPrice": "5000"
+      },
+      {
+        "description": "Airline Tickets (NRCP Conventions)",
+        "uom": "pax",
+        "unitPrice": "5000"
+      },
+      {
+        "description": "Departmental Trainings and Workshop",
+        "uom": "pax",
+        "unitPrice": "5000"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "REPAIRS AND MAINTENANCE",
+    "items": [
+      {
+        "description": "Materials for Repairs BSIE Shop Room",
+        "uom": "",
+        "unitPrice": "100000"
+      },
+      {
+        "description": "TOTAL BUDGET:",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "Note: Technical Specifications for each Item/Project being proposed shall be submitted as part of the PPMP.",
+        "uom": "",
+        "unitPrice": ""
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "Prepared & Submitted by: | D668: Certified Fund Available: | L668: Approved:",
+    "items": [
+      {
+        "description": "MARY ELLEN C. CAMARILLO",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "End-User",
+        "uom": "",
+        "unitPrice": ""
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "PAPER MATERIALS AND PRODUCTS",
+    "items": [
+      {
+        "description": "CARTOLINA, assorted colors,",
+        "uom": "pack",
+        "unitPrice": "150"
+      },
+      {
+        "description": "LOOSELEAF COVER, legal",
+        "uom": "bundle",
+        "unitPrice": "1000"
+      },
+      {
+        "description": "NOTE PAD, stick on, 50mm x 76mm (2\" x 3\") min",
+        "uom": "pad",
+        "unitPrice": "38"
+      },
+      {
+        "description": "NOTE PAD, stick on, 76mm x 100mm (3\" x 4\") min",
+        "uom": "pad",
+        "unitPrice": "60"
+      },
+      {
+        "description": "NOTE PAD, stick on, 3\" x 3\"",
+        "uom": "pad",
+        "unitPrice": "55"
+      },
+      {
+        "description": "NOTEBOOK, stenographer",
+        "uom": "piece",
+        "unitPrice": "20"
+      },
+      {
+        "description": "PAPER, MULTICOPY, A4, 80 gsm",
+        "uom": "reams",
+        "unitPrice": "250"
+      },
+      {
+        "description": "PAPER, MULTICOPY, Legal, 80gsm",
+        "uom": "reams",
+        "unitPrice": "280"
+      },
+      {
+        "description": "PAPER, Multi-Purpose, A4, 70 gsm",
+        "uom": "reams",
+        "unitPrice": "230"
+      },
+      {
+        "description": "PAPER, Multi-purpose, legal, 70gsm",
+        "uom": "reams",
+        "unitPrice": "235"
+      },
+      {
+        "description": "PAPER, Multi-purpose, letter, 70gsm",
+        "uom": "reams",
+        "unitPrice": "235"
+      },
+      {
+        "description": "PAPER, parchment",
+        "uom": "box",
+        "unitPrice": "150"
+      },
+      {
+        "description": "Thermal Paper, 55GSM (-5%) ,1/2 Core, 216mm x 30m",
+        "uom": "roll",
+        "unitPrice": "100"
+      },
+      {
+        "description": "RECORD BOOK, 300 PAGES, size: 214mm x 278mm min",
+        "uom": "book",
+        "unitPrice": "100"
+      },
+      {
+        "description": "RECORD BOOK, 500 PAGES, size: 214mm x 278mm min",
+        "uom": "book",
+        "unitPrice": "125"
+      },
+      {
+        "description": "TOILET TISSUE PAPER, 2-ply, 100% recycled",
+        "uom": "pack",
+        "unitPrice": "100"
+      },
+      {
+        "description": "TISSUE, interfolded paper towel",
+        "uom": "pack",
+        "unitPrice": "50"
+      },
+      {
+        "description": "TOILET TISSUE PAPER, Interfolded Paper Towel",
+        "uom": "pack",
+        "unitPrice": "50"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "COMMON OFFICE EQUIPMENT | C312: 0 [formula: =SUM(G312:R312)]",
+    "items": [
+      {
+        "description": "COPIER, Monochrome",
+        "uom": "unit",
+        "unitPrice": "100000"
+      },
+      {
+        "description": "DISPENSER, Water, Hot and Cold",
+        "uom": "unit",
+        "unitPrice": "6000"
+      },
+      {
+        "description": "LAMINATING MACHINE, heavy duty",
+        "uom": "unit",
+        "unitPrice": "8000"
+      },
+      {
+        "description": "REFRIGERATOR, 8 cu. ft",
+        "uom": "set",
+        "unitPrice": "20000"
+      }
+    ]
+  },
+  {
+    "part": "PART I",
+    "category": "Prepared & Submitted by: | D667: Certified Fund Available: | L667: Approved:",
+    "items": [
+      {
+        "description": "MARY ELLEN C. CAMARILLO",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "End-User",
+        "uom": "",
+        "unitPrice": ""
+      }
+    ]
+  }
+]

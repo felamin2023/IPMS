@@ -54,6 +54,14 @@ function Pill({ status }: { status: RequestStatus }) {
   );
 }
 
+function formatPrLabel(request: RequestRow) {
+  const groups = request.pr_groups ?? [];
+  if (groups.length === 0) return request.pr_no ?? request.id.slice(0, 8);
+  if (groups.length === 1) return groups[0].pr_no;
+  const [first, ...rest] = groups;
+  return `${first.pr_no} +${rest.length}`;
+}
+
 function ProgressBar({ value }: { value: number }) {
   return (
     <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
@@ -63,6 +71,19 @@ function ProgressBar({ value }: { value: number }) {
       />
     </div>
   );
+}
+
+function parseContractFileUrls(value: string | null | undefined): string[] {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) {
+      return parsed.filter((entry) => typeof entry === "string");
+    }
+  } catch {
+    // Fall back to treating the value as a single URL.
+  }
+  return [value];
 }
 
 export default function Monitoring() {
@@ -244,6 +265,11 @@ export default function Monitoring() {
     [requests, selectedId, selectedFull],
   );
 
+  const contractFileUrls = useMemo(
+    () => parseContractFileUrls(selected?.contract_file_url),
+    [selected?.contract_file_url],
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32">
@@ -300,7 +326,7 @@ export default function Monitoring() {
                 >
                   <div className="text-sm font-semibold text-blue-700">
                     <div className="flex items-center justify-between gap-2">
-                      <span>{r.pr_no ?? r.id.slice(0, 8)}</span>
+                      <span>{formatPrLabel(r)}</span>
                       {(unreadByRequest[r.id] ?? 0) > 0 && (
                         <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-bold text-white">
                           {unreadByRequest[r.id] > 99
@@ -345,7 +371,7 @@ export default function Monitoring() {
                 Detailed Tracking
               </div>
               <div className="mt-1 text-sm text-gray-500">
-                Request: {selected.pr_no ?? "No PR yet"} —{" "}
+                Request: {formatPrLabel(selected)} —{" "}
                 {selected.purpose || "No purpose"}
               </div>
             </div>
@@ -363,6 +389,43 @@ export default function Monitoring() {
                 currentUserRole={role}
               />
             </div>
+
+            {(selected.contract_amount != null ||
+              selected.contract_file_url) && (
+              <div className="mx-6 mt-4 rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 via-blue-50 to-white px-5 py-4 text-blue-900">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <div className="text-sm font-semibold">
+                      Contract Details
+                    </div>
+                    <div className="mt-1 text-xs text-blue-700">
+                      Uploaded files are available for viewing.
+                    </div>
+                  </div>
+                  {selected.contract_amount != null && (
+                    <div className="rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-semibold text-blue-800">
+                      Amount: {selected.contract_amount}
+                    </div>
+                  )}
+                </div>
+
+                {contractFileUrls.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {contractFileUrls.map((url, index) => (
+                      <a
+                        key={`${url}-${index}`}
+                        href={url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-semibold text-blue-700 hover:border-blue-300 hover:text-blue-800"
+                      >
+                        {`View Contract File${contractFileUrls.length > 1 ? " " + (index + 1) : ""}`}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 

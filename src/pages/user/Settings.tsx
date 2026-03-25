@@ -7,14 +7,14 @@ import SettingsPasswordSecurity from "../../components/SettingsPasswordSecurity"
 
 const ROLE_POSITION_LABEL: Record<string, string> = {
   department_user: "Department User",
-  twg: "Technical Working Group",
+  accounting_admin: "Accounting Administrator",
   procurement_admin: "Procurement Administrator",
   supply_admin: "Supply Administrator",
 };
 
 const ROLE_DEPARTMENT_LABEL: Record<string, string> = {
   department_user: "Department",
-  twg: "Technical Working Group",
+  accounting_admin: "Accounting Administrator",
   procurement_admin: "Procurement & Supply Office",
   supply_admin: "Supply Office",
 };

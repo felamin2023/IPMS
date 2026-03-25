@@ -99,11 +99,19 @@ function itemsTotal(items?: { unit_cost: number | null; qty: number }[]) {
   );
 }
 
+function formatPrLabel(request: RequestRow) {
+  const groups = request.pr_groups ?? [];
+  if (groups.length === 0) return request.pr_no ?? "No PR yet";
+  if (groups.length === 1) return groups[0].pr_no;
+  const [first, ...rest] = groups;
+  return `${first.pr_no} +${rest.length}`;
+}
+
 export default function Approvals() {
   const { user, role } = useAuth();
 
-  // Only TWG can take approval actions
-  const canAct = role === "twg";
+  // Only Accounting Administrator can take approval actions
+  const canAct = role === "accounting_admin";
   const [pending, setPending] = useState<RequestRow[]>([]);
   const [recentActions, setRecentActions] = useState<RequestRow[]>([]);
   const [selected, setSelected] = useState<RequestRow | null>(null);
@@ -180,7 +188,7 @@ export default function Approvals() {
         {/* Header */}
         <div className="mb-5">
           <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-            TWG Review & Validation
+            Accounting Review & Validation
           </h1>
           <p className="mt-1 text-sm text-gray-500">
             Review item descriptions and validate pending procurement requests
@@ -221,7 +229,7 @@ export default function Approvals() {
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <div className="text-sm font-semibold text-blue-700">
-                              {q.pr_no ?? "No PR yet"}
+                              {formatPrLabel(q)}
                             </div>
                             <div className="mt-1 text-sm font-semibold text-gray-900 line-clamp-2">
                               {q.purpose || "No purpose specified"}
@@ -266,7 +274,7 @@ export default function Approvals() {
                     >
                       <div>
                         <div className="text-xs text-gray-500">
-                          {a.pr_no ?? "No PR yet"}
+                          {formatPrLabel(a)}
                         </div>
                         <div className="mt-1 text-sm font-semibold text-gray-900 line-clamp-1">
                           {a.purpose || "No purpose"}
@@ -299,7 +307,7 @@ export default function Approvals() {
                       {selected.purpose || "No purpose specified"}
                     </div>
                     <div className="mt-1 text-sm text-gray-500">
-                      {selected.pr_no ?? "No PR yet"}
+                      {formatPrLabel(selected)}
                     </div>
                   </div>
                   <Badge text={STATUS_LABELS[selected.status]} />
@@ -406,7 +414,7 @@ export default function Approvals() {
                 )}
               </div>
 
-              {/* Progress — show TWG-relevant steps */}
+              {/* Progress — show accounting-relevant steps */}
               <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                 <div className="mb-4 text-sm font-semibold text-gray-900">
                   Review Progress
@@ -428,11 +436,11 @@ export default function Approvals() {
                 </div>
               </div>
 
-              {/* Action Buttons — only show for pending requests if user has TWG role */}
+              {/* Action Buttons — only show for pending requests if user has Accounting role */}
               {selected.status === "request_sent" && canAct && (
                 <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                   <div className="text-sm font-semibold text-gray-900">
-                    TWG Decision
+                    Accounting Decision
                   </div>
                   <p className="mt-1 text-sm text-gray-500">
                     Ensure item descriptions are correct and complete, then

@@ -590,8 +590,8 @@ export default function SignUp() {
                         <option value="department_user">
                           End User (Department)
                         </option>
-                        <option value="twg">
-                          Technical Working Group (TWG)
+                        <option value="accounting_admin">
+                          Accounting Administrator
                         </option>
                         <option value="procurement_admin">
                           Procurement Office Administrator

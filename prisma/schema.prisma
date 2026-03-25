@@ -14,7 +14,7 @@ datasource db {
 
 enum UserRole {
   department_user
-  twg
+    accounting_admin
   procurement_admin
   supply_admin
 }
@@ -112,6 +112,10 @@ model Request {
   programId  String        @map("program_id")
   purpose    String?
   fundSource String?       @map("fund_source")
+  requestedBy String?      @map("requested_by")
+  reviewedBy  String?      @map("reviewed_by")
+  contractAmount Decimal?  @map("contract_amount") @db.Decimal(12, 2)
+  contractFileUrl String?  @map("contract_file_url")
   status     RequestStatus @default(request_sent)
   createdBy  String        @map("created_by")
   createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz
@@ -122,6 +126,7 @@ model Request {
   creator User    @relation("RequestCreator", fields: [createdBy], references: [id])
 
   items         RequestItem[]
+  prGroups      RequestPrGroup[]
   statusLogs    RequestStatusLog[]
   notifications Notification[]
   messages      RequestMessage[]
@@ -138,15 +143,66 @@ model RequestItem {
   stockNo         String?  @map("stock_no")
   qty             Int
   itemDescription String   @map("item_description")
+  category        String?  @map("category")
   uom             String // pcs, box, ream, etc.
   unitCost        Decimal? @map("unit_cost") @db.Decimal(12, 2)
   totalCost       Decimal? @map("total_cost") @db.Decimal(12, 2)
   receivedQty     Int?     @map("received_qty")
   damageNotes     String?  @map("damage_notes")
+  preferredBrand  String?  @map("preferred_brand")
+  inspectionNotes String?  @map("inspection_notes")
+  inspectionFileUrl String? @map("inspection_file_url")
 
   request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
 
   @@map("request_items")
+}
+
+model RequestPrGroup {
+  id        String   @id @default(uuid())
+  requestId String   @map("request_id")
+  category  String
+  prNo      String   @unique @map("pr_no")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@map("request_pr_groups")
+}
+
+model PpmpPlan {
+  id         String   @id @default(uuid())
+  createdBy  String   @map("created_by")
+  collegeId  String   @map("college_id")
+  programId  String   @map("program_id")
+  expiresAt  DateTime? @map("expires_at") @db.Timestamptz
+  realignAt  DateTime? @map("realign_at") @db.Timestamptz
+  completedAt DateTime? @map("completed_at") @db.Timestamptz
+  completedBy String?  @map("completed_by")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  creator User    @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  college College @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  program Program @relation(fields: [programId], references: [id], onDelete: Cascade)
+  items   PpmpItem[]
+
+  @@map("ppmp_plans")
+}
+
+model PpmpItem {
+  id              String   @id @default(uuid())
+  planId          String   @map("plan_id")
+  category        String
+  itemDescription String   @map("item_description")
+  qty             Int
+  uom             String
+  unitPrice       Decimal? @map("unit_price") @db.Numeric
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  plan PpmpPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@map("ppmp_items")
 }
 
 // ── Request Status Logs (Timeline / Tracking) ───────

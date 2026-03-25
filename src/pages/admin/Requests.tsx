@@ -1,28 +1,28 @@
 // src/pages/admin/Requests.tsx
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Download,
   Search,
   Filter,
   Eye,
+  Download,
   Loader2,
-  X,
-  PlayCircle,
-  XCircle,
-  RotateCcw,
   Check,
+  XCircle,
+  PlayCircle,
+  RotateCcw,
+  X,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import {
   fetchRequestsLight,
   fetchRequestById,
   updateRequestStatus,
-  getResumeStatusAfterReturnForAction,
   sendSpecialStatusNotice,
+  getResumeStatusAfterReturnForAction,
   type RequestRow,
   type RequestStatus,
-  STATUS_SHORT_LABELS,
   DEFAULT_STATUS_NOTES,
+  STATUS_SHORT_LABELS,
   STATUS_TONE,
   STATUS_FLOW,
   STATUS_RESPONSIBLE_ROLE,
@@ -33,36 +33,41 @@ import StatusTimeline from "../../components/StatusTimeline";
 
 type SpecialNoticeStatus = "notice_of_meeting" | "hope_approval" | "issuance";
 
+const SPECIAL_NOTICE_STATUSES: SpecialNoticeStatus[] = [
+  "notice_of_meeting",
+  "hope_approval",
+  "issuance",
+];
+
 function isSpecialNoticeStatus(
   status: RequestStatus,
 ): status is SpecialNoticeStatus {
-  return (
-    status === "notice_of_meeting" ||
-    status === "hope_approval" ||
-    status === "issuance"
-  );
+  return SPECIAL_NOTICE_STATUSES.includes(status as SpecialNoticeStatus);
 }
 
-function parseEmailList(raw: string) {
-  return raw
-    .split(/[\n,;]+/)
-    .map((email) => email.trim())
+function parseEmailList(value: string) {
+  return value
+    .split(/[,;\n]+/)
+    .map((entry) => entry.trim())
     .filter(Boolean);
 }
 
 function validateEmails(emails: string[]) {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emails.every((email) => emailRegex.test(email));
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emails.every((email) => emailPattern.test(email));
 }
 
 function getSpecialNoticeTitle(status: SpecialNoticeStatus) {
-  if (status === "notice_of_meeting") {
-    return "Notice of Meeting Notification";
+  switch (status) {
+    case "notice_of_meeting":
+      return "Notice of Meeting";
+    case "hope_approval":
+      return "HoPE Approval Notice";
+    case "issuance":
+      return "Issuance and Utilization Notice";
+    default:
+      return "Special Notice";
   }
-  if (status === "hope_approval") {
-    return "HoPE Approval Meeting Notification";
-  }
-  return "Issuance Availability Notification";
 }
 
 function StatusPill({ status }: { status: RequestStatus }) {
@@ -100,27 +105,45 @@ function itemsTotal(items?: { unit_cost: number | null; qty: number }[]) {
   );
 }
 
-/**
- * Return contextual action buttons based on current status AND the user's role.
- * Only shows actions if the user's role is responsible for the next status.
- */
+function formatPrLabel(request: RequestRow) {
+  const groups = request.pr_groups ?? [];
+  if (groups.length === 0) return request.pr_no ?? "No PR yet";
+  if (groups.length === 1) return groups[0].pr_no;
+  const [first, ...rest] = groups;
+  return `${first.pr_no} +${rest.length}`;
+}
+
+function parseContractFileUrls(value: string | null | undefined): string[] {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) {
+      return parsed.filter((entry) => typeof entry === "string");
+    }
+  } catch {
+    // Fall back to treating the value as a single URL.
+  }
+  return [value];
+}
+
+type ActionConfig = {
+  label: string;
+  status: RequestStatus;
+  icon: typeof XCircle;
+  tone: "amber" | "blue" | "green" | "violet" | "red";
+};
+
+type ActionSet = {
+  primary?: ActionConfig;
+  negative?: ActionConfig;
+};
+
 function getActions(
   request: RequestRow,
-  userRole: string | null,
-): {
-  primary?: {
-    label: string;
-    status: RequestStatus;
-    icon: typeof Check;
-    tone: string;
-  };
-  negative?: {
-    label: string;
-    status: RequestStatus;
-    icon: typeof XCircle;
-    tone: string;
-  };
-} {
+  userRole: string | null | undefined,
+): ActionSet {
+  if (!userRole) return {};
+
   const current = request.status;
   const idx = STATUS_FLOW.indexOf(current);
 
@@ -151,10 +174,10 @@ function getActions(
   const canAdvance = userRole === responsibleRole;
 
   // Return button: only the role responsible for advancing can also return,
-  // and only workflow actors (TWG / Procurement / Supply) have return capability.
+  // and only workflow actors (Accounting / Procurement / Supply) have return capability.
   const canReturn =
     canAdvance &&
-    (userRole === "twg" ||
+    (userRole === "accounting_admin" ||
       userRole === "procurement_admin" ||
       userRole === "supply_admin");
 
@@ -210,6 +233,9 @@ export default function Requests() {
   const [meetingTime, setMeetingTime] = useState("");
   const [meetingVenue, setMeetingVenue] = useState("");
   const [specialNoticeError, setSpecialNoticeError] = useState("");
+  const viewContractFiles = viewRequest
+    ? parseContractFileUrls(viewRequest.contract_file_url)
+    : [];
 
   async function openView(r: RequestRow) {
     setViewLoading(true);
@@ -293,9 +319,15 @@ export default function Requests() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return data.filter((r) => {
+      const prMatches =
+        (r.pr_no ?? "").toLowerCase().includes(q) ||
+        (r.pr_groups ?? [])
+          .map((g) => g.pr_no.toLowerCase())
+          .some((value) => value.includes(q));
+
       const matchesQuery =
         !q ||
-        (r.pr_no ?? "").toLowerCase().includes(q) ||
+        prMatches ||
         (r.purpose ?? "").toLowerCase().includes(q) ||
         (r.college?.code ?? "").toLowerCase().includes(q) ||
         (r.program?.code ?? "").toLowerCase().includes(q) ||
@@ -454,7 +486,10 @@ export default function Requests() {
         status: specialNoticeModal.newStatus,
         ownerName,
         ownerEmail,
-        prNo: specialNoticeModal.request.pr_no ?? specialNoticeModal.request.id,
+        prNo:
+          specialNoticeModal.request.pr_groups?.[0]?.pr_no ??
+          specialNoticeModal.request.pr_no ??
+          specialNoticeModal.request.id,
         additionalEmails: parsedEmails,
         meetingDate: meetingDate || undefined,
         meetingTime: meetingTime || undefined,
@@ -568,7 +603,7 @@ export default function Requests() {
                         <tr key={r.id} className="text-sm text-gray-700">
                           <td className="px-5 py-4">
                             <div className="font-medium text-gray-900">
-                              {r.pr_no ?? "No PR yet"}
+                              {formatPrLabel(r)}
                             </div>
                           </td>
                           <td className="px-5 py-4 max-w-[180px] truncate">
@@ -624,44 +659,77 @@ export default function Requests() {
                                 </button>
                               )}
 
-                              {/* Primary action */}
-                              {actions.primary && (
-                                <button
-                                  type="button"
-                                  disabled={advancing === r.id}
-                                  className={[
-                                    "inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold disabled:opacity-50",
-                                    actions.primary.tone === "amber"
-                                      ? "bg-amber-50 text-amber-700 hover:bg-amber-100"
-                                      : actions.primary.tone === "blue"
-                                        ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
-                                        : actions.primary.tone === "green"
-                                          ? "bg-green-50 text-green-700 hover:bg-green-100"
-                                          : "bg-violet-50 text-violet-700 hover:bg-violet-100",
-                                  ].join(" ")}
-                                  onClick={() => {
-                                    const nextStatus = actions.primary!.status;
-                                    if (isSpecialNoticeStatus(nextStatus)) {
-                                      setSpecialNoticeModal({
-                                        request: r,
-                                        newStatus: nextStatus,
-                                      });
-                                      setExtraEmails("");
-                                      setMeetingDate("");
-                                      setMeetingTime("");
-                                      setMeetingVenue("");
-                                      setSpecialNoticeError("");
-                                      return;
-                                    }
+                              {r.status === "contract_awarded" &&
+                                (role === "procurement_admin" ||
+                                  role === "supply_admin") && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      disabled={advancing === r.id}
+                                      className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
+                                      onClick={() =>
+                                        handleAdvanceStatus(r.id, "po_issued")
+                                      }
+                                      title="Purchase Order Issued (Supply)"
+                                    >
+                                      <Check className="h-3.5 w-3.5" />
+                                      PO Issued
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={advancing === r.id}
+                                      className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-50"
+                                      onClick={() =>
+                                        handleAdvanceStatus(r.id, "ntp_issued")
+                                      }
+                                      title="Notice to Proceed Issued (Procurement)"
+                                    >
+                                      <Check className="h-3.5 w-3.5" />
+                                      NTP Issued
+                                    </button>
+                                  </>
+                                )}
 
-                                    handleAdvanceStatus(r.id, nextStatus);
-                                  }}
-                                  title={actions.primary.label}
-                                >
-                                  <actions.primary.icon className="h-3.5 w-3.5" />
-                                  {actions.primary.label}
-                                </button>
-                              )}
+                              {/* Primary action */}
+                              {actions.primary &&
+                                r.status !== "contract_awarded" && (
+                                  <button
+                                    type="button"
+                                    disabled={advancing === r.id}
+                                    className={[
+                                      "inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold disabled:opacity-50",
+                                      actions.primary.tone === "amber"
+                                        ? "bg-amber-50 text-amber-700 hover:bg-amber-100"
+                                        : actions.primary.tone === "blue"
+                                          ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                                          : actions.primary.tone === "green"
+                                            ? "bg-green-50 text-green-700 hover:bg-green-100"
+                                            : "bg-violet-50 text-violet-700 hover:bg-violet-100",
+                                    ].join(" ")}
+                                    onClick={() => {
+                                      const nextStatus =
+                                        actions.primary!.status;
+                                      if (isSpecialNoticeStatus(nextStatus)) {
+                                        setSpecialNoticeModal({
+                                          request: r,
+                                          newStatus: nextStatus,
+                                        });
+                                        setExtraEmails("");
+                                        setMeetingDate("");
+                                        setMeetingTime("");
+                                        setMeetingVenue("");
+                                        setSpecialNoticeError("");
+                                        return;
+                                      }
+
+                                      handleAdvanceStatus(r.id, nextStatus);
+                                    }}
+                                    title={actions.primary.label}
+                                  >
+                                    <actions.primary.icon className="h-3.5 w-3.5" />
+                                    {actions.primary.label}
+                                  </button>
+                                )}
 
                               {/* Negative action (opens note modal) */}
                               {actions.negative && (
@@ -759,8 +827,15 @@ export default function Requests() {
             <div className="flex items-start justify-between gap-3 mb-4">
               <div>
                 <div className="text-lg font-semibold text-gray-900">
-                  {viewRequest.pr_no ?? "No PR yet"}
+                  {formatPrLabel(viewRequest)}
                 </div>
+                {viewRequest.pr_groups && viewRequest.pr_groups.length > 0 && (
+                  <div className="mt-1 text-xs text-gray-500">
+                    {viewRequest.pr_groups
+                      .map((g) => `${g.pr_no} — ${g.category}`)
+                      .join(" | ")}
+                  </div>
+                )}
                 <div className="text-sm text-gray-500">
                   {viewRequest.purpose || "No purpose"}
                 </div>
@@ -826,6 +901,26 @@ export default function Requests() {
                   </div>
                 </div>
               )}
+              {viewRequest.requested_by && (
+                <div>
+                  <div className="text-xs font-semibold uppercase text-gray-500">
+                    Requested by
+                  </div>
+                  <div className="mt-1 text-gray-900">
+                    {viewRequest.requested_by}
+                  </div>
+                </div>
+              )}
+              {viewRequest.reviewed_by && (
+                <div>
+                  <div className="text-xs font-semibold uppercase text-gray-500">
+                    Reviewed by
+                  </div>
+                  <div className="mt-1 text-gray-900">
+                    {viewRequest.reviewed_by}
+                  </div>
+                </div>
+              )}
             </div>
 
             {viewRequest.items && viewRequest.items.length > 0 && (
@@ -837,17 +932,27 @@ export default function Requests() {
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50">
                       <tr className="text-left text-xs font-semibold uppercase text-gray-500">
+                        <th className="px-3 py-2">Category</th>
                         <th className="px-3 py-2">Description</th>
+                        <th className="px-3 py-2">Preferred Brand</th>
                         <th className="px-3 py-2">Qty</th>
                         <th className="px-3 py-2">UOM</th>
                         <th className="px-3 py-2">Unit Cost</th>
                         <th className="px-3 py-2">Total</th>
+                        <th className="px-3 py-2">Inspection Notes</th>
+                        <th className="px-3 py-2">Inspection File</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {viewRequest.items.map((item) => (
                         <tr key={item.id}>
+                          <td className="px-3 py-2 text-gray-500">
+                            {item.category || "—"}
+                          </td>
                           <td className="px-3 py-2">{item.item_description}</td>
+                          <td className="px-3 py-2">
+                            {item.preferred_brand || "—"}
+                          </td>
                           <td className="px-3 py-2">{item.qty}</td>
                           <td className="px-3 py-2">{item.uom}</td>
                           <td className="px-3 py-2">
@@ -860,6 +965,23 @@ export default function Requests() {
                               ? money.format(Number(item.total_cost))
                               : "—"}
                           </td>
+                          <td className="px-3 py-2">
+                            {item.inspection_notes || "—"}
+                          </td>
+                          <td className="px-3 py-2">
+                            {item.inspection_file_url ? (
+                              <a
+                                href={item.inspection_file_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-blue-600 hover:text-blue-800 underline"
+                              >
+                                View
+                              </a>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -868,6 +990,33 @@ export default function Requests() {
                 <div className="mt-2 text-right text-sm font-semibold text-gray-900">
                   Total: {money.format(itemsTotal(viewRequest.items))}
                 </div>
+              </div>
+            )}
+
+            {(viewRequest.contract_amount != null ||
+              viewRequest.contract_file_url) && (
+              <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                <div className="font-semibold">Contract Details</div>
+                {viewRequest.contract_amount != null && (
+                  <div className="mt-1">
+                    Amount: {money.format(Number(viewRequest.contract_amount))}
+                  </div>
+                )}
+                {viewContractFiles.length > 0 && (
+                  <div className="mt-1 space-y-1">
+                    {viewContractFiles.map((url, index) => (
+                      <a
+                        key={`${url}-${index}`}
+                        href={url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-block text-blue-700 underline"
+                      >
+                        {`View Contract File${viewContractFiles.length > 1 ? " " + (index + 1) : ""}`}
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

@@ -33,16 +33,18 @@ export type RequestStatus =
   | "returned_for_revision"
   | "returned_for_action";
 
+// Keep legacy statuses for backwards compatibility with historical logs.
+export type LegacyRequestStatus = "pr_number_assigned";
+
 /** The ordered steps a request walks through (excluding returned_for_revision). */
 export const STATUS_FLOW: RequestStatus[] = [
   "request_sent",
   "request_reviewed",
-  "pr_number_assigned",
-  "notice_of_meeting",
   "endorsed_to_bac",
   "resolution_approved",
   "under_supplier_quotation",
   "quotations_received",
+  "notice_of_meeting",
   "under_quotation_evaluation",
   "hope_approval",
   "abstract_prepared",
@@ -62,27 +64,28 @@ export const STATUS_FLOW: RequestStatus[] = [
 export const STATUS_LABELS: Record<RequestStatus, string> = {
   draft: "Draft",
   request_sent: "Request Sent",
-  request_reviewed: "Request Reviewed and Validated",
-  pr_number_assigned: "PR Number Assigned",
+  request_reviewed: "Purchase Request Reviewed and Validated",
+  pr_number_assigned: "PR Number Assigned (Legacy)",
   notice_of_meeting: "Notice of Meeting",
-  endorsed_to_bac: "Endorsed to BAC for Procurement Mode Evaluation",
+  endorsed_to_bac:
+    "Endorsed to BAC for Evaluation and Determination of the Mode of Purchase",
   resolution_approved: "Resolution Approved",
-  under_supplier_quotation: "Under Supplier Quotation Process",
+  under_supplier_quotation: "Canvassing in Progress",
   quotations_received: "Supplier Quotations Received",
-  under_quotation_evaluation: "Under Quotation Evaluation",
-  hope_approval: "For HoPE Approval of BAC Recommendation",
-  abstract_prepared: "Abstract Prepared",
-  contract_awarded: "Contract Awarded",
-  po_issued: "Contract Signed and Purchase Order Issued",
+  under_quotation_evaluation: "Opening of Bids",
+  hope_approval: "A Resolution Recommending the Award of Contract",
+  abstract_prepared: "Abstract of Quotations Prepared",
+  contract_awarded: "Notice of Award Sent to Supplier",
+  po_issued: "Purchase Order Created and Issued",
   ntp_issued: "Notice to Proceed Issued",
-  noa_po_ntp_posted: "NOA, PO/Contract and NTP Issued",
+  noa_po_ntp_posted: "Signed Notice of Award Returned to Procurement",
   po_delivered: "Purchase Order Delivered/Picked Up",
   po_received_supply: "Purchase Order Received by Supply Office",
   items_for_inspection: "Items Endorsed for Inspection",
   under_inspection: "Under Checking and Inspection",
   under_warehousing: "Under Storing and Warehousing for Inventory",
-  issuance: "Issuance and Utilization to End-users",
-  completed: "Issuance and Utilization Completed",
+  issuance: "Issuance and Utilization Completed",
+  completed: "Procurement Complete",
   returned_for_revision: "Returned to User for Revision",
   returned_for_action: "Returned to User for Personal Action",
 };
@@ -90,36 +93,38 @@ export const STATUS_LABELS: Record<RequestStatus, string> = {
 /** Default notes for each status step to be saved in logs or displayed to users. */
 export const DEFAULT_STATUS_NOTES: Record<RequestStatus, string> = {
   draft: "Request is in draft mode.",
-  request_sent: "End-user has created and sent a purchase request.",
+  request_sent:
+    "The end-user has created and sent a purchase request. PR numbers are assigned automatically.",
   request_reviewed:
-    "The Technical Working Group (TWG) has reviewed and validated the request.",
+    "The Accounting Administrator has reviewed and validated the purchase request and issued certification as to source of allotment.",
   pr_number_assigned: "PR Number has been assigned.",
-  notice_of_meeting: "BAC secretariat has sent a Notice of Meeting.",
+  notice_of_meeting:
+    "Notice of meeting has been sent to BAC, Accounting Administrator, and end-user.",
   endorsed_to_bac:
-    "Purchase request has been endorsed to BAC for approval of mode of purchase.",
+    "Purchase request has been endorsed to BAC for evaluation and determination of the mode of purchase.",
   resolution_approved:
     "The resolution has been approved by HoPE/Campus Director.",
-  under_supplier_quotation: "Supplier identification in progress.",
+  under_supplier_quotation: "Supplier canvassing is in progress.",
   quotations_received:
     "The Procurement Office has received quotations from suppliers.",
-  under_quotation_evaluation: "Suppliers' quotations are under evaluation.",
-  hope_approval:
-    "Notice of Opening, Validation and Contract Awarding Meeting Issued.",
-  abstract_prepared: "Formal Abstract of Supplier Bids Issued.",
-  contract_awarded: "Notice of Award (NOA) issued to supplier.",
-  po_issued: "Contract signing and Purchase Order Issued.",
-  ntp_issued: "Notice to Proceed Issued to the winning supplier.",
-  noa_po_ntp_posted: "NOA, PO/Contract and NTP Issued in the PhilGEPS.",
+  under_quotation_evaluation:
+    "Submitted bids are being opened and recorded for evaluation.",
+  hope_approval: "Resolution recommending award of contract is being prepared.",
+  abstract_prepared: "Formal Abstract of Supplier Bids issued.",
+  contract_awarded: "Notice of Award (NOA) sent to supplier.",
+  po_issued: "Purchase Order created and issued.",
+  ntp_issued: "Notice to Proceed issued to the winning supplier.",
+  noa_po_ntp_posted: "Signed Notice of Award returned to Procurement Office.",
   po_delivered: "Purchase order is delivered/picked up.",
   po_received_supply:
-    "Purchase Order Received by the Supply Office from the supplier.",
+    "Purchase Order received by the Supply Office from the supplier.",
   items_for_inspection:
-    "Items are endorsed for inspection for conformance of items to specifications.",
+    "Items are endorsed for inspection for conformance to specifications.",
   under_inspection:
     "Items delivered are checked and inspected against the Purchase Order.",
   under_warehousing:
     "Items received are stored for book recording and inventory purposes.",
-  issuance: "Items are issued to the end-users.",
+  issuance: "Items are issued to the end-users and utilization is completed.",
   completed: "Procurement complete.",
   returned_for_revision: "Request returned to user for revision.",
   returned_for_action:
@@ -135,22 +140,22 @@ export const STATUS_SHORT_LABELS: Record<RequestStatus, string> = {
   notice_of_meeting: "Notice of Meeting",
   endorsed_to_bac: "Endorsed to BAC",
   resolution_approved: "Resolution Approved",
-  under_supplier_quotation: "Supplier Quotation",
+  under_supplier_quotation: "Canvassing",
   quotations_received: "Quotations Received",
-  under_quotation_evaluation: "Quotation Eval",
-  hope_approval: "HoPE Approval",
+  under_quotation_evaluation: "Opening of Bids",
+  hope_approval: "Contract Awarding",
   abstract_prepared: "Abstract Prepared",
-  contract_awarded: "Contract Awarded",
+  contract_awarded: "Notice of Award",
   po_issued: "PO Issued",
   ntp_issued: "NTP Issued",
-  noa_po_ntp_posted: "NOA/PO/NTP Posted",
+  noa_po_ntp_posted: "NOA Returned",
   po_delivered: "PO Delivered",
   po_received_supply: "Received by Supply",
   items_for_inspection: "For Inspection",
   under_inspection: "Under Inspection",
   under_warehousing: "Warehousing",
-  issuance: "Issuance",
-  completed: "Completed",
+  issuance: "Issuance Complete",
+  completed: "Complete",
   returned_for_revision: "Returned for Revision",
   returned_for_action: "Returned for Personal Fix",
 };
@@ -159,34 +164,34 @@ export const OLD_NOTES_MAP: Record<string, string> = {
   "Request created and sent":
     "End-user has created and sent a purchase request.",
   "Request reviewed and validated by TWG":
-    "The Technical Working Group (TWG) has reviewed and validated the request.",
+    "The Accounting Administrator has reviewed and validated the purchase request and issued certification as to source of allotment.",
   "Status updated to Request Reviewed and Validated":
-    "The Technical Working Group (TWG) has reviewed and validated the request.",
+    "The Accounting Administrator has reviewed and validated the purchase request and issued certification as to source of allotment.",
   "Status updated to PR Number Assigned": "PR Number has been assigned.",
   "Status updated to Notice of Meeting":
-    "BAC secretariat has sent a Notice of Meeting.",
+    "Notice of meeting has been sent to BAC, Accounting Administrator, and end-user.",
   "Status updated to Endorsed to BAC for Procurement Mode Evaluation":
-    "Purchase request has been endorsed to BAC for approval of mode of purchase.",
+    "Purchase request has been endorsed to BAC for evaluation and determination of the mode of purchase.",
   "Status updated to Resolution Approved":
     "The resolution has been approved by HoPE/Campus Director.",
   "Status updated to Under Supplier Quotation Process":
-    "Supplier identification in progress.",
+    "Supplier canvassing is in progress.",
   "Status updated to Supplier Quotations Received":
     "The Procurement Office has received quotations from suppliers.",
   "Status updated to Under Quotation Evaluation":
-    "Suppliers' quotations are under evaluation.",
+    "Submitted bids are being opened and recorded for evaluation.",
   "Status updated to For HoPE Approval of BAC Recommendation":
-    "Notice of Opening, Validation and Contract Awarding Meeting Issued.",
+    "Resolution recommending award of contract is being prepared.",
   "Status updated to Abstract Prepared":
-    "Formal Abstract of Supplier Bids Issued.",
+    "Formal Abstract of Supplier Bids issued.",
   "Status updated to Contract Awarded":
-    "Notice of Award (NOA) issued to supplier.",
+    "Notice of Award (NOA) sent to supplier.",
   "Status updated to Contract Signed and Purchase Order Issued":
-    "Contract signing and Purchase Order Issued.",
+    "Purchase Order created and issued.",
   "Status updated to Notice to Proceed Issued":
     "Notice to Proceed Issued to the winning supplier.",
   "Status updated to NOA, PO/Contract and NTP Issued":
-    "NOA, PO/Contract and NTP Issued in the PhilGEPS.",
+    "Signed Notice of Award returned to Procurement Office.",
   "Status updated to Purchase Order Delivered/Picked Up":
     "Purchase order is delivered/picked up.",
   "Status updated to Purchase Order Received by Supply Office":
@@ -198,7 +203,7 @@ export const OLD_NOTES_MAP: Record<string, string> = {
   "Status updated to Under Storing and Warehousing for Inventory":
     "Items received are stored for book recording and inventory purposes.",
   "Status updated to Issuance and Utilization to End-users":
-    "Items are issued to the end-users.",
+    "Items are issued to the end-users and utilization is completed.",
   "Status updated to Issuance and Utilization Completed":
     "Procurement complete.",
 };
@@ -250,14 +255,14 @@ export const STATUS_TONE: Record<RequestStatus, string> = {
 /** Which role is responsible for advancing to each status. */
 export type UserRole =
   | "department_user"
-  | "twg"
+  | "accounting_admin"
   | "procurement_admin"
   | "supply_admin";
 
 export const STATUS_RESPONSIBLE_ROLE: Record<RequestStatus, UserRole> = {
   draft: "department_user",
   request_sent: "department_user",
-  request_reviewed: "twg",
+  request_reviewed: "accounting_admin",
   pr_number_assigned: "procurement_admin",
   notice_of_meeting: "procurement_admin",
   endorsed_to_bac: "procurement_admin",
@@ -278,13 +283,13 @@ export const STATUS_RESPONSIBLE_ROLE: Record<RequestStatus, UserRole> = {
   under_warehousing: "supply_admin",
   issuance: "supply_admin",
   completed: "department_user",
-  returned_for_revision: "twg",
+  returned_for_revision: "accounting_admin",
   // Fallback owner for display only; authorization for this status is handled in updateRequestStatus.
   returned_for_action: "procurement_admin",
 };
 
 const RETURN_STATUS_ALLOWED_ROLES: UserRole[] = [
-  "twg",
+  "accounting_admin",
   "procurement_admin",
   "supply_admin",
 ];
@@ -292,7 +297,7 @@ const RETURN_STATUS_ALLOWED_ROLES: UserRole[] = [
 /** Statuses grouped by responsible role (phase). */
 export const ROLE_LABELS: Record<UserRole, string> = {
   department_user: "End User (Department)",
-  twg: "Technical Working Group (TWG)",
+  accounting_admin: "Accounting Administrator",
   procurement_admin: "Procurement Office Administrator",
   supply_admin: "Supply Office Administrator",
 };
@@ -302,7 +307,7 @@ export function normalizeUserRole(
 ): UserRole | null {
   if (
     role === "department_user" ||
-    role === "twg" ||
+    role === "accounting_admin" ||
     role === "procurement_admin" ||
     role === "supply_admin"
   ) {
@@ -352,6 +357,8 @@ export function shouldShowUnreadChatForStatus(params: {
 export interface RequestItemInput {
   qty: number;
   itemDescription: string;
+  category?: string;
+  preferredBrand?: string;
   uom: string;
   unitCost?: number;
 }
@@ -363,6 +370,10 @@ export interface RequestRow {
   program_id: string;
   purpose: string | null;
   fund_source: string | null;
+  requested_by?: string | null;
+  reviewed_by?: string | null;
+  contract_amount?: number | null;
+  contract_file_url?: string | null;
   status: RequestStatus;
   created_by: string;
   created_at: string;
@@ -378,6 +389,7 @@ export interface RequestRow {
   };
   items?: RequestItemRow[];
   status_logs?: StatusLogRow[];
+  pr_groups?: RequestPrGroupRow[];
 }
 
 export interface RequestItemRow {
@@ -386,11 +398,47 @@ export interface RequestItemRow {
   stock_no: string | null;
   qty: number;
   item_description: string;
+  category?: string | null;
+  preferred_brand?: string | null;
   uom: string;
   unit_cost: number | null;
   total_cost: number | null;
   received_qty: number | null;
   damage_notes: string | null;
+  inspection_notes?: string | null;
+  inspection_file_url?: string | null;
+}
+
+export interface RequestPrGroupRow {
+  id: string;
+  request_id: string;
+  category: string;
+  pr_no: string;
+  created_at: string;
+}
+
+export interface PpmpPlanRow {
+  id: string;
+  created_by: string;
+  college_id: string;
+  program_id: string;
+  expires_at: string | null;
+  realign_at: string | null;
+  completed_at: string | null;
+  completed_by: string | null;
+  created_at: string;
+  updated_at: string;
+  items?: PpmpItemRow[];
+}
+
+export interface PpmpItemRow {
+  id: string;
+  plan_id: string;
+  category: string;
+  item_description: string;
+  qty: number;
+  uom: string;
+  unit_price: number | null;
 }
 
 export interface StatusLogRow {
@@ -451,7 +499,7 @@ async function generatePrNo(): Promise<string> {
 
   // Get the highest existing PR number for this year
   const { data } = await supabase
-    .from("requests")
+    .from("request_pr_groups")
     .select("pr_no")
     .like("pr_no", `${prefix}%`)
     .order("pr_no", { ascending: false })
@@ -479,6 +527,8 @@ export async function saveDraft(params: {
   programId: string;
   purpose?: string;
   fundSource?: string;
+  requestedBy?: string;
+  reviewedBy?: string;
   createdBy: string;
   items: RequestItemInput[];
 }): Promise<RequestRow> {
@@ -491,6 +541,8 @@ export async function saveDraft(params: {
       .update({
         purpose: params.purpose ?? null,
         fund_source: params.fundSource ?? null,
+        requested_by: params.requestedBy ?? null,
+        reviewed_by: params.reviewedBy ?? null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", params.draftId)
@@ -511,6 +563,8 @@ export async function saveDraft(params: {
       program_id: params.programId,
       purpose: params.purpose ?? null,
       fund_source: params.fundSource ?? null,
+      requested_by: params.requestedBy ?? null,
+      reviewed_by: params.reviewedBy ?? null,
       status: "draft" as RequestStatus,
       created_by: params.createdBy,
       updated_at: new Date().toISOString(),
@@ -528,9 +582,11 @@ export async function saveDraft(params: {
         stock_no: String(idx + 1),
         qty: item.qty,
         item_description: item.itemDescription,
+        category: item.category ?? null,
         uom: item.uom,
         unit_cost: item.unitCost ?? null,
         total_cost: item.unitCost ? item.unitCost * item.qty : null,
+        preferred_brand: item.preferredBrand ?? null,
       }));
 
     if (itemRows.length > 0) {
@@ -589,9 +645,49 @@ export async function submitDraft(
     updated_by: userId,
   });
 
-  // Notify TWG users
+  // Generate per-category PR numbers for this draft
+  const { data: items, error: itemsErr } = await supabase
+    .from("request_items")
+    .select("category")
+    .eq("request_id", draftId);
+
+  if (itemsErr) throw itemsErr;
+
+  const categories = Array.from(
+    new Set(
+      (items ?? [])
+        .map((item: { category?: string | null }) => item.category?.trim())
+        .filter((value): value is string => Boolean(value)),
+    ),
+  );
+
+  if (categories.length > 0) {
+    const prGroupRows = [] as {
+      id: string;
+      request_id: string;
+      category: string;
+      pr_no: string;
+    }[];
+
+    for (const category of categories) {
+      const prNo = await generatePrNo();
+      prGroupRows.push({
+        id: crypto.randomUUID(),
+        request_id: draftId,
+        category,
+        pr_no: prNo,
+      });
+    }
+
+    const { error: groupError } = await supabase
+      .from("request_pr_groups")
+      .insert(prGroupRows);
+    if (groupError) throw groupError;
+  }
+
+  // Notify Accounting Administrator users
   await notifyUsersByRole({
-    role: "twg",
+    role: "accounting_admin",
     title: "New request submitted",
     body: "A new procurement request needs review",
     type: "new_request",
@@ -622,6 +718,8 @@ export async function createRequest(params: {
   programId: string;
   purpose: string;
   fundSource?: string;
+  requestedBy?: string;
+  reviewedBy?: string;
   createdBy: string;
   items: RequestItemInput[];
 }) {
@@ -637,6 +735,8 @@ export async function createRequest(params: {
       program_id: params.programId,
       purpose: params.purpose,
       fund_source: params.fundSource ?? null,
+      requested_by: params.requestedBy ?? null,
+      reviewed_by: params.reviewedBy ?? null,
       status: "request_sent" as RequestStatus,
       created_by: params.createdBy,
       updated_at: new Date().toISOString(),
@@ -654,9 +754,11 @@ export async function createRequest(params: {
       stock_no: String(idx + 1),
       qty: item.qty,
       item_description: item.itemDescription,
+      category: item.category ?? null,
       uom: item.uom,
       unit_cost: item.unitCost ?? null,
       total_cost: item.unitCost ? item.unitCost * item.qty : null,
+      preferred_brand: item.preferredBrand ?? null,
     }));
 
     const { error: itemError } = await supabase
@@ -674,9 +776,42 @@ export async function createRequest(params: {
     updated_by: params.createdBy,
   });
 
-  // Notify TWG users that a new request needs review
+  // Generate per-category PR numbers
+  const categories = Array.from(
+    new Set(
+      params.items
+        .map((item) => item.category?.trim())
+        .filter((value): value is string => Boolean(value)),
+    ),
+  );
+
+  if (categories.length > 0) {
+    const prGroupRows = [] as {
+      id: string;
+      request_id: string;
+      category: string;
+      pr_no: string;
+    }[];
+
+    for (const category of categories) {
+      const prNo = await generatePrNo();
+      prGroupRows.push({
+        id: crypto.randomUUID(),
+        request_id: request.id,
+        category,
+        pr_no: prNo,
+      });
+    }
+
+    const { error: groupError } = await supabase
+      .from("request_pr_groups")
+      .insert(prGroupRows);
+    if (groupError) throw groupError;
+  }
+
+  // Notify Accounting Administrator users that a new request needs review
   await notifyUsersByRole({
-    role: "twg",
+    role: "accounting_admin",
     title: "New request submitted",
     body: params.purpose || "A new procurement request needs review",
     type: "new_request",
@@ -705,6 +840,7 @@ export async function fetchRequestsLight(filters?: {
       program:programs(id, code, name),
       creator:users!requests_created_by_fkey(id, first_name, last_name, email),
       items:request_items(*),
+      pr_groups:request_pr_groups(*),
       status_logs:request_status_logs(
         id,
         request_id,
@@ -748,6 +884,7 @@ export async function fetchRequests(filters?: {
       program:programs(*),
       creator:users!requests_created_by_fkey(id, first_name, last_name, email),
       items:request_items(*),
+      pr_groups:request_pr_groups(*),
       status_logs:request_status_logs(*, updater:users!request_status_logs_updated_by_fkey(id, first_name, last_name, role))
     `,
     )
@@ -778,6 +915,7 @@ export async function fetchRequestById(id: string) {
       program:programs(*),
       creator:users!requests_created_by_fkey(id, first_name, last_name, email),
       items:request_items(*),
+      pr_groups:request_pr_groups(*),
       status_logs:request_status_logs(*, updater:users!request_status_logs_updated_by_fkey(id, first_name, last_name, role))
     `,
     )
@@ -829,7 +967,9 @@ export async function sendRequestMessage(params: {
   ] = await Promise.all([
     supabase
       .from("requests")
-      .select("id, created_by, status")
+      .select(
+        "id, created_by, status, pr_groups:request_pr_groups(pr_no), creator:users!requests_created_by_fkey(email, first_name, last_name)",
+      )
       .eq("id", params.requestId)
       .single(),
     supabase
@@ -864,7 +1004,7 @@ export async function sendRequestMessage(params: {
     handlerRole !== "department_user" && senderRole === handlerRole;
   const isRequestSentParticipant =
     request.status === "request_sent" &&
-    (senderRole === "department_user" || senderRole === "twg");
+    (senderRole === "department_user" || senderRole === "accounting_admin");
 
   if (!isRequester && !isCurrentHandler && !isRequestSentParticipant) {
     throw new Error(
@@ -895,6 +1035,37 @@ export async function sendRequestMessage(params: {
     .single();
 
   if (error) throw error;
+
+  // Send email notification to the request owner when staff replies
+  try {
+    if (senderRole !== "department_user" && request?.creator) {
+      const creatorRaw = request.creator as unknown;
+      const creator = (
+        Array.isArray(creatorRaw) ? creatorRaw[0] : creatorRaw
+      ) as {
+        email: string | null;
+        first_name: string;
+        last_name: string;
+      } | null;
+
+      const prGroups = (request?.pr_groups ?? []) as { pr_no: string }[];
+      const prLabel = prGroups.length > 0 ? prGroups[0].pr_no : "Request";
+
+      if (creator?.email) {
+        await supabase.functions.invoke("send-chat-notification", {
+          body: {
+            email: creator.email,
+            recipientName: `${creator.first_name} ${creator.last_name}`,
+            prNo: prLabel,
+            message: cleanMessage,
+          },
+        });
+      }
+    }
+  } catch (emailErr) {
+    console.error("Chat email notification failed:", emailErr);
+  }
+
   return normalizeMessageSender(data as RequestMessageRow);
 }
 
@@ -1159,6 +1330,17 @@ export async function updateRequestStatus(params: {
         `Your role (${ROLE_LABELS[userRole]}) is not authorized to return requests for personal action.`,
       );
     }
+  } else if (
+    params.newStatus === "po_issued" ||
+    params.newStatus === "ntp_issued"
+  ) {
+    const allowed = ["procurement_admin", "supply_admin"] as UserRole[];
+    if (!allowed.includes(userRole)) {
+      throw new Error(
+        `Your role (${ROLE_LABELS[userRole]}) is not authorized to set status to "${STATUS_LABELS[params.newStatus]}". ` +
+          `This action requires: Procurement or Supply.`,
+      );
+    }
   } else {
     // Role must match the responsible role for the target status.
     if (userRole !== responsibleRole) {
@@ -1169,33 +1351,13 @@ export async function updateRequestStatus(params: {
     }
   }
 
-  const { data: existingRequest, error: existingRequestError } = await supabase
-    .from("requests")
-    .select("pr_no")
-    .eq("id", params.requestId)
-    .single();
-
-  if (existingRequestError || !existingRequest) {
-    throw new Error("Request not found.");
-  }
-
-  let prNo = existingRequest.pr_no as string | null;
-  if (params.newStatus === "pr_number_assigned" && !prNo) {
-    prNo = await generatePrNo();
-  }
-
   const requestUpdates: {
     status: RequestStatus;
     updated_at: string;
-    pr_no?: string | null;
   } = {
     status: params.newStatus,
     updated_at: new Date().toISOString(),
   };
-
-  if (params.newStatus === "pr_number_assigned") {
-    requestUpdates.pr_no = prNo;
-  }
 
   const { error: updateError } = await supabase
     .from("requests")
@@ -1222,7 +1384,7 @@ export async function updateRequestStatus(params: {
     const { data: request, error: fetchErr } = await supabase
       .from("requests")
       .select(
-        "pr_no, created_by, creator:users!requests_created_by_fkey(email, first_name, last_name)",
+        "pr_no, created_by, pr_groups:request_pr_groups(pr_no, created_at), creator:users!requests_created_by_fkey(email, first_name, last_name)",
       )
       .eq("id", params.requestId)
       .single();
@@ -1255,7 +1417,11 @@ export async function updateRequestStatus(params: {
       }
 
       // ── In-app notification to the request creator ──
-      const prLabel = request.pr_no ?? "Request";
+      const prGroups = (request?.pr_groups ?? []) as { pr_no: string }[];
+      const prLabel =
+        prGroups.length > 0
+          ? prGroups.map((g) => g.pr_no).join(", ")
+          : (request.pr_no ?? "Request");
       const notifType =
         params.newStatus === "returned_for_revision" ||
         params.newStatus === "returned_for_action"
@@ -1373,6 +1539,163 @@ export async function fetchPrograms(collegeId?: string) {
   return data ?? [];
 }
 
+// ── PPMP Plans ───────────────────────────────────────
+
+export async function fetchActivePpmpPlan(params: {
+  userId: string;
+  programId: string;
+}) {
+  const { data, error } = await supabase
+    .from("ppmp_plans")
+    .select(
+      `
+      *,
+      items:ppmp_items(*)
+    `,
+    )
+    .eq("created_by", params.userId)
+    .eq("program_id", params.programId)
+    .not("completed_at", "is", null)
+    .gt("expires_at", new Date().toISOString())
+    .order("completed_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error) throw error;
+  return data as PpmpPlanRow;
+}
+
+export async function fetchUserPpmpPlans(params: {
+  userId: string;
+  programId?: string;
+}) {
+  let query = supabase
+    .from("ppmp_plans")
+    .select(
+      `
+      *,
+      items:ppmp_items(*),
+      program:programs(id, code, name)
+    `,
+    )
+    .eq("created_by", params.userId)
+    .order("created_at", { ascending: false });
+
+  if (params.programId) {
+    query = query.eq("program_id", params.programId);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as PpmpPlanRow[];
+}
+
+export async function createPpmpPlan(params: {
+  createdBy: string;
+  collegeId: string;
+  programId: string;
+  items: Array<{
+    category: string;
+    itemDescription: string;
+    qty: number;
+    uom: string;
+    unitPrice?: number;
+  }>;
+}) {
+  const planId = crypto.randomUUID();
+
+  const { error: planError } = await supabase.from("ppmp_plans").insert({
+    id: planId,
+    created_by: params.createdBy,
+    college_id: params.collegeId,
+    program_id: params.programId,
+    expires_at: null,
+    realign_at: null,
+    completed_at: null,
+    completed_by: null,
+  });
+  if (planError) throw planError;
+
+  const items = params.items.map((item) => ({
+    id: crypto.randomUUID(),
+    plan_id: planId,
+    category: item.category,
+    item_description: item.itemDescription,
+    qty: item.qty,
+    uom: item.uom,
+    unit_price: item.unitPrice ?? null,
+  }));
+
+  if (items.length > 0) {
+    const { error: itemsError } = await supabase
+      .from("ppmp_items")
+      .insert(items);
+    if (itemsError) throw itemsError;
+  }
+
+  return planId;
+}
+
+export async function updatePpmpPlan(params: {
+  planId: string;
+  items: Array<{
+    category: string;
+    itemDescription: string;
+    qty: number;
+    uom: string;
+    unitPrice?: number;
+  }>;
+}) {
+  const { error: updateError } = await supabase
+    .from("ppmp_plans")
+    .update({
+      updated_at: new Date().toISOString(),
+      realign_at: new Date().toISOString(),
+    })
+    .eq("id", params.planId);
+  if (updateError) throw updateError;
+
+  const { error: deleteError } = await supabase
+    .from("ppmp_items")
+    .delete()
+    .eq("plan_id", params.planId);
+  if (deleteError) throw deleteError;
+
+  const items = params.items.map((item) => ({
+    id: crypto.randomUUID(),
+    plan_id: params.planId,
+    category: item.category,
+    item_description: item.itemDescription,
+    qty: item.qty,
+    uom: item.uom,
+    unit_price: item.unitPrice ?? null,
+  }));
+
+  if (items.length > 0) {
+    const { error: itemsError } = await supabase
+      .from("ppmp_items")
+      .insert(items);
+    if (itemsError) throw itemsError;
+  }
+}
+
+export async function completePpmpPlan(params: {
+  planId: string;
+  completedBy: string;
+  expiresAt: string;
+}) {
+  const { error } = await supabase
+    .from("ppmp_plans")
+    .update({
+      completed_at: new Date().toISOString(),
+      completed_by: params.completedBy,
+      expires_at: params.expiresAt,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", params.planId);
+  if (error) throw error;
+}
+
 // ── Stats ──────────────────────────────────────────────
 
 export async function fetchRequestStats(userId?: string) {
@@ -1385,10 +1708,7 @@ export async function fetchRequestStats(userId?: string) {
   const rows = data ?? [];
 
   // Group by phase for dashboard
-  const twgStatuses: RequestStatus[] = [
-    "request_reviewed",
-    "pr_number_assigned",
-  ];
+  const accountingStatuses: RequestStatus[] = ["request_reviewed"];
   const procurementStatuses: RequestStatus[] = [
     "notice_of_meeting",
     "endorsed_to_bac",
@@ -1415,8 +1735,8 @@ export async function fetchRequestStats(userId?: string) {
   return {
     total: rows.length,
     requestSent: rows.filter((r) => r.status === "request_sent").length,
-    twgPhase: rows.filter((r) =>
-      twgStatuses.includes(r.status as RequestStatus),
+    accountingPhase: rows.filter((r) =>
+      accountingStatuses.includes(r.status as RequestStatus),
     ).length,
     procurementPhase: rows.filter((r) =>
       procurementStatuses.includes(r.status as RequestStatus),
@@ -1499,7 +1819,7 @@ export async function confirmReceipt(
  * Returns true only if:
  * - Current status is "returned_for_revision"
  * - Previous status (before the return) was "request_sent"
- * - The user who returned it for revision has role "twg"
+ * - The user who returned it for revision has role "accounting_admin"
  */
 export function canEditReturnedRequest(request: RequestRow): boolean {
   if (request.status !== "returned_for_revision") {
@@ -1524,8 +1844,8 @@ export function canEditReturnedRequest(request: RequestRow): boolean {
     return false;
   }
 
-  // Check if the returner has "twg" role.
-  if (returnLog.updater.role !== "twg") {
+  // Check if the returner has "accounting_admin" role.
+  if (returnLog.updater.role !== "accounting_admin") {
     return false;
   }
 
@@ -1615,9 +1935,11 @@ export async function resubmitReturnedRequest(params: {
         stock_no: String(idx + 1),
         qty: item.qty,
         item_description: item.itemDescription,
+        category: item.category ?? null,
         uom: item.uom,
         unit_cost: item.unitCost ?? null,
         total_cost: item.unitCost ? item.unitCost * item.qty : null,
+        preferred_brand: item.preferredBrand ?? null,
       }));
 
     if (itemRows.length > 0) {

@@ -98,11 +98,19 @@ function itemsTotal(items?: { unit_cost: number | null; qty: number }[]) {
   return items.reduce((s, it) => s + (it.unit_cost ?? 0) * (it.qty ?? 0), 0);
 }
 
+function formatPrLabel(request: RequestRow) {
+  const groups = request.pr_groups ?? [];
+  if (groups.length === 0) return request.pr_no ?? "No PR yet";
+  if (groups.length === 1) return groups[0].pr_no;
+  const [first, ...rest] = groups;
+  return `${first.pr_no} +${rest.length}`;
+}
+
 export default function Dashboard() {
   const [stats, setStats] = useState({
     total: 0,
     requestSent: 0,
-    twgPhase: 0,
+    accountingPhase: 0,
     procurementPhase: 0,
     supplyPhase: 0,
     completed: 0,
@@ -135,7 +143,11 @@ export default function Dashboard() {
     () =>
       [
         { name: "Request Sent", value: stats.requestSent, color: "#6b7280" },
-        { name: "TWG Phase", value: stats.twgPhase, color: "#f59e0b" },
+        {
+          name: "Accounting Phase",
+          value: stats.accountingPhase,
+          color: "#f59e0b",
+        },
         {
           name: "Procurement Phase",
           value: stats.procurementPhase,
@@ -186,13 +198,15 @@ export default function Dashboard() {
           <StatCard
             title="Pending Review"
             value={stats.requestSent}
-            sub="awaiting TWG review"
+            sub="awaiting accounting review"
             icon={Clock}
             theme="amber"
           />
           <StatCard
             title="In Progress"
-            value={stats.twgPhase + stats.procurementPhase + stats.supplyPhase}
+            value={
+              stats.accountingPhase + stats.procurementPhase + stats.supplyPhase
+            }
             sub="under processing"
             icon={CheckCircle2}
             theme="green"
@@ -253,8 +267,8 @@ export default function Dashboard() {
                   color: "bg-gray-100 text-gray-700",
                 },
                 {
-                  label: "TWG Phase",
-                  count: stats.twgPhase,
+                  label: "Accounting Phase",
+                  count: stats.accountingPhase,
                   color: "bg-amber-100 text-amber-700",
                 },
                 {
@@ -318,7 +332,7 @@ export default function Dashboard() {
                 {recent.map((r) => (
                   <tr key={r.id} className="text-sm text-gray-700">
                     <td className="px-5 py-4 font-medium text-gray-900">
-                      {r.pr_no ?? "No PR yet"}
+                      {formatPrLabel(r)}
                     </td>
                     <td className="px-5 py-4 max-w-[200px] truncate">
                       {r.purpose || "—"}

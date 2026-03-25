@@ -22,6 +22,8 @@ import CreateRequestUser from "./pages/user/CreateRequest";
 import RequestsUser from "./pages/user/Requests";
 import MonitoringUser from "./pages/user/Monitoring";
 import SettingsUser from "./pages/user/Settings";
+import Ppmp from "./pages/user/Ppmp";
+import Support from "./pages/common/Support";
 
 export default function App() {
   return (
@@ -44,6 +46,8 @@ export default function App() {
               />
               <Route path="/requests" element={<RequestsUser />} />
               <Route path="/monitoring" element={<MonitoringUser />} />
+              <Route path="/ppmp" element={<Ppmp />} />
+              <Route path="/support" element={<Support />} />
               <Route path="/settings" element={<SettingsUser />} />
             </Route>
 
@@ -60,6 +64,7 @@ export default function App() {
               <Route path="/admin/monitoring" element={<MonitoringAdmin />} />
               <Route path="/admin/reports" element={<Reports />} />
               <Route path="/admin/settings" element={<Settings />} />
+              <Route path="/admin/support" element={<Support />} />
             </Route>
           </Route>
 

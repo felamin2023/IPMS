@@ -10,8 +10,13 @@ import {
   fetchUserProfile,
   type RequestItemInput,
 } from "../../lib/requests";
+import ppmpCatalog from "../../lib/ppmpCatalog.json";
 
-type ItemRow = RequestItemInput & { key: number };
+type ItemRow = RequestItemInput & {
+  key: number;
+  qtyInput: string;
+  unitCostInput: string;
+};
 
 let nextKey = 1;
 
@@ -19,9 +24,13 @@ function emptyItem(): ItemRow {
   return {
     key: nextKey++,
     qty: 1,
+    qtyInput: "1",
     itemDescription: "",
+    preferredBrand: "",
+    category: "",
     uom: "pcs",
     unitCost: 0,
+    unitCostInput: "0",
   };
 }
 
@@ -29,8 +38,12 @@ export default function CreateRequest() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const nameRegex = /^[A-Za-z\s.'-]+$/;
+
   const [purpose, setPurpose] = useState("");
   const [fundSource, setFundSource] = useState("");
+  const [requestedBy, setRequestedBy] = useState("");
+  const [reviewedBy, setReviewedBy] = useState("");
   const [items, setItems] = useState<ItemRow[]>([emptyItem()]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -50,9 +63,15 @@ export default function CreateRequest() {
       .then((p) => {
         if (p?.college_id) setCollegeId(p.college_id);
         if (p?.program_id) setProgramId(p.program_id);
+        if (!requestedBy.trim() && p?.first_name) {
+          const fullName = `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim();
+          if (fullName) {
+            setRequestedBy(fullName);
+          }
+        }
       })
       .catch(console.error);
-  }, [user?.id]);
+  }, [user?.id, requestedBy]);
 
   useEffect(() => {
     if (collegeId) {
@@ -62,24 +81,106 @@ export default function CreateRequest() {
     }
   }, [collegeId]);
 
-  const uomOptions = useMemo(
-    () => [
-      "pcs",
-      "box",
-      "ream",
-      "set",
-      "unit",
-      "pack",
-      "roll",
-      "bottle",
-      "lot",
-    ],
-    [],
-  );
+  const categoryOptions = useMemo(() => {
+    const all = ppmpCatalog.map((entry) => entry.category);
+    return Array.from(new Set(all)).sort((a, b) => a.localeCompare(b));
+  }, []);
 
-  function updateItem(key: number, field: keyof RequestItemInput, value: any) {
+  const uomOptions = useMemo(() => {
+    const base = [
+      "piece",
+      "pc",
+      "unit",
+      "set",
+      "lot",
+      "pair",
+      "box",
+      "pack",
+      "ream",
+      "roll",
+      "bundle",
+      "book",
+      "pad",
+      "notebook",
+      "cartridge",
+      "bottle",
+      "can",
+      "tube",
+      "sheet",
+      "liter",
+      "L",
+      "milliliter",
+      "mL",
+      "gallon",
+      "container",
+      "drum",
+      "kilogram",
+      "kg",
+      "gram",
+      "g",
+      "ton",
+      "meter",
+      "m",
+      "centimeter",
+      "cm",
+      "inch",
+      "foot",
+      "ft",
+      "square meter",
+      "sqm",
+      "cubic meter",
+      "cu.m",
+      "bag",
+      "sack",
+      "pail",
+      "rod",
+      "bar",
+      "panel",
+      "length",
+      "coil",
+      "kilo",
+      "tray",
+      "dozen",
+      "sachet",
+      "license",
+      "subscription",
+    ];
+    const catalogUoms = ppmpCatalog
+      .flatMap((entry) => entry.items.map((item) => item.uom))
+      .filter(Boolean);
+    return Array.from(new Set([...base, ...catalogUoms])).sort((a, b) =>
+      a.localeCompare(b),
+    );
+  }, []);
+
+  function updateItem(key: number, field: string, value: any) {
     setItems((prev) =>
-      prev.map((it) => (it.key === key ? { ...it, [field]: value } : it)),
+      prev.map((it) => {
+        if (it.key !== key) return it;
+        if (field === "category") {
+          return { ...it, category: value, itemDescription: "" };
+        }
+        if (field === "preferredBrand") {
+          return { ...it, preferredBrand: value };
+        }
+        if (field === "qtyInput") {
+          const parsed = parseInt(value, 10);
+          return {
+            ...it,
+            qtyInput: value,
+            qty: Number.isFinite(parsed) && parsed > 0 ? parsed : it.qty,
+          };
+        }
+        if (field === "unitCostInput") {
+          const parsed = parseFloat(value);
+          return {
+            ...it,
+            unitCostInput: value,
+            unitCost: Number.isFinite(parsed) ? parsed : it.unitCost,
+          };
+        }
+        return { ...it, [field]: value };
+      }),
     );
   }
 
@@ -111,8 +212,32 @@ export default function CreateRequest() {
       setError("Please select a college and program.");
       return;
     }
+    if (!purpose.trim()) {
+      setError("Purpose is required.");
+      return;
+    }
+    if (!fundSource.trim()) {
+      setError("Fund source is required.");
+      return;
+    }
     if (items.some((it) => !it.itemDescription.trim())) {
       setError("Each item must have a description.");
+      return;
+    }
+    if (items.some((it) => !it.category?.trim())) {
+      setError("Each item must have a category.");
+      return;
+    }
+    if (!requestedBy.trim() || !reviewedBy.trim()) {
+      setError("Requested by and Reviewed by are required.");
+      return;
+    }
+    if (!nameRegex.test(requestedBy.trim())) {
+      setError("Requested by must contain letters only.");
+      return;
+    }
+    if (!nameRegex.test(reviewedBy.trim())) {
+      setError("Reviewed by must contain letters only.");
       return;
     }
 
@@ -124,10 +249,14 @@ export default function CreateRequest() {
         programId,
         purpose,
         fundSource: fundSource || undefined,
+        requestedBy: requestedBy || undefined,
+        reviewedBy: reviewedBy || undefined,
         createdBy: user.id,
         items: items.map((it) => ({
           qty: it.qty,
           itemDescription: it.itemDescription,
+          category: it.category,
+          preferredBrand: it.preferredBrand,
           uom: it.uom,
           unitCost: it.unitCost || undefined,
         })),
@@ -218,28 +347,72 @@ export default function CreateRequest() {
               <label className="text-sm font-medium text-gray-700">
                 Purpose <span className="text-red-500">*</span>
               </label>
-              <textarea
+              <select
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value)}
-                className="mt-2 min-h-[80px] w-full resize-y rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-                placeholder="Purpose of this procurement request"
+                className="mt-2 w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                 required
-              />
+              >
+                <option value="">Select purpose</option>
+                {categoryOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
               <label className="text-sm font-medium text-gray-700">
-                Fund Source{" "}
-                <span className="text-xs font-normal text-gray-400">
-                  (Optional)
-                </span>
+                Fund Source <span className="text-red-500">*</span>
               </label>
-              <input
+              <select
                 value={fundSource}
                 onChange={(e) => setFundSource(e.target.value)}
                 className="mt-2 w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-                placeholder="e.g., General Fund, Special Fund"
-              />
+                required
+              >
+                <option value="">Select fund source</option>
+                <option value="General Appropriations Act (GAA)">
+                  General Appropriations Act (GAA)
+                </option>
+                <option value="School Trust Fund (STF)">
+                  School Trust Fund (STF)
+                </option>
+                <option value="Income Generating Projects (IGP)">
+                  Income Generating Projects (IGP)
+                </option>
+              </select>
+            </div>
+
+            {/* Requested / Reviewed By */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label className="text-sm font-medium text-gray-700">
+                  Requested by <span className="text-red-500">*</span>
+                </label>
+                <input
+                  value={requestedBy}
+                  onChange={(e) => setRequestedBy(e.target.value)}
+                  className="mt-2 w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  placeholder="Name of requester"
+                  spellCheck
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">
+                  Reviewed by <span className="text-red-500">*</span>
+                </label>
+                <input
+                  value={reviewedBy}
+                  onChange={(e) => setReviewedBy(e.target.value)}
+                  className="mt-2 w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  placeholder="Name of reviewer"
+                  spellCheck
+                  required
+                />
+              </div>
             </div>
 
             {/* Items */}
@@ -277,10 +450,31 @@ export default function CreateRequest() {
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-6">
                       <div className="md:col-span-2">
                         <label className="text-xs text-gray-500">
-                          Description *
+                          Category <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={it.category || ""}
+                          onChange={(e) =>
+                            updateItem(it.key, "category", e.target.value)
+                          }
+                          className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                          required
+                        >
+                          <option value="">Select category</option>
+                          {categoryOptions.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="text-xs text-gray-500">
+                          Description <span className="text-red-500">*</span>
                         </label>
                         <input
                           value={it.itemDescription}
@@ -291,34 +485,56 @@ export default function CreateRequest() {
                               e.target.value,
                             )
                           }
-                          className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-300"
+                          className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                           placeholder="Item description"
+                          spellCheck
                           required
                         />
                       </div>
 
-                      <div>
+                      <div className="md:col-span-2">
+                        <label className="text-xs text-gray-500">
+                          Preferred Brand with Detailed Specifications
+                        </label>
+                        <input
+                          value={it.preferredBrand || ""}
+                          onChange={(e) =>
+                            updateItem(it.key, "preferredBrand", e.target.value)
+                          }
+                          className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                          placeholder="Notes (for internal reference only)"
+                          spellCheck
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
                         <label className="text-xs text-gray-500">Qty *</label>
                         <input
                           type="number"
                           min={1}
-                          value={it.qty}
+                          step="1"
+                          value={it.qtyInput}
                           onChange={(e) =>
-                            updateItem(it.key, "qty", Number(e.target.value))
+                            updateItem(it.key, "qtyInput", e.target.value)
                           }
-                          className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-300"
+                          onBlur={(e) => {
+                            if (!e.target.value) {
+                              updateItem(it.key, "qtyInput", "1");
+                            }
+                          }}
+                          className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                           required
                         />
                       </div>
 
-                      <div>
+                      <div className="md:col-span-2">
                         <label className="text-xs text-gray-500">UOM</label>
                         <select
                           value={it.uom}
                           onChange={(e) =>
                             updateItem(it.key, "uom", e.target.value)
                           }
-                          className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-300"
+                          className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                         >
                           {uomOptions.map((u) => (
                             <option key={u} value={u}>
@@ -328,7 +544,7 @@ export default function CreateRequest() {
                         </select>
                       </div>
 
-                      <div>
+                      <div className="md:col-span-2">
                         <label className="text-xs text-gray-500">
                           Unit Cost
                         </label>
@@ -336,15 +552,16 @@ export default function CreateRequest() {
                           type="number"
                           min={0}
                           step="0.01"
-                          value={it.unitCost ?? ""}
+                          value={it.unitCostInput}
                           onChange={(e) =>
-                            updateItem(
-                              it.key,
-                              "unitCost",
-                              Number(e.target.value),
-                            )
+                            updateItem(it.key, "unitCostInput", e.target.value)
                           }
-                          className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-300"
+                          onBlur={(e) => {
+                            if (!e.target.value) {
+                              updateItem(it.key, "unitCostInput", "0");
+                            }
+                          }}
+                          className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                           placeholder="0.00"
                         />
                       </div>

@@ -59,7 +59,7 @@ export default function RequestChatPanel(props: {
   const isRequestSentParticipant =
     request.status === "request_sent" &&
     !!role &&
-    (role === "department_user" || role === "twg");
+    (role === "department_user" || role === "accounting_admin");
   const canSend =
     Boolean(currentUserId) &&
     Boolean(handlerRole) &&

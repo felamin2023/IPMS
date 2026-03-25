@@ -25,7 +25,7 @@ import {
   getDisplayNote,
 } from "../../lib/requests";
 import { supabase } from "../../lib/supabase";
-import { generatePrDocument } from "../../lib/generatePr.ts";
+import { generatePrDocument } from "../../lib/generatePr";
 import StatusTimeline from "../../components/StatusTimeline";
 
 function StatusPill({ status }: { status: RequestStatus }) {
@@ -63,6 +63,27 @@ function itemsTotal(items?: { unit_cost: number | null; qty: number }[]) {
   );
 }
 
+function formatPrLabel(request: RequestRow) {
+  const groups = request.pr_groups ?? [];
+  if (groups.length === 0) return request.pr_no ?? "No PR yet";
+  if (groups.length === 1) return groups[0].pr_no;
+  const [first, ...rest] = groups;
+  return `${first.pr_no} +${rest.length}`;
+}
+
+function parseContractFileUrls(value: string | null | undefined): string[] {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) {
+      return parsed.filter((entry) => typeof entry === "string");
+    }
+  } catch {
+    // Fall back to treating the value as a single URL.
+  }
+  return [value];
+}
+
 export default function Requests() {
   const { user } = useAuth();
   const [data, setData] = useState<RequestRow[]>([]);
@@ -80,6 +101,9 @@ export default function Requests() {
     { id: string; receivedQty: number; damageNotes: string }[]
   >([]);
   const [submittingReceipt, setSubmittingReceipt] = useState(false);
+  const viewContractFiles = viewRequest
+    ? parseContractFileUrls(viewRequest.contract_file_url)
+    : [];
 
   async function openView(r: RequestRow) {
     setViewLoading(true);
@@ -159,9 +183,15 @@ export default function Requests() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return data.filter((r) => {
+      const prMatches =
+        (r.pr_no ?? "").toLowerCase().includes(q) ||
+        (r.pr_groups ?? [])
+          .map((g) => g.pr_no.toLowerCase())
+          .some((value) => value.includes(q));
+
       const matchesQuery =
         !q ||
-        (r.pr_no ?? "").toLowerCase().includes(q) ||
+        prMatches ||
         (r.purpose ?? "").toLowerCase().includes(q) ||
         (r.college?.code ?? "").toLowerCase().includes(q) ||
         (r.program?.code ?? "").toLowerCase().includes(q);
@@ -274,7 +304,14 @@ export default function Requests() {
                     {current.map((r) => (
                       <tr key={r.id} className="text-sm text-gray-700">
                         <td className="px-5 py-4 font-medium text-gray-900">
-                          {r.pr_no ?? "No PR yet"}
+                          <div
+                            className="font-medium text-gray-900"
+                            title={(r.pr_groups ?? [])
+                              .map((g) => `${g.pr_no} — ${g.category}`)
+                              .join("\n")}
+                          >
+                            {formatPrLabel(r)}
+                          </div>
                         </td>
                         <td className="px-5 py-4 max-w-[200px] truncate">
                           {r.purpose || "—"}
@@ -463,8 +500,15 @@ export default function Requests() {
             <div className="flex items-start justify-between gap-3 mb-4">
               <div>
                 <div className="text-lg font-semibold text-gray-900">
-                  {viewRequest.pr_no ?? "No PR yet"}
+                  {formatPrLabel(viewRequest)}
                 </div>
+                {viewRequest.pr_groups && viewRequest.pr_groups.length > 0 && (
+                  <div className="mt-1 text-xs text-gray-500">
+                    {viewRequest.pr_groups
+                      .map((g) => `${g.pr_no} — ${g.category}`)
+                      .join(" | ")}
+                  </div>
+                )}
                 <div className="text-sm text-gray-500">
                   {viewRequest.purpose || "No purpose"}
                 </div>
@@ -520,6 +564,26 @@ export default function Requests() {
                   </div>
                 </div>
               )}
+              {viewRequest.requested_by && (
+                <div>
+                  <div className="text-xs font-semibold uppercase text-gray-500">
+                    Requested by
+                  </div>
+                  <div className="mt-1 text-gray-900">
+                    {viewRequest.requested_by}
+                  </div>
+                </div>
+              )}
+              {viewRequest.reviewed_by && (
+                <div>
+                  <div className="text-xs font-semibold uppercase text-gray-500">
+                    Reviewed by
+                  </div>
+                  <div className="mt-1 text-gray-900">
+                    {viewRequest.reviewed_by}
+                  </div>
+                </div>
+              )}
             </div>
 
             {viewRequest.items && viewRequest.items.length > 0 && (
@@ -531,17 +595,27 @@ export default function Requests() {
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50">
                       <tr className="text-left text-xs font-semibold uppercase text-gray-500">
+                        <th className="px-3 py-2">Category</th>
                         <th className="px-3 py-2">Description</th>
+                        <th className="px-3 py-2">Preferred Brand</th>
                         <th className="px-3 py-2">Qty</th>
                         <th className="px-3 py-2">UOM</th>
                         <th className="px-3 py-2">Unit Cost</th>
                         <th className="px-3 py-2">Total</th>
+                        <th className="px-3 py-2">Inspection Notes</th>
+                        <th className="px-3 py-2">Inspection File</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {viewRequest.items.map((item) => (
                         <tr key={item.id}>
+                          <td className="px-3 py-2 text-gray-500">
+                            {item.category || "—"}
+                          </td>
                           <td className="px-3 py-2">{item.item_description}</td>
+                          <td className="px-3 py-2">
+                            {item.preferred_brand || "—"}
+                          </td>
                           <td className="px-3 py-2">{item.qty}</td>
                           <td className="px-3 py-2">{item.uom}</td>
                           <td className="px-3 py-2">
@@ -554,6 +628,23 @@ export default function Requests() {
                               ? money.format(Number(item.total_cost))
                               : "—"}
                           </td>
+                          <td className="px-3 py-2">
+                            {item.inspection_notes || "—"}
+                          </td>
+                          <td className="px-3 py-2">
+                            {item.inspection_file_url ? (
+                              <a
+                                href={item.inspection_file_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-blue-600 hover:text-blue-800 underline"
+                              >
+                                View
+                              </a>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -562,6 +653,33 @@ export default function Requests() {
                 <div className="mt-2 text-right text-sm font-semibold text-gray-900">
                   Total: {money.format(itemsTotal(viewRequest.items))}
                 </div>
+              </div>
+            )}
+
+            {(viewRequest.contract_amount != null ||
+              viewRequest.contract_file_url) && (
+              <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                <div className="font-semibold">Contract Details</div>
+                {viewRequest.contract_amount != null && (
+                  <div className="mt-1">
+                    Amount: {money.format(Number(viewRequest.contract_amount))}
+                  </div>
+                )}
+                {viewContractFiles.length > 0 && (
+                  <div className="mt-1 space-y-1">
+                    {viewContractFiles.map((url, index) => (
+                      <a
+                        key={`${url}-${index}`}
+                        href={url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-block text-blue-700 underline"
+                      >
+                        {`View Contract File${viewContractFiles.length > 1 ? " " + (index + 1) : ""}`}
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -710,7 +828,7 @@ export default function Requests() {
                   Confirm Receipt of Items
                 </div>
                 <div className="text-sm text-gray-500">
-                  {receiptRequest.pr_no ?? "No PR yet"} —{" "}
+                  {formatPrLabel(receiptRequest)} —{" "}
                   {receiptRequest.purpose || "No purpose"}
                 </div>
               </div>

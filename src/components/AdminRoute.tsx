@@ -1,11 +1,11 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-const ADMIN_ROLES = ["twg", "procurement_admin", "supply_admin"];
+const ADMIN_ROLES = ["accounting_admin", "procurement_admin", "supply_admin"];
 
 /**
  * Wraps admin-only routes.
- * Allows admin, twg, procurement_admin, and supply_admin roles.
+ * Allows admin, accounting_admin, procurement_admin, and supply_admin roles.
  */
 export default function AdminRoute() {
   const { user, role, loading } = useAuth();

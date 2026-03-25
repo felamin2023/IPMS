@@ -11,6 +11,7 @@ import {
   Activity,
   ClipboardList,
   Settings2,
+  HelpCircle,
   LogOut,
 } from "lucide-react";
 
@@ -23,9 +24,11 @@ type NavItem = {
 const navItems: NavItem[] = [
   { label: "Home", to: "/", icon: Home },
   { label: "Create Request", to: "/create-request", icon: FilePlus2 },
+  { label: "PPMP", to: "/ppmp", icon: ClipboardList },
   { label: "Procurement Requests", to: "/requests", icon: FileText },
   { label: "Monitoring", to: "/monitoring", icon: Activity },
   { label: "Settings", to: "/settings", icon: Settings2 },
+  { label: "Support", to: "/support", icon: HelpCircle },
 ];
 
 export default function UserNav({ hideBrand }: { hideBrand?: boolean }) {

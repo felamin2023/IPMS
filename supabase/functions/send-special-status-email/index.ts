@@ -46,23 +46,23 @@ function buildNotice(params: {
 
   if (status === "notice_of_meeting") {
     return {
-      subject: "Notice of Meeting for Determination of Mode of Purchase",
+      subject:
+        "Notice of Meeting for the Determination of the Mode of Purchase, Opening, Validation, and Awarding of Contract",
       htmlContent: `
         <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; color: #111827;">
           <p>Dear Members of the BAC, Technical Working Group (TWG), and End-User,</p>
-          <p>Good day!</p>
+          <p>Greetings!</p>
           <p>
-            Please be informed that a meeting will be conducted to determine the appropriate mode of purchase for the submitted Procurement Request (PR) <strong>${escapeHtml(params.prNo)}</strong>.
-            The procurement staff will be coordinating this session to ensure compliance with applicable procurement guidelines and procedures.
+            Please be advised that a meeting will be held for the determination of mode of purchase, opening, validation, and awarding of contract to the supplier with the Lowest Calculated and Responsive Bid (LCRB).
+            The BAC Secretariat/Procurement Personnel will facilitate this process to ensure transparency and adherence to procurement regulations.
           </p>
-          <p><strong>Details of the meeting are as follows:</strong></p>
+          <p><strong>Meeting details are as follows:</strong></p>
           <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;">
             ${meetingDetailsHtml(params)}
           </div>
           <p>
-            Your presence and participation are highly requested to facilitate timely processing of the procurement activity.
+            Your attendance is essential for the proper conduct of this procurement activity. Thank you for your cooperation.
           </p>
-          <p>Thank you.</p>
           <p style="margin-top: 20px;">
             Respectfully,<br />
             Ricamar D. Kintanar<br />
@@ -121,7 +121,7 @@ function buildNotice(params: {
     htmlContent: `
       <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; color: #111827;">
         <p>Dear ${escapeHtml(params.ownerName || "Recipient")},</p>
-        <p>Good day!</p>
+        <p>Greetings!</p>
         <p>
           This is to inform you that the requested supplies/materials/equipment under Procurement Request (PR) <strong>${escapeHtml(params.prNo)}</strong> are now available.
         </p>
@@ -129,7 +129,6 @@ function buildNotice(params: {
           You may arrange for pick-up at the Supply Office or expect delivery based on the agreed schedule. Should you have any questions or require coordination, please feel free to contact our office.
         </p>
         ${venueLine}
-        <p>Thank you.</p>
         <p style="margin-top: 20px;">
           Respectfully,<br />
           Jame Patrick Villegas<br />

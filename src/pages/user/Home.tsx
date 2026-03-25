@@ -108,6 +108,14 @@ function itemsTotal(items?: { unit_cost: number | null; qty: number }[]) {
   return items.reduce((s, it) => s + (it.unit_cost ?? 0) * (it.qty ?? 0), 0);
 }
 
+function formatPrLabel(request: RequestRow) {
+  const groups = request.pr_groups ?? [];
+  if (groups.length === 0) return request.pr_no ?? "No PR yet";
+  if (groups.length === 1) return groups[0].pr_no;
+  const [first, ...rest] = groups;
+  return `${first.pr_no} +${rest.length}`;
+}
+
 export default function Home() {
   const { user } = useAuth();
 
@@ -118,7 +126,7 @@ export default function Home() {
   const [stats, setStats] = useState({
     total: 0,
     requestSent: 0,
-    twgPhase: 0,
+    accountingPhase: 0,
     procurementPhase: 0,
     supplyPhase: 0,
     completed: 0,
@@ -259,7 +267,9 @@ export default function Home() {
           />
           <StatCard
             title="In Progress"
-            value={stats.twgPhase + stats.procurementPhase + stats.supplyPhase}
+            value={
+              stats.accountingPhase + stats.procurementPhase + stats.supplyPhase
+            }
             icon={CheckCircle2}
             tone="green"
           />
@@ -306,7 +316,7 @@ export default function Home() {
                   {recent.map((r) => (
                     <tr key={r.id} className="text-sm text-gray-700">
                       <td className="px-6 py-4 font-medium text-gray-900">
-                        {r.pr_no ?? "No PR yet"}
+                        {formatPrLabel(r)}
                       </td>
                       <td className="px-6 py-4 max-w-[180px] truncate">
                         {r.purpose || "—"}
@@ -359,7 +369,7 @@ export default function Home() {
               </div>
               <div className="rounded-xl bg-amber-50 p-4">
                 <div className="text-sm font-semibold text-gray-900">
-                  2) TWG Review & Validation
+                  2) Accounting Review & Validation
                 </div>
                 <div className="mt-1 text-sm text-gray-600">
                   Technical Working Group reviews and validates request details.

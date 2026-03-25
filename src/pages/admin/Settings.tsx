@@ -24,7 +24,7 @@ function CardHeader({
 
 const ROLE_POSITION_LABEL: Record<string, string> = {
   department_user: "Department User",
-  twg: "Technical Working Group",
+  accounting_admin: "Accounting Administrator",
   procurement_admin: "Procurement Administrator",
   supply_admin: "Supply Administrator",
 };

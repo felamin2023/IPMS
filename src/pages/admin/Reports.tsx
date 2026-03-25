@@ -268,8 +268,8 @@ export default function Reports() {
         color: "#f59e0b",
       },
       {
-        name: "TWG / PR",
-        statuses: ["request_reviewed", "pr_number_assigned"],
+        name: "Accounting Review",
+        statuses: ["request_reviewed"],
         color: "#d97706",
       },
       {

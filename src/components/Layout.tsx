@@ -9,7 +9,9 @@ import { X } from "lucide-react";
 export default function Layout() {
   const { role } = useAuth();
   const isAdmin =
-    role === "twg" || role === "procurement_admin" || role === "supply_admin";
+    role === "accounting_admin" ||
+    role === "procurement_admin" ||
+    role === "supply_admin";
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (

@@ -12,6 +12,7 @@ import {
   BarChart3,
   Settings2,
   FileText,
+  HelpCircle,
   LogOut,
 } from "lucide-react";
 
@@ -36,7 +37,7 @@ const navItems: NavItem[] = [
     label: "Approvals",
     to: "/admin/approvals",
     icon: CheckSquare,
-    roles: ["twg"],
+    roles: ["accounting_admin"],
   },
   { label: "Monitoring", to: "/admin/monitoring", icon: Activity },
   {
@@ -46,6 +47,7 @@ const navItems: NavItem[] = [
     roles: ["procurement_admin"],
   },
   { label: "Settings", to: "/admin/settings", icon: Settings2 },
+  { label: "Support", to: "/admin/support", icon: HelpCircle },
 ];
 
 export default function AdminNav({ hideBrand }: { hideBrand?: boolean }) {
