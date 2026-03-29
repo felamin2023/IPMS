@@ -37,7 +37,6 @@ enum RequestStatus {
   ntp_issued
   noa_po_ntp_posted
   po_delivered
-  po_received_supply
   items_for_inspection
   under_inspection
   under_warehousing
@@ -58,6 +57,7 @@ model College {
   programs Program[]
   users    User[]
   requests Request[]
+  ppmpPlans PpmpPlan[]
 
   @@map("colleges")
 }
@@ -73,6 +73,7 @@ model Program {
   college  College   @relation(fields: [collegeId], references: [id], onDelete: Cascade)
   users    User[]
   requests Request[]
+  ppmpPlans PpmpPlan[]
 
   @@unique([collegeId, code])
   @@map("programs")
@@ -95,6 +96,7 @@ model User {
   program Program? @relation(fields: [programId], references: [id])
 
   createdRequests  Request[]          @relation("RequestCreator")
+  ppmpPlans        PpmpPlan[]
   statusLogEntries RequestStatusLog[] @relation("StatusLogUpdater")
   notifications    Notification[]     @relation("UserNotifications")
   requestMessages  RequestMessage[]   @relation("RequestMessageSender")
@@ -197,7 +199,7 @@ model PpmpItem {
   itemDescription String   @map("item_description")
   qty             Int
   uom             String
-  unitPrice       Decimal? @map("unit_price") @db.Numeric
+  unitPrice       Decimal? @map("unit_price") @db.Decimal(12, 2)
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   plan PpmpPlan @relation(fields: [planId], references: [id], onDelete: Cascade)

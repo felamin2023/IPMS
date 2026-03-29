@@ -1,5 +1,6 @@
 // src/pages/admin/Dashboard.tsx
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { FileText, Clock, CheckCircle2, Package, Loader2 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -24,9 +25,17 @@ type StatCardProps = {
   sub: string;
   icon: React.ComponentType<{ className?: string }>;
   theme: "blue" | "amber" | "green" | "violet";
+  onClick?: () => void;
 };
 
-function StatCard({ title, value, sub, icon: Icon, theme }: StatCardProps) {
+function StatCard({
+  title,
+  value,
+  sub,
+  icon: Icon,
+  theme,
+  onClick,
+}: StatCardProps) {
   const themeMap = {
     blue: {
       border: "border-blue-200",
@@ -51,8 +60,10 @@ function StatCard({ title, value, sub, icon: Icon, theme }: StatCardProps) {
   }[theme];
 
   return (
-    <div
-      className={`rounded-2xl border bg-white p-5 shadow-sm ${themeMap.border}`}
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-2xl border bg-white p-5 shadow-sm text-left transition ${themeMap.border} ${onClick ? "cursor-pointer hover:shadow-md" : "cursor-default"}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -68,7 +79,7 @@ function StatCard({ title, value, sub, icon: Icon, theme }: StatCardProps) {
           <Icon className={`h-5 w-5 ${themeMap.iconText}`} />
         </div>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -107,6 +118,7 @@ function formatPrLabel(request: RequestRow) {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     total: 0,
     requestSent: 0,
@@ -117,7 +129,11 @@ export default function Dashboard() {
     returned: 0,
   });
   const [recent, setRecent] = useState<RequestRow[]>([]);
+  const [allRequests, setAllRequests] = useState<RequestRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeStat, setActiveStat] = useState<
+    "total" | "pending" | "inProgress" | "completed" | null
+  >(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -127,6 +143,7 @@ export default function Dashboard() {
         fetchRequestsLight(),
       ]);
       setStats(s);
+      setAllRequests(all);
       setRecent(all.slice(0, 5));
     } catch (err) {
       console.error("Dashboard load error:", err);
@@ -134,6 +151,67 @@ export default function Dashboard() {
       setLoading(false);
     }
   }, []);
+
+  const accountingStatuses: RequestStatus[] = ["request_reviewed"];
+  const procurementStatuses: RequestStatus[] = [
+    "notice_of_meeting",
+    "endorsed_to_bac",
+    "resolution_approved",
+    "under_supplier_quotation",
+    "quotations_received",
+    "under_quotation_evaluation",
+    "hope_approval",
+    "abstract_prepared",
+    "contract_awarded",
+    "po_issued",
+    "ntp_issued",
+    "noa_po_ntp_posted",
+  ];
+  const supplyStatuses: RequestStatus[] = [
+    "po_delivered",
+    "items_for_inspection",
+    "under_inspection",
+    "under_warehousing",
+    "issuance",
+  ];
+
+  const modalTitle =
+    activeStat === "total"
+      ? "Total Requests"
+      : activeStat === "pending"
+        ? "Pending Review"
+        : activeStat === "inProgress"
+          ? "In Progress"
+          : activeStat === "completed"
+            ? "Completed"
+            : "";
+
+  const modalRequests = useMemo(() => {
+    if (!activeStat) return [] as RequestRow[];
+    if (activeStat === "total") return allRequests;
+    if (activeStat === "pending") {
+      return allRequests.filter((r) => r.status === "request_sent");
+    }
+    if (activeStat === "inProgress") {
+      return allRequests.filter((r) =>
+        [
+          ...accountingStatuses,
+          ...procurementStatuses,
+          ...supplyStatuses,
+        ].includes(r.status),
+      );
+    }
+    if (activeStat === "completed") {
+      return allRequests.filter((r) => r.status === "completed");
+    }
+    return [];
+  }, [
+    activeStat,
+    allRequests,
+    accountingStatuses,
+    procurementStatuses,
+    supplyStatuses,
+  ]);
 
   useEffect(() => {
     loadData();
@@ -194,6 +272,7 @@ export default function Dashboard() {
             sub="all time"
             icon={FileText}
             theme="blue"
+            onClick={() => setActiveStat("total")}
           />
           <StatCard
             title="Pending Review"
@@ -201,6 +280,7 @@ export default function Dashboard() {
             sub="awaiting accounting review"
             icon={Clock}
             theme="amber"
+            onClick={() => setActiveStat("pending")}
           />
           <StatCard
             title="In Progress"
@@ -210,6 +290,7 @@ export default function Dashboard() {
             sub="under processing"
             icon={CheckCircle2}
             theme="green"
+            onClick={() => setActiveStat("inProgress")}
           />
           <StatCard
             title="Completed"
@@ -217,6 +298,7 @@ export default function Dashboard() {
             sub="fully completed"
             icon={Package}
             theme="violet"
+            onClick={() => setActiveStat("completed")}
           />
         </div>
 
@@ -368,6 +450,89 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {activeStat && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setActiveStat(null)}
+          />
+          <div className="relative z-10 w-full max-w-3xl rounded-2xl bg-white shadow-xl">
+            <div className="flex items-start justify-between border-b border-gray-200 px-6 py-4">
+              <div>
+                <div className="text-lg font-semibold text-gray-900">
+                  {modalTitle}
+                </div>
+                <div className="mt-1 text-xs text-gray-500">
+                  {modalRequests.length} record(s)
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveStat(null)}
+                className="rounded-lg p-1 text-gray-500 hover:bg-gray-100"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="max-h-[70vh] overflow-y-auto">
+              <table className="w-full min-w-[720px]">
+                <thead className="bg-gray-50">
+                  <tr className="text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    <th className="px-5 py-3">PR Number</th>
+                    <th className="px-5 py-3">Purpose</th>
+                    <th className="px-5 py-3">Requester</th>
+                    <th className="px-5 py-3">Date</th>
+                    <th className="px-5 py-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {modalRequests.map((r) => (
+                    <tr
+                      key={r.id}
+                      className="text-sm text-gray-700 cursor-pointer hover:bg-gray-50"
+                      onClick={() => {
+                        setActiveStat(null);
+                        navigate(`/admin/requests?open=${r.id}`);
+                      }}
+                    >
+                      <td className="px-5 py-4 font-medium text-gray-900">
+                        {formatPrLabel(r)}
+                      </td>
+                      <td className="px-5 py-4 max-w-[220px] truncate">
+                        {r.purpose || "—"}
+                      </td>
+                      <td className="px-5 py-4 text-gray-600">
+                        {r.creator
+                          ? `${r.creator.first_name} ${r.creator.last_name}`
+                          : "—"}
+                      </td>
+                      <td className="px-5 py-4 text-gray-600">
+                        {new Date(r.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-5 py-4">
+                        <StatusPill status={r.status} />
+                      </td>
+                    </tr>
+                  ))}
+                  {modalRequests.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="px-5 py-10 text-center text-sm text-gray-500"
+                      >
+                        No records found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

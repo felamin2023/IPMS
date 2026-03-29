@@ -1,5 +1,6 @@
 // src/pages/admin/Approvals.tsx
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Clock,
   CheckCircle2,
@@ -18,6 +19,7 @@ import {
   type RequestStatus,
   STATUS_LABELS,
   STATUS_FLOW,
+  normalizeFlowStatus,
 } from "../../lib/requests";
 
 function money(n: number) {
@@ -83,7 +85,7 @@ function getStepState(
   status: RequestStatus,
   stepStatus: RequestStatus,
 ): "done" | "current" | "todo" {
-  const currentIdx = STATUS_FLOW.indexOf(status);
+  const currentIdx = STATUS_FLOW.indexOf(normalizeFlowStatus(status));
   const stepIdx = STATUS_FLOW.indexOf(stepStatus);
   if (currentIdx < 0 || stepIdx < 0) return "todo";
   if (currentIdx > stepIdx) return "done";
@@ -100,15 +102,12 @@ function itemsTotal(items?: { unit_cost: number | null; qty: number }[]) {
 }
 
 function formatPrLabel(request: RequestRow) {
-  const groups = request.pr_groups ?? [];
-  if (groups.length === 0) return request.pr_no ?? "No PR yet";
-  if (groups.length === 1) return groups[0].pr_no;
-  const [first, ...rest] = groups;
-  return `${first.pr_no} +${rest.length}`;
+  return request.pr_no ?? "No PR yet";
 }
 
 export default function Approvals() {
   const { user, role } = useAuth();
+  const navigate = useNavigate();
 
   // Only Accounting Administrator can take approval actions
   const canAct = role === "accounting_admin";
@@ -268,9 +267,13 @@ export default function Approvals() {
               ) : (
                 <div className="space-y-3">
                   {recentActions.map((a) => (
-                    <div
+                    <button
                       key={a.id}
-                      className="flex items-start justify-between gap-3 rounded-xl border border-gray-200 bg-white p-4"
+                      type="button"
+                      onClick={() =>
+                        navigate(`/admin/monitoring?requestId=${a.id}`)
+                      }
+                      className="flex w-full items-start justify-between gap-3 rounded-xl border border-gray-200 bg-white p-4 text-left transition-colors hover:bg-gray-50"
                     >
                       <div>
                         <div className="text-xs text-gray-500">
@@ -289,7 +292,7 @@ export default function Approvals() {
                       ) : (
                         <XCircle className="h-5 w-5 text-red-500 shrink-0" />
                       )}
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}

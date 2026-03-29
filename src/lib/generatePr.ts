@@ -19,13 +19,24 @@ function escapeHtml(value: unknown) {
     .replace(/"/g, "&quot;");
 }
 
-const MIN_ROWS = 13;
+const MIN_ROWS = 20;
 
 /**
  * Opens a new window with a printable Purchase Request document
  * matching the official CTU Argao Campus PR form.
  */
 export function generatePrDocument(request: RequestRow) {
+  console.log("PR document request data:", request);
+  const programRaw = request.program as unknown;
+  const program = (Array.isArray(programRaw) ? programRaw[0] : programRaw) as
+    | { code?: string | null; name?: string | null }
+    | null
+    | undefined;
+  const collegeRaw = request.college as unknown;
+  const college = (Array.isArray(collegeRaw) ? collegeRaw[0] : collegeRaw) as
+    | { name?: string | null }
+    | null
+    | undefined;
   const items = request.items ?? [];
   const grouped = new Map<string, typeof items>();
   for (const item of items) {
@@ -44,8 +55,9 @@ export function generatePrDocument(request: RequestRow) {
     month: "long",
     day: "numeric",
   });
-  const departmentSection = request.college?.name ?? "";
-  const responsibilityCenter = request.college?.code ?? "";
+  const departmentSection = college?.name ?? "";
+  const responsibilityCenter = program?.name ?? "";
+  console.log("PR responsibility center:", responsibilityCenter);
   const requestedBy = request.requested_by ?? "";
   const reviewedBy = request.reviewed_by ?? "";
   const baseUrl = window.location.origin;
@@ -118,20 +130,7 @@ export function generatePrDocument(request: RequestRow) {
 
       const commonHeader = `
         <div class="pr-header">
-          <div class="logo left">
-            <img src="${baseUrl}/assets/pr-logo-left.svg" alt="Left logo" />
-          </div>
-          <div class="header-text">
-            <div class="tiny">Republic of the Philippines</div>
-            <div class="school">CEBU TECHNOLOGICAL UNIVERSITY</div>
-            <div class="campus">ARGAO CAMPUS</div>
-            <div class="tiny">Ed Kintanar Street, Lamacan, Argao, Cebu</div>
-            <div class="tiny">Website: http://www.argao.ctu.edu.ph &nbsp; E-mail: ctuargao@ctu.edu.ph</div>
-            <div class="tiny">Phone No.: (032) 401-0737 local 1700</div>
-          </div>
-          <div class="logo right">
-            <img src="${baseUrl}/assets/pr-logo-right.svg" alt="Right logo" />
-          </div>
+          <img src="${baseUrl}/assets/header.jpg" alt="Purchase request header" />
         </div>
         <div class="pr-title">PURCHASE REQUEST</div>
       `;
@@ -139,18 +138,16 @@ export function generatePrDocument(request: RequestRow) {
       const infoBlock = `
         <table class="info">
           <tr>
-            <td class="label">Department/ Section:</td>
-            <td class="value">${escapeHtml(departmentSection)}</td>
-            <td class="label">PR No:</td>
-            <td class="value handwriting">${escapeHtml(prNo)}</td>
-            <td class="label">Date:</td>
-            <td class="value handwriting">${escapeHtml(dateStr)}</td>
+            <td class="label dept-row">Department/ Section:</td>
+            <td class="value dept-row">${escapeHtml(departmentSection)}</td>
+            <td class="label pr-box" rowspan="2">PR No:<br /><br /><br />Responsibility Center Code:</td>
+            <td class="value value-strong">${escapeHtml(prNo)}</td>
+            <td class="label value-inline" colspan="2">Date: <span class="value-strong">${escapeHtml(dateStr)}</span></td>
           </tr>
           <tr>
             <td class="label">Fund Source:</td>
             <td class="value">${escapeHtml(request.fund_source ?? "")}</td>
-            <td class="label" colspan="2">Responsibility Center Code:</td>
-            <td class="value" colspan="2">${escapeHtml(
+            <td class="value value-strong resp-row" colspan="3">${escapeHtml(
               responsibilityCenter,
             )}</td>
           </tr>
@@ -188,16 +185,24 @@ export function generatePrDocument(request: RequestRow) {
           )}</div>
           <table class="signatures">
             <tr>
-              <td>
-                <div class="sig-title">Requested by:</div>
-                <div class="sig-line">${escapeHtml(requestedBy)}</div>
-                <div class="sig-role">Signature / Printed Name / Designation</div>
-              </td>
-              <td>
-                <div class="sig-title">Reviewed by:</div>
-                <div class="sig-line">${escapeHtml(reviewedBy)}</div>
-                <div class="sig-role">Signature / Printed Name / Designation</div>
-              </td>
+              <td class="sig-label"></td>
+              <td class="sig-title-cell">Requested by:</td>
+              <td class="sig-title-cell">Reviewed by:</td>
+            </tr>
+            <tr>
+              <td class="sig-label">Signature:</td>
+              <td class="sig-field"></td>
+              <td class="sig-field"></td>
+            </tr>
+            <tr>
+              <td class="sig-label">Printed Name:</td>
+              <td class="sig-field sig-name">${escapeHtml(requestedBy)}</td>
+              <td class="sig-field sig-name">${escapeHtml(reviewedBy)}</td>
+            </tr>
+            <tr>
+              <td class="sig-label">Designation:</td>
+              <td class="sig-field"></td>
+              <td class="sig-field"></td>
             </tr>
           </table>
           <div class="approval">
@@ -206,7 +211,7 @@ export function generatePrDocument(request: RequestRow) {
             <div class="approval-role">Campus Director</div>
           </div>
           <div class="footer">
-            <img src="${baseUrl}/assets/pr-footer-logos.svg" alt="Accreditation logos" />
+            <img src="${baseUrl}/assets/footer.jpg" alt="Purchase request footer" />
           </div>
         </div>
       `;
@@ -231,7 +236,7 @@ export function generatePrDocument(request: RequestRow) {
             </tbody>
           </table>
           <div class="footer">
-            <img src="${baseUrl}/assets/pr-footer-logos.svg" alt="Accreditation logos" />
+            <img src="${baseUrl}/assets/footer.jpg" alt="Purchase request footer" />
           </div>
         </div>
       `;
@@ -248,7 +253,7 @@ export function generatePrDocument(request: RequestRow) {
   <style>
     @page {
       size: A4 portrait;
-      margin: 12mm 10mm;
+      margin: 0;
     }
     @media print {
       .no-print { display: none !important; }
@@ -258,11 +263,11 @@ export function generatePrDocument(request: RequestRow) {
     * { box-sizing: border-box; }
     body {
       font-family: "Times New Roman", Times, serif;
-      font-size: 11pt;
+      font-size: 10.5pt;
       color: #000;
       margin: 0;
       padding: 0;
-      background: #f2f2f2;
+      background: #fff;
     }
     .toolbar {
       display: flex;
@@ -282,59 +287,57 @@ export function generatePrDocument(request: RequestRow) {
     }
     .page {
       background: #fff;
-      width: 100%;
-      max-width: 850px;
-      margin: 0 auto 16px;
-      padding: 12px 14px 18px;
-      border: 2px solid #000;
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0;
+      padding: 6mm 0 2mm;
     }
     .pr-header {
-      display: grid;
-      grid-template-columns: 90px 1fr 90px;
-      gap: 12px;
-      align-items: center;
-      border-bottom: 2px solid #000;
-      padding: 8px 0;
-    }
-    .logo {
+      border-bottom: 1px solid #000;
+      padding: 4px 0 6px;
       display: flex;
-      align-items: center;
       justify-content: center;
-      height: 64px;
-      width: 64px;
-      margin: 0 auto;
     }
-    .logo img {
-      height: 64px;
-      width: 64px;
+    .pr-header img {
+      width: 100%;
+      max-width: 760px;
+      max-height: 80px;
+      height: auto;
       object-fit: contain;
     }
-    .header-text { text-align: center; line-height: 1.1; }
-    .header-text .tiny { font-size: 10px; }
-    .header-text .school { font-size: 18px; font-weight: 800; }
-    .header-text .campus { font-size: 12px; font-weight: 700; }
     .pr-title {
       text-align: center;
-      font-size: 18px;
+      font-size: 15px;
       font-weight: 800;
       letter-spacing: 4px;
-      border-bottom: 2px solid #000;
-      padding: 6px 0;
+      border-top: 1px solid #000;
+      padding: 4px 0 5px;
       text-transform: uppercase;
     }
     .info {
       width: 100%;
       border-collapse: collapse;
       margin-top: 6px;
-      font-size: 11px;
+      font-size: 10.5px;
     }
     .info td {
       border: 1px solid #000;
       padding: 4px 6px;
+      vertical-align: top;
+    }
+    .info .dept-row {
+      padding-top: 8px;
+      padding-bottom: 10px;
+    }
+    .info .resp-row {
+      padding-top: 8px;
+      padding-bottom: 10px;
     }
     .info .label { font-weight: 700; width: 120px; }
     .info .value { font-weight: 600; }
-    .info .handwriting { font-family: "Segoe Script", cursive; font-size: 14px; }
+    .info .value-strong { font-weight: 700; }
+    .info .pr-box { width: 120px; }
+    .info .value-inline { width: 200px; }
     .category {
       font-weight: 700;
       margin-top: 8px;
@@ -349,10 +352,10 @@ export function generatePrDocument(request: RequestRow) {
       width: 100%;
       border-collapse: collapse;
       margin-top: 6px;
-      font-size: 12px;
+      font-size: 11px;
     }
     .items th, .items td { border: 1px solid #000; padding: 4px 6px; }
-    .items th { background: #f5f5f5; font-weight: 700; }
+    .items th { background: #fff; font-weight: 700; }
     .items .c { text-align: center; }
     .items .r { text-align: right; }
     .items .w-stock { width: 70px; }
@@ -361,7 +364,7 @@ export function generatePrDocument(request: RequestRow) {
     .items .w-unit { width: 120px; }
     .items .w-total { width: 130px; }
     .items .bold { font-weight: 800; }
-    .data-row { height: 32px; }
+    .data-row { height: 26px; }
     .purpose {
       border: 1px solid #000;
       border-top: none;
@@ -374,23 +377,36 @@ export function generatePrDocument(request: RequestRow) {
       width: 100%;
       border-collapse: collapse;
       margin-top: 6px;
+      border: 1px solid #000;
     }
     .signatures td {
-      border: 1px solid #000;
-      padding: 10px;
-      vertical-align: top;
-      text-align: center;
+      border: none;
+      padding: 4px 8px;
+      vertical-align: middle;
+      text-align: left;
     }
-    .sig-title { font-size: 14px; margin-bottom: 14px; }
-    .sig-line {
-      border-bottom: 2px solid #000;
-      min-height: 24px;
-      margin: 0 auto 6px;
-      width: 70%;
+    .sig-label {
+      width: 140px;
+      font-size: 12px;
+      font-weight: 600;
+      border-right: 1px solid #000;
+    }
+    .sig-title-cell {
+      font-size: 12px;
+      font-weight: 700;
+      text-align: left;
+    }
+    .sig-title-cell + .sig-title-cell {
+      border-left: 1px solid #000;
+    }
+    .sig-field { height: 24px; }
+    .sig-field + .sig-field { border-left: 1px solid #000; }
+    .sig-name {
       font-weight: 700;
       text-transform: uppercase;
+      border-bottom: 1px solid #000;
+      padding-bottom: 2px;
     }
-    .sig-role { font-size: 12px; }
     .approval {
       border: 1px solid #000;
       border-top: none;
@@ -410,14 +426,15 @@ export function generatePrDocument(request: RequestRow) {
     .footer {
       border: 1px solid #000;
       border-top: none;
-      padding: 10px 12px 12px;
+      padding: 6px 10px 6px;
       display: flex;
       justify-content: center;
     }
     .footer img {
       width: 100%;
-      max-width: 720px;
+      max-width: 760px;
       height: auto;
+      object-fit: contain;
     }
   </style>
 </head>

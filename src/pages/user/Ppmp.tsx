@@ -605,7 +605,6 @@ export default function Ppmp() {
                             Item <span className="text-red-500">*</span>
                           </label>
                           <input
-                            list={`ppmp-item-${item.key}`}
                             value={item.itemDescription}
                             onChange={(e) =>
                               updateItem(
@@ -617,17 +616,6 @@ export default function Ppmp() {
                             className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                             required
                           />
-                          <datalist id={`ppmp-item-${item.key}`}>
-                            {(item.category
-                              ? (itemsByCategory.get(item.category) ?? [])
-                              : []
-                            ).map((option) => (
-                              <option
-                                key={option.description}
-                                value={option.description}
-                              />
-                            ))}
-                          </datalist>
                         </div>
 
                         <div className="md:col-span-2">

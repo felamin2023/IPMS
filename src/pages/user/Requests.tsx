@@ -23,6 +23,7 @@ import {
   STATUS_TONE,
   STATUS_FLOW,
   getDisplayNote,
+  normalizeFlowStatus,
 } from "../../lib/requests";
 import { supabase } from "../../lib/supabase";
 import { generatePrDocument } from "../../lib/generatePr";
@@ -64,11 +65,7 @@ function itemsTotal(items?: { unit_cost: number | null; qty: number }[]) {
 }
 
 function formatPrLabel(request: RequestRow) {
-  const groups = request.pr_groups ?? [];
-  if (groups.length === 0) return request.pr_no ?? "No PR yet";
-  if (groups.length === 1) return groups[0].pr_no;
-  const [first, ...rest] = groups;
-  return `${first.pr_no} +${rest.length}`;
+  return request.pr_no ?? "No PR yet";
 }
 
 function parseContractFileUrls(value: string | null | undefined): string[] {
@@ -403,11 +400,24 @@ export default function Requests() {
                                 Confirm Receipt
                               </button>
                             )}
-                            {STATUS_FLOW.indexOf(r.status) >= 1 && (
+                            {STATUS_FLOW.indexOf(
+                              normalizeFlowStatus(r.status),
+                            ) >= 1 && (
                               <button
                                 type="button"
                                 className="inline-flex items-center gap-1 text-green-600 font-semibold hover:text-green-700 text-sm"
-                                onClick={() => generatePrDocument(r)}
+                                onClick={async () => {
+                                  try {
+                                    const full = await fetchRequestById(r.id);
+                                    generatePrDocument(full);
+                                  } catch (err) {
+                                    console.error(
+                                      "Failed to load request for PR download:",
+                                      err,
+                                    );
+                                    generatePrDocument(r);
+                                  }
+                                }}
                               >
                                 <Download className="h-4 w-4" />
                                 PR
@@ -769,7 +779,8 @@ export default function Requests() {
             />
 
             {/* Download button */}
-            {STATUS_FLOW.indexOf(viewRequest.status) >= 1 && (
+            {STATUS_FLOW.indexOf(normalizeFlowStatus(viewRequest.status)) >=
+              1 && (
               <div className="mt-4 flex justify-end">
                 <button
                   type="button"

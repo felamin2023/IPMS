@@ -24,7 +24,6 @@ export type RequestStatus =
   | "ntp_issued"
   | "noa_po_ntp_posted"
   | "po_delivered"
-  | "po_received_supply"
   | "items_for_inspection"
   | "under_inspection"
   | "under_warehousing"
@@ -49,17 +48,24 @@ export const STATUS_FLOW: RequestStatus[] = [
   "hope_approval",
   "abstract_prepared",
   "contract_awarded",
+  "noa_po_ntp_posted",
   "po_issued",
   "ntp_issued",
-  "noa_po_ntp_posted",
   "po_delivered",
-  "po_received_supply",
   "items_for_inspection",
   "under_inspection",
   "under_warehousing",
   "issuance",
   "completed",
 ];
+
+export function normalizeFlowStatus(
+  status: RequestStatus | string,
+): RequestStatus {
+  return status === "po_received_supply"
+    ? "po_delivered"
+    : (status as RequestStatus);
+}
 
 export const STATUS_LABELS: Record<RequestStatus, string> = {
   draft: "Draft",
@@ -78,9 +84,8 @@ export const STATUS_LABELS: Record<RequestStatus, string> = {
   contract_awarded: "Notice of Award Sent to Supplier",
   po_issued: "Purchase Order Created and Issued",
   ntp_issued: "Notice to Proceed Issued",
-  noa_po_ntp_posted: "Signed Notice of Award Returned to Procurement",
+  noa_po_ntp_posted: "Signed Notice of Award is Returned to Procurement",
   po_delivered: "Purchase Order Delivered/Picked Up",
-  po_received_supply: "Purchase Order Received by Supply Office",
   items_for_inspection: "Items Endorsed for Inspection",
   under_inspection: "Under Checking and Inspection",
   under_warehousing: "Under Storing and Warehousing for Inventory",
@@ -109,15 +114,14 @@ export const DEFAULT_STATUS_NOTES: Record<RequestStatus, string> = {
     "The Procurement Office has received quotations from suppliers.",
   under_quotation_evaluation:
     "Submitted bids are being opened and recorded for evaluation.",
-  hope_approval: "Resolution recommending award of contract is being prepared.",
+  hope_approval: "Contract awarding.",
   abstract_prepared: "Formal Abstract of Supplier Bids issued.",
-  contract_awarded: "Notice of Award (NOA) sent to supplier.",
+  contract_awarded: "Notice of Award (NOA) issued to supplier.",
   po_issued: "Purchase Order created and issued.",
   ntp_issued: "Notice to Proceed issued to the winning supplier.",
-  noa_po_ntp_posted: "Signed Notice of Award returned to Procurement Office.",
+  noa_po_ntp_posted:
+    "The supplier/awardee has signed the Notice of Award and returned it to the Procurement Office.",
   po_delivered: "Purchase order is delivered/picked up.",
-  po_received_supply:
-    "Purchase Order received by the Supply Office from the supplier.",
   items_for_inspection:
     "Items are endorsed for inspection for conformance to specifications.",
   under_inspection:
@@ -150,7 +154,6 @@ export const STATUS_SHORT_LABELS: Record<RequestStatus, string> = {
   ntp_issued: "NTP Issued",
   noa_po_ntp_posted: "NOA Returned",
   po_delivered: "PO Delivered",
-  po_received_supply: "Received by Supply",
   items_for_inspection: "For Inspection",
   under_inspection: "Under Inspection",
   under_warehousing: "Warehousing",
@@ -242,7 +245,6 @@ export const STATUS_TONE: Record<RequestStatus, string> = {
   ntp_issued: "green",
   noa_po_ntp_posted: "green",
   po_delivered: "violet",
-  po_received_supply: "violet",
   items_for_inspection: "violet",
   under_inspection: "violet",
   under_warehousing: "violet",
@@ -277,7 +279,6 @@ export const STATUS_RESPONSIBLE_ROLE: Record<RequestStatus, UserRole> = {
   ntp_issued: "procurement_admin",
   noa_po_ntp_posted: "procurement_admin",
   po_delivered: "supply_admin",
-  po_received_supply: "supply_admin",
   items_for_inspection: "supply_admin",
   under_inspection: "supply_admin",
   under_warehousing: "supply_admin",
@@ -329,7 +330,7 @@ export function getChatHandlerRole(status: RequestStatus): UserRole | null {
     return "department_user";
   }
 
-  const idx = STATUS_FLOW.indexOf(status);
+  const idx = STATUS_FLOW.indexOf(normalizeFlowStatus(status));
   if (idx < 0 || idx >= STATUS_FLOW.length - 1) {
     return null;
   }
@@ -407,6 +408,31 @@ export interface RequestItemRow {
   damage_notes: string | null;
   inspection_notes?: string | null;
   inspection_file_url?: string | null;
+}
+
+async function assignMainPrNoWithRetry(params: {
+  requestId: string;
+  maxAttempts?: number;
+}) {
+  const maxAttempts = params.maxAttempts ?? 5;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const mainPrNo = await generateMainPrNo();
+    const { error } = await supabase
+      .from("requests")
+      .update({ pr_no: mainPrNo })
+      .eq("id", params.requestId);
+
+    if (!error) return mainPrNo;
+
+    if (error.code === "23505" && attempt < maxAttempts) {
+      continue;
+    }
+
+    throw error;
+  }
+
+  return null;
 }
 
 export interface RequestPrGroupRow {
@@ -493,11 +519,31 @@ function normalizeMessageSender(row: RequestMessageRow): RequestMessageRow {
 
 // ── PR Number generation ───────────────────────────────
 
-async function generatePrNo(): Promise<string> {
+async function generateMainPrNo(): Promise<string> {
   const year = new Date().getFullYear();
-  const prefix = `PR-${year}-`;
+  const prefix = `PR_${year}_`;
 
   // Get the highest existing PR number for this year
+  const { data } = await supabase
+    .from("requests")
+    .select("pr_no")
+    .like("pr_no", `${prefix}%`)
+    .order("pr_no", { ascending: false })
+    .limit(1);
+
+  let seq = 1;
+  if (data && data.length > 0 && data[0].pr_no) {
+    const last = data[0].pr_no as string;
+    const lastSeq = parseInt(last.replace(prefix, ""), 10);
+    if (!isNaN(lastSeq)) seq = lastSeq + 1;
+  }
+
+  return `${prefix}${String(seq).padStart(4, "0")}`;
+}
+
+async function generateCategoryPrNo(mainPrNo: string): Promise<string> {
+  const prefix = `${mainPrNo}_`;
+
   const { data } = await supabase
     .from("request_pr_groups")
     .select("pr_no")
@@ -512,7 +558,35 @@ async function generatePrNo(): Promise<string> {
     if (!isNaN(lastSeq)) seq = lastSeq + 1;
   }
 
-  return `${prefix}${String(seq).padStart(4, "0")}`;
+  return `${prefix}${String(seq).padStart(3, "0")}`;
+}
+
+async function insertPrGroupWithRetry(params: {
+  requestId: string;
+  category: string;
+  mainPrNo: string;
+  maxAttempts?: number;
+}) {
+  const maxAttempts = params.maxAttempts ?? 5;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const prNo = await generateCategoryPrNo(params.mainPrNo);
+    const { error } = await supabase.from("request_pr_groups").insert({
+      id: crypto.randomUUID(),
+      request_id: params.requestId,
+      category: params.category,
+      pr_no: prNo,
+    });
+
+    if (!error) return;
+
+    if (error.code === "23505" && attempt < maxAttempts) {
+      // Duplicate PR number: regenerate and retry.
+      continue;
+    }
+
+    throw error;
+  }
 }
 
 // ── Draft Management ───────────────────────────────────
@@ -625,10 +699,15 @@ export async function submitDraft(
   draftId: string,
   userId: string,
 ): Promise<RequestRow> {
+  const mainPrNo = await assignMainPrNoWithRetry({ requestId: draftId });
+  if (!mainPrNo) {
+    throw new Error("Failed to assign a main PR number.");
+  }
+
   const { error: updateErr } = await supabase
     .from("requests")
     .update({
-      pr_no: null,
+      pr_no: mainPrNo,
       status: "request_sent" as RequestStatus,
       updated_at: new Date().toISOString(),
     })
@@ -662,27 +741,13 @@ export async function submitDraft(
   );
 
   if (categories.length > 0) {
-    const prGroupRows = [] as {
-      id: string;
-      request_id: string;
-      category: string;
-      pr_no: string;
-    }[];
-
     for (const category of categories) {
-      const prNo = await generatePrNo();
-      prGroupRows.push({
-        id: crypto.randomUUID(),
-        request_id: draftId,
+      await insertPrGroupWithRetry({
+        requestId: draftId,
         category,
-        pr_no: prNo,
+        mainPrNo,
       });
     }
-
-    const { error: groupError } = await supabase
-      .from("request_pr_groups")
-      .insert(prGroupRows);
-    if (groupError) throw groupError;
   }
 
   // Notify Accounting Administrator users
@@ -696,7 +761,7 @@ export async function submitDraft(
 
   return {
     id: draftId,
-    pr_no: null,
+    pr_no: mainPrNo,
     status: "request_sent" as RequestStatus,
   } as RequestRow;
 }
@@ -726,27 +791,43 @@ export async function createRequest(params: {
   const requestId = crypto.randomUUID();
 
   // Insert the request
-  const { data: request, error: reqError } = await supabase
-    .from("requests")
-    .insert({
-      id: requestId,
-      pr_no: null,
-      college_id: params.collegeId,
-      program_id: params.programId,
-      purpose: params.purpose,
-      fund_source: params.fundSource ?? null,
-      requested_by: params.requestedBy ?? null,
-      reviewed_by: params.reviewedBy ?? null,
-      status: "request_sent" as RequestStatus,
-      created_by: params.createdBy,
-      updated_at: new Date().toISOString(),
-    })
-    .select()
-    .single();
+  let request: RequestRow | null = null;
+  for (let attempt = 1; attempt <= 5; attempt += 1) {
+    const mainPrNo = await generateMainPrNo();
+    const { data, error: reqError } = await supabase
+      .from("requests")
+      .insert({
+        id: requestId,
+        pr_no: mainPrNo,
+        college_id: params.collegeId,
+        program_id: params.programId,
+        purpose: params.purpose,
+        fund_source: params.fundSource ?? null,
+        requested_by: params.requestedBy ?? null,
+        reviewed_by: params.reviewedBy ?? null,
+        status: "request_sent" as RequestStatus,
+        created_by: params.createdBy,
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
 
-  if (reqError) throw reqError;
+    if (!reqError) {
+      request = data as RequestRow;
+      break;
+    }
 
-  // Insert items (stock_no auto-generated from item index)
+    if (reqError.code === "23505" && attempt < 5) {
+      continue;
+    }
+
+    throw reqError;
+  }
+
+  if (!request) {
+    throw new Error("Failed to create request after retrying PR numbers.");
+  }
+
   if (params.items.length > 0) {
     const itemRows = params.items.map((item, idx) => ({
       id: crypto.randomUUID(),
@@ -786,27 +867,13 @@ export async function createRequest(params: {
   );
 
   if (categories.length > 0) {
-    const prGroupRows = [] as {
-      id: string;
-      request_id: string;
-      category: string;
-      pr_no: string;
-    }[];
-
     for (const category of categories) {
-      const prNo = await generatePrNo();
-      prGroupRows.push({
-        id: crypto.randomUUID(),
-        request_id: request.id,
+      await insertPrGroupWithRetry({
+        requestId: request.id,
         category,
-        pr_no: prNo,
+        mainPrNo: request.pr_no ?? "",
       });
     }
-
-    const { error: groupError } = await supabase
-      .from("request_pr_groups")
-      .insert(prGroupRows);
-    if (groupError) throw groupError;
   }
 
   // Notify Accounting Administrator users that a new request needs review
@@ -1437,7 +1504,8 @@ export async function updateRequestStatus(params: {
       });
 
       // ── In-app notification to the responsible role for the next step ──
-      const nextIdx = STATUS_FLOW.indexOf(params.newStatus) + 1;
+      const nextIdx =
+        STATUS_FLOW.indexOf(normalizeFlowStatus(params.newStatus)) + 1;
       const nextStatus = STATUS_FLOW[nextIdx] as RequestStatus | undefined;
       if (nextStatus) {
         const nextRole = STATUS_RESPONSIBLE_ROLE[nextStatus];
@@ -1725,7 +1793,6 @@ export async function fetchRequestStats(userId?: string) {
   ];
   const supplyStatuses: RequestStatus[] = [
     "po_delivered",
-    "po_received_supply",
     "items_for_inspection",
     "under_inspection",
     "under_warehousing",
@@ -1902,7 +1969,7 @@ export function getResumeStatusAfterReturnForAction(
     "returned_for_action",
   );
   if (!previous) return null;
-  const previousIdx = STATUS_FLOW.indexOf(previous);
+  const previousIdx = STATUS_FLOW.indexOf(normalizeFlowStatus(previous));
   if (previousIdx < 0 || previousIdx >= STATUS_FLOW.length - 1) {
     return null;
   }

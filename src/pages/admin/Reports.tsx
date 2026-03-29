@@ -294,7 +294,6 @@ export default function Reports() {
         name: "Supply",
         statuses: [
           "po_delivered",
-          "po_received_supply",
           "items_for_inspection",
           "under_inspection",
           "under_warehousing",

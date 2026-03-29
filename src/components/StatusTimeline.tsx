@@ -6,8 +6,10 @@ import {
   STATUS_RESPONSIBLE_ROLE,
   ROLE_LABELS,
   getDisplayNote,
+  normalizeFlowStatus,
   type RequestStatus,
   type StatusLogRow,
+  type UserRole,
 } from "../lib/requests";
 
 interface StatusTimelineProps {
@@ -31,8 +33,9 @@ function buildLogMap(logs: StatusLogRow[]) {
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
   );
   for (const log of sorted) {
-    if (!map.has(log.status)) {
-      map.set(log.status, {
+    const normalizedStatus = normalizeFlowStatus(log.status as RequestStatus);
+    if (!map.has(normalizedStatus)) {
+      map.set(normalizedStatus, {
         date: log.created_at,
         note: log.note,
         updater: log.updater,
@@ -74,18 +77,94 @@ export default function StatusTimeline({
   statusLogs = [],
 }: StatusTimelineProps) {
   const logMap = buildLogMap(statusLogs);
-  const currentIdx = STATUS_FLOW.indexOf(currentStatus);
+  const currentIdx = STATUS_FLOW.indexOf(normalizeFlowStatus(currentStatus));
   const isReturned =
     currentStatus === "returned_for_revision" ||
     currentStatus === "returned_for_action";
-  const currentReturnStatus = isReturned
-    ? (currentStatus as "returned_for_revision" | "returned_for_action")
-    : null;
+  const returnLogs = [...statusLogs]
+    .filter(
+      (log) =>
+        log.status === "returned_for_revision" ||
+        log.status === "returned_for_action",
+    )
+    .sort(
+      (a, b) =>
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+    );
+  const nextLoggedDate: Array<number | null> = Array(STATUS_FLOW.length).fill(
+    null,
+  );
+  let nextDate: number | null = null;
+  for (let i = STATUS_FLOW.length - 1; i >= 0; i -= 1) {
+    const log = logMap.get(STATUS_FLOW[i]);
+    if (log) {
+      nextDate = new Date(log.date).getTime();
+    }
+    nextLoggedDate[i] = nextDate;
+  }
 
-  // Also check if there's a return log entry.
-  const returnedLog = currentReturnStatus
-    ? logMap.get(currentReturnStatus)
-    : null;
+  const timelineEntries: Array<
+    | {
+        type: "status";
+        status: RequestStatus;
+        log?: {
+          date: string;
+          note: string | null;
+          updater?: { first_name: string; last_name: string };
+        };
+        isCompleted: boolean;
+        isCurrent: boolean;
+        isPending: boolean;
+        tone: string;
+        role: UserRole;
+      }
+    | { type: "return"; log: StatusLogRow }
+  > = [];
+  let prevLoggedDate: number | null = null;
+  let returnIdx = 0;
+
+  STATUS_FLOW.forEach((status, idx) => {
+    const log = logMap.get(status);
+    const isCompleted = isReturned ? !!log : idx <= currentIdx;
+    const isCurrent = !isReturned && idx === currentIdx;
+    const isPending = !isCompleted;
+    const tone = STATUS_TONE[status];
+    const role = STATUS_RESPONSIBLE_ROLE[status];
+    const nextDateLimit = nextLoggedDate[idx] ?? Number.POSITIVE_INFINITY;
+    const currentLogDate = log ? new Date(log.date).getTime() : null;
+
+    while (returnIdx < returnLogs.length) {
+      const returnLog = returnLogs[returnIdx];
+      const returnTime = new Date(returnLog.created_at).getTime();
+      const lowerBound = prevLoggedDate ?? Number.NEGATIVE_INFINITY;
+      if (returnTime <= nextDateLimit && returnTime > lowerBound) {
+        timelineEntries.push({ type: "return", log: returnLog });
+        returnIdx += 1;
+        continue;
+      }
+      break;
+    }
+
+    timelineEntries.push({
+      type: "status",
+      status,
+      log,
+      isCompleted,
+      isCurrent,
+      isPending,
+      tone,
+      role,
+    });
+
+    if (currentLogDate != null) {
+      prevLoggedDate = currentLogDate;
+    }
+  });
+
+  while (returnIdx < returnLogs.length) {
+    timelineEntries.push({ type: "return", log: returnLogs[returnIdx] });
+    returnIdx += 1;
+  }
 
   return (
     <div className="relative">
@@ -94,50 +173,41 @@ export default function StatusTimeline({
       </div>
 
       <ol className="relative">
-        {/* Show return status at the top if it's the current status */}
-        {isReturned && (
-          <li className="relative pl-8 pb-6">
-            {/* Connector line */}
-            <div className="absolute left-[13px] top-7 bottom-0 w-0.5 bg-gray-200" />
-            {/* Icon */}
-            <div className="absolute left-0 top-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-red-500 text-white ring-4 ring-red-50">
-              <RotateCcw className="h-3.5 w-3.5" />
-            </div>
-            {/* Content */}
-            <div className="ml-2">
-              <p className="text-sm font-semibold text-red-700">
-                {STATUS_LABELS[currentReturnStatus!]}
-              </p>
-              {returnedLog && (
-                <>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {formatDateTime(returnedLog.date)}
-                    {returnedLog.updater &&
-                      ` — ${returnedLog.updater.first_name} ${returnedLog.updater.last_name}`}
+        {timelineEntries.map((entry, index) => {
+          const isLast = index === timelineEntries.length - 1;
+          if (entry.type === "return") {
+            const status = entry.log.status as
+              | "returned_for_revision"
+              | "returned_for_action";
+            return (
+              <li key={entry.log.id} className="relative pl-8 pb-6 last:pb-0">
+                {!isLast && (
+                  <div className="absolute left-[13px] top-7 bottom-0 w-0.5 bg-gray-200" />
+                )}
+                <div className="absolute left-0 top-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-red-500 text-white ring-4 ring-red-50">
+                  <RotateCcw className="h-3.5 w-3.5" />
+                </div>
+                <div className="ml-2">
+                  <p className="text-sm font-semibold text-red-700">
+                    {STATUS_LABELS[status]}
                   </p>
-                  {returnedLog.note && (
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {formatDateTime(entry.log.created_at)}
+                    {entry.log.updater &&
+                      ` — ${entry.log.updater.first_name} ${entry.log.updater.last_name}`}
+                  </p>
+                  {entry.log.note && (
                     <p className="text-xs text-red-600 mt-0.5 italic">
-                      &ldquo;
-                      {getDisplayNote(currentReturnStatus!, returnedLog.note)}
-                      &rdquo;
+                      &ldquo;{getDisplayNote(status, entry.log.note)}&rdquo;
                     </p>
                   )}
-                </>
-              )}
-            </div>
-          </li>
-        )}
+                </div>
+              </li>
+            );
+          }
 
-        {STATUS_FLOW.map((status, idx) => {
-          const log = logMap.get(status);
-          const isCompleted = isReturned
-            ? !!log // if returned, steps that have logs are "completed"
-            : idx <= currentIdx;
-          const isCurrent = !isReturned && idx === currentIdx;
-          const isPending = !isCompleted;
-          const tone = STATUS_TONE[status];
-          const isLast = idx === STATUS_FLOW.length - 1;
-          const role = STATUS_RESPONSIBLE_ROLE[status];
+          const { status, log, isCompleted, isCurrent, isPending, tone, role } =
+            entry;
 
           return (
             <li key={status} className="relative pl-8 pb-6 last:pb-0">

@@ -1,5 +1,6 @@
 // src/pages/admin/Monitoring.tsx
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Check, Loader2, Plus, UploadCloud } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -12,6 +13,7 @@ import {
   STATUS_SHORT_LABELS,
   STATUS_TONE,
   STATUS_FLOW,
+  normalizeFlowStatus,
 } from "../../lib/requests";
 import { supabase } from "../../lib/supabase";
 import StatusTimeline from "../../components/StatusTimeline";
@@ -19,15 +21,37 @@ import RequestChatPanel from "../../components/RequestChatPanel";
 
 // ── helpers ────────────────────────────────────────────
 
-function progressFor(status: RequestStatus): { text: string; value: number } {
-  if (status === "returned_for_revision" || status === "returned_for_action")
-    return { text: "Returned to User", value: 0 };
+function progressFor(
+  status: RequestStatus,
+  statusLogs?: RequestRow["status_logs"],
+): { text: string; value: number } {
+  if (status === "returned_for_revision" || status === "returned_for_action") {
+    const lastNonReturn = (statusLogs ?? [])
+      .filter(
+        (log) =>
+          log.status !== "returned_for_revision" &&
+          log.status !== "returned_for_action",
+      )
+      .sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      )[0];
+    const lastStatus = lastNonReturn
+      ? normalizeFlowStatus(lastNonReturn.status as RequestStatus)
+      : null;
+    const idx = lastStatus ? STATUS_FLOW.indexOf(lastStatus) : -1;
+    const step = idx === -1 ? 1 : idx + 1;
+    return {
+      text: "Returned to User",
+      value: Math.round((step / STATUS_FLOW.length) * 100),
+    };
+  }
   if (status === "completed")
     return {
       text: `${STATUS_FLOW.length} of ${STATUS_FLOW.length}`,
       value: 100,
     };
-  const idx = STATUS_FLOW.indexOf(status);
+  const idx = STATUS_FLOW.indexOf(normalizeFlowStatus(status));
   const step = idx === -1 ? 1 : idx + 1;
   return {
     text: `${step} of ${STATUS_FLOW.length}`,
@@ -56,11 +80,7 @@ function Pill({ status }: { status: RequestStatus }) {
 }
 
 function formatPrLabel(request: RequestRow) {
-  const groups = request.pr_groups ?? [];
-  if (groups.length === 0) return request.pr_no ?? request.id.slice(0, 8);
-  if (groups.length === 1) return groups[0].pr_no;
-  const [first, ...rest] = groups;
-  return `${first.pr_no} +${rest.length}`;
+  return request.pr_no ?? request.id.slice(0, 8);
 }
 
 function ProgressBar({ value }: { value: number }) {
@@ -89,6 +109,7 @@ function parseContractFileUrls(value: string | null | undefined): string[] {
 
 export default function Monitoring() {
   const { user, role } = useAuth();
+  const [searchParams] = useSearchParams();
   const [requests, setRequests] = useState<RequestRow[]>([]);
   const [unreadByRequest, setUnreadByRequest] = useState<
     Record<string, number>
@@ -99,6 +120,7 @@ export default function Monitoring() {
   const [contractFiles, setContractFiles] = useState<File[]>([]);
   const [contractSaving, setContractSaving] = useState(false);
   const contractInputRef = useRef<HTMLInputElement | null>(null);
+  const cardRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const [inspectionEdits, setInspectionEdits] = useState<
     Record<string, { notes: string; file: File | null; saving: boolean }>
   >({});
@@ -142,16 +164,38 @@ export default function Monitoring() {
       }
       try {
         const all = await fetchRequestsLight();
-        const active = all.filter(
+        let active = all.filter(
           (r) =>
             r.status !== "returned_for_revision" &&
             r.status !== "returned_for_action",
         );
+
+        if (role === "accounting_admin") {
+          active = active
+            .filter(
+              (r) =>
+                r.status === "request_sent" || r.status === "request_reviewed",
+            )
+            .sort(
+              (a, b) =>
+                new Date(b.updated_at).getTime() -
+                new Date(a.updated_at).getTime(),
+            );
+        }
         setRequests(active);
         void loadUnreadCounts(active);
         if (active.length > 0) {
-          const targetId = selectedId ?? active[0].id;
+          const requestedId = searchParams.get("requestId");
+          const requestedValid = requestedId
+            ? active.some((r) => r.id === requestedId)
+            : false;
+          const targetId = requestedValid
+            ? requestedId!
+            : (selectedId ?? active[0].id);
           if (!selectedId) {
+            setSelectedId(targetId);
+          }
+          if (requestedValid && selectedId !== targetId) {
             setSelectedId(targetId);
           }
           fetchRequestById(targetId)
@@ -168,7 +212,7 @@ export default function Monitoring() {
         }
       }
     },
-    [loadUnreadCounts, selectedId],
+    [loadUnreadCounts, selectedId, searchParams],
   );
 
   useEffect(() => {
@@ -264,6 +308,17 @@ export default function Monitoring() {
       void supabase.removeChannel(channel);
     };
   }, [user?.id, loadData]);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    const card = cardRefs.current[selectedId];
+    if (!card) return;
+    card.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "center",
+    });
+  }, [selectedId, requests]);
 
   function handleSelect(id: string) {
     setSelectedId(id);
@@ -483,16 +538,19 @@ export default function Monitoring() {
           <div className="flex min-w-max gap-4">
             {requests.map((r) => {
               const active = r.id === selectedId;
-              const prog = progressFor(r.status);
+              const prog = progressFor(r.status, r.status_logs);
               return (
                 <button
                   key={r.id}
                   type="button"
                   onClick={() => handleSelect(r.id)}
+                  ref={(el) => {
+                    cardRefs.current[r.id] = el;
+                  }}
                   className={[
                     "w-[360px] shrink-0 rounded-2xl border bg-white p-5 text-left shadow-sm transition-colors",
                     active
-                      ? "border-blue-200 ring-2 ring-blue-100"
+                      ? "border-blue-500 bg-blue-50 ring-4 ring-blue-200 shadow-md"
                       : "border-gray-200 hover:bg-gray-50",
                   ].join(" ")}
                 >

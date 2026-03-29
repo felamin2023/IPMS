@@ -23,8 +23,8 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { label: "Home", to: "/", icon: Home },
-  { label: "Create Request", to: "/create-request", icon: FilePlus2 },
   { label: "PPMP", to: "/ppmp", icon: ClipboardList },
+  { label: "Create Request", to: "/create-request", icon: FilePlus2 },
   { label: "Procurement Requests", to: "/requests", icon: FileText },
   { label: "Monitoring", to: "/monitoring", icon: Activity },
   { label: "Settings", to: "/settings", icon: Settings2 },

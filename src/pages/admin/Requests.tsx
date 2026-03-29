@@ -1,5 +1,6 @@
 // src/pages/admin/Requests.tsx
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Search,
   Filter,
@@ -26,6 +27,7 @@ import {
   STATUS_TONE,
   STATUS_FLOW,
   STATUS_RESPONSIBLE_ROLE,
+  normalizeFlowStatus,
 } from "../../lib/requests";
 import { supabase } from "../../lib/supabase";
 import { generatePrDocument } from "../../lib/generatePr";
@@ -106,11 +108,7 @@ function itemsTotal(items?: { unit_cost: number | null; qty: number }[]) {
 }
 
 function formatPrLabel(request: RequestRow) {
-  const groups = request.pr_groups ?? [];
-  if (groups.length === 0) return request.pr_no ?? "No PR yet";
-  if (groups.length === 1) return groups[0].pr_no;
-  const [first, ...rest] = groups;
-  return `${first.pr_no} +${rest.length}`;
+  return request.pr_no ?? "No PR yet";
 }
 
 function parseContractFileUrls(value: string | null | undefined): string[] {
@@ -145,7 +143,7 @@ function getActions(
   if (!userRole) return {};
 
   const current = request.status;
-  const idx = STATUS_FLOW.indexOf(current);
+  const idx = STATUS_FLOW.indexOf(normalizeFlowStatus(current));
 
   // Special case: requests returned for personal action can be validated and
   // advanced by the role responsible for the next status after the return point.
@@ -216,6 +214,7 @@ function getActions(
 
 export default function Requests() {
   const { user, role } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [data, setData] = useState<RequestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -249,6 +248,18 @@ export default function Requests() {
     }
   }
 
+  async function openViewById(requestId: string) {
+    setViewLoading(true);
+    try {
+      const full = await fetchRequestById(requestId);
+      setViewRequest(full);
+    } catch (err) {
+      console.error("Failed to load request view:", err);
+    } finally {
+      setViewLoading(false);
+    }
+  }
+
   // Return/Decline modal state
   const [noteModal, setNoteModal] = useState<{
     requestId: string;
@@ -272,6 +283,12 @@ export default function Requests() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    const openId = searchParams.get("open");
+    if (!openId) return;
+    void openViewById(openId);
+  }, [searchParams]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -648,11 +665,24 @@ export default function Requests() {
                               </button>
 
                               {/* Download PR */}
-                              {STATUS_FLOW.indexOf(r.status) >= 1 && (
+                              {STATUS_FLOW.indexOf(
+                                normalizeFlowStatus(r.status),
+                              ) >= 1 && (
                                 <button
                                   type="button"
                                   className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-green-600 hover:bg-green-50"
-                                  onClick={() => generatePrDocument(r)}
+                                  onClick={async () => {
+                                    try {
+                                      const full = await fetchRequestById(r.id);
+                                      generatePrDocument(full);
+                                    } catch (err) {
+                                      console.error(
+                                        "Failed to load request for PR download:",
+                                        err,
+                                      );
+                                      generatePrDocument(r);
+                                    }
+                                  }}
                                   title="Download PR"
                                 >
                                   <Download className="h-4 w-4" />
@@ -822,209 +852,228 @@ export default function Requests() {
 
       {/* View Modal */}
       {viewRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
-            <div className="flex items-start justify-between gap-3 mb-4">
-              <div>
-                <div className="text-lg font-semibold text-gray-900">
-                  {formatPrLabel(viewRequest)}
-                </div>
-                {viewRequest.pr_groups && viewRequest.pr_groups.length > 0 && (
-                  <div className="mt-1 text-xs text-gray-500">
-                    {viewRequest.pr_groups
-                      .map((g) => `${g.pr_no} — ${g.category}`)
-                      .join(" | ")}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-3xl max-h-[92vh] overflow-y-auto rounded-2xl bg-white shadow-xl">
+            <div className="border-b border-gray-200 px-6 py-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-xl font-semibold text-gray-900">
+                    {formatPrLabel(viewRequest)}
                   </div>
-                )}
-                <div className="text-sm text-gray-500">
-                  {viewRequest.purpose || "No purpose"}
+                  {viewRequest.pr_groups &&
+                    viewRequest.pr_groups.length > 0 && (
+                      <div className="mt-1 text-xs text-gray-500">
+                        {viewRequest.pr_groups
+                          .map((g) => `${g.pr_no} — ${g.category}`)
+                          .join(" | ")}
+                      </div>
+                    )}
+                  <div className="mt-1 text-sm text-gray-500">
+                    {viewRequest.purpose || "No purpose"}
+                  </div>
                 </div>
+                <button
+                  onClick={() => {
+                    setViewRequest(null);
+                    if (searchParams.has("open")) {
+                      searchParams.delete("open");
+                      setSearchParams(searchParams, { replace: true });
+                    }
+                  }}
+                  className="rounded-lg p-1 text-gray-500 hover:bg-gray-100"
+                  aria-label="Close"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
-              <button
-                onClick={() => setViewRequest(null)}
-                className="rounded-lg p-1 hover:bg-gray-100"
-              >
-                <X className="h-5 w-5 text-gray-500" />
-              </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-              <div>
-                <div className="text-xs font-semibold uppercase text-gray-500">
-                  College
-                </div>
-                <div className="mt-1 text-gray-900">
-                  {viewRequest.college?.name ?? "—"}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs font-semibold uppercase text-gray-500">
-                  Program
-                </div>
-                <div className="mt-1 text-gray-900">
-                  {viewRequest.program?.name ?? "—"}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs font-semibold uppercase text-gray-500">
-                  Requester
-                </div>
-                <div className="mt-1 text-gray-900">
-                  {viewRequest.creator
-                    ? `${viewRequest.creator.first_name} ${viewRequest.creator.last_name}`
-                    : "—"}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs font-semibold uppercase text-gray-500">
-                  Status
-                </div>
-                <div className="mt-1">
-                  <StatusPill status={viewRequest.status} />
-                </div>
-              </div>
-              <div>
-                <div className="text-xs font-semibold uppercase text-gray-500">
-                  Date
-                </div>
-                <div className="mt-1 text-gray-900">
-                  {new Date(viewRequest.created_at).toLocaleDateString()}
-                </div>
-              </div>
-              {viewRequest.fund_source && (
-                <div>
-                  <div className="text-xs font-semibold uppercase text-gray-500">
-                    Fund Source
+            <div className="px-6 py-5">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm mb-5">
+                <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                    College
                   </div>
                   <div className="mt-1 text-gray-900">
-                    {viewRequest.fund_source}
+                    {viewRequest.college?.name ?? "—"}
                   </div>
                 </div>
-              )}
-              {viewRequest.requested_by && (
-                <div>
-                  <div className="text-xs font-semibold uppercase text-gray-500">
-                    Requested by
+                <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                    Program
                   </div>
                   <div className="mt-1 text-gray-900">
-                    {viewRequest.requested_by}
+                    {viewRequest.program?.name ?? "—"}
                   </div>
                 </div>
-              )}
-              {viewRequest.reviewed_by && (
-                <div>
-                  <div className="text-xs font-semibold uppercase text-gray-500">
-                    Reviewed by
+                <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                    Requester
                   </div>
                   <div className="mt-1 text-gray-900">
-                    {viewRequest.reviewed_by}
+                    {viewRequest.creator
+                      ? `${viewRequest.creator.first_name} ${viewRequest.creator.last_name}`
+                      : "—"}
                   </div>
                 </div>
-              )}
-            </div>
-
-            {viewRequest.items && viewRequest.items.length > 0 && (
-              <div className="mb-4">
-                <div className="text-xs font-semibold uppercase text-gray-500 mb-2">
-                  Items
-                </div>
-                <div className="overflow-x-auto rounded-lg border border-gray-200">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50">
-                      <tr className="text-left text-xs font-semibold uppercase text-gray-500">
-                        <th className="px-3 py-2">Category</th>
-                        <th className="px-3 py-2">Description</th>
-                        <th className="px-3 py-2">Preferred Brand</th>
-                        <th className="px-3 py-2">Qty</th>
-                        <th className="px-3 py-2">UOM</th>
-                        <th className="px-3 py-2">Unit Cost</th>
-                        <th className="px-3 py-2">Total</th>
-                        <th className="px-3 py-2">Inspection Notes</th>
-                        <th className="px-3 py-2">Inspection File</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {viewRequest.items.map((item) => (
-                        <tr key={item.id}>
-                          <td className="px-3 py-2 text-gray-500">
-                            {item.category || "—"}
-                          </td>
-                          <td className="px-3 py-2">{item.item_description}</td>
-                          <td className="px-3 py-2">
-                            {item.preferred_brand || "—"}
-                          </td>
-                          <td className="px-3 py-2">{item.qty}</td>
-                          <td className="px-3 py-2">{item.uom}</td>
-                          <td className="px-3 py-2">
-                            {item.unit_cost
-                              ? money.format(Number(item.unit_cost))
-                              : "—"}
-                          </td>
-                          <td className="px-3 py-2 font-medium">
-                            {item.total_cost
-                              ? money.format(Number(item.total_cost))
-                              : "—"}
-                          </td>
-                          <td className="px-3 py-2">
-                            {item.inspection_notes || "—"}
-                          </td>
-                          <td className="px-3 py-2">
-                            {item.inspection_file_url ? (
-                              <a
-                                href={item.inspection_file_url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-blue-600 hover:text-blue-800 underline"
-                              >
-                                View
-                              </a>
-                            ) : (
-                              "—"
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="mt-2 text-right text-sm font-semibold text-gray-900">
-                  Total: {money.format(itemsTotal(viewRequest.items))}
-                </div>
-              </div>
-            )}
-
-            {(viewRequest.contract_amount != null ||
-              viewRequest.contract_file_url) && (
-              <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
-                <div className="font-semibold">Contract Details</div>
-                {viewRequest.contract_amount != null && (
+                <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                    Status
+                  </div>
                   <div className="mt-1">
-                    Amount: {money.format(Number(viewRequest.contract_amount))}
+                    <StatusPill status={viewRequest.status} />
+                  </div>
+                </div>
+                <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                    Date
+                  </div>
+                  <div className="mt-1 text-gray-900">
+                    {new Date(viewRequest.created_at).toLocaleDateString()}
+                  </div>
+                </div>
+                {viewRequest.fund_source && (
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                      Fund Source
+                    </div>
+                    <div className="mt-1 text-gray-900">
+                      {viewRequest.fund_source}
+                    </div>
                   </div>
                 )}
-                {viewContractFiles.length > 0 && (
-                  <div className="mt-1 space-y-1">
-                    {viewContractFiles.map((url, index) => (
-                      <a
-                        key={`${url}-${index}`}
-                        href={url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-block text-blue-700 underline"
-                      >
-                        {`View Contract File${viewContractFiles.length > 1 ? " " + (index + 1) : ""}`}
-                      </a>
-                    ))}
+                {viewRequest.requested_by && (
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                      Requested by
+                    </div>
+                    <div className="mt-1 text-gray-900">
+                      {viewRequest.requested_by}
+                    </div>
+                  </div>
+                )}
+                {viewRequest.reviewed_by && (
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                      Reviewed by
+                    </div>
+                    <div className="mt-1 text-gray-900">
+                      {viewRequest.reviewed_by}
+                    </div>
                   </div>
                 )}
               </div>
-            )}
 
-            {/* Status Timeline */}
-            <StatusTimeline
-              currentStatus={viewRequest.status}
-              statusLogs={viewRequest.status_logs}
-            />
+              {viewRequest.items && viewRequest.items.length > 0 && (
+                <div className="mb-5">
+                  <div className="text-xs font-semibold uppercase text-gray-500 mb-2">
+                    Items
+                  </div>
+                  <div className="overflow-x-auto rounded-xl border border-gray-200">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50">
+                        <tr className="text-left text-xs font-semibold uppercase text-gray-500">
+                          <th className="px-3 py-2">Category</th>
+                          <th className="px-3 py-2">Description</th>
+                          <th className="px-3 py-2">Preferred Brand</th>
+                          <th className="px-3 py-2">Qty</th>
+                          <th className="px-3 py-2">UOM</th>
+                          <th className="px-3 py-2">Unit Cost</th>
+                          <th className="px-3 py-2">Total</th>
+                          <th className="px-3 py-2">Inspection Notes</th>
+                          <th className="px-3 py-2">Inspection File</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {viewRequest.items.map((item) => (
+                          <tr key={item.id}>
+                            <td className="px-3 py-2 text-gray-500">
+                              {item.category || "—"}
+                            </td>
+                            <td className="px-3 py-2">
+                              {item.item_description}
+                            </td>
+                            <td className="px-3 py-2">
+                              {item.preferred_brand || "—"}
+                            </td>
+                            <td className="px-3 py-2">{item.qty}</td>
+                            <td className="px-3 py-2">{item.uom}</td>
+                            <td className="px-3 py-2">
+                              {item.unit_cost
+                                ? money.format(Number(item.unit_cost))
+                                : "—"}
+                            </td>
+                            <td className="px-3 py-2 font-medium">
+                              {item.total_cost
+                                ? money.format(Number(item.total_cost))
+                                : "—"}
+                            </td>
+                            <td className="px-3 py-2">
+                              {item.inspection_notes || "—"}
+                            </td>
+                            <td className="px-3 py-2">
+                              {item.inspection_file_url ? (
+                                <a
+                                  href={item.inspection_file_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-blue-600 hover:text-blue-800 underline"
+                                >
+                                  View
+                                </a>
+                              ) : (
+                                "—"
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="mt-2 text-right text-sm font-semibold text-gray-900">
+                    Total: {money.format(itemsTotal(viewRequest.items))}
+                  </div>
+                </div>
+              )}
+
+              {(viewRequest.contract_amount != null ||
+                viewRequest.contract_file_url) && (
+                <div className="mb-5 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                  <div className="font-semibold">Contract Details</div>
+                  {viewRequest.contract_amount != null && (
+                    <div className="mt-1">
+                      Amount:{" "}
+                      {money.format(Number(viewRequest.contract_amount))}
+                    </div>
+                  )}
+                  {viewContractFiles.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-3">
+                      {viewContractFiles.map((url, index) => (
+                        <a
+                          key={`${url}-${index}`}
+                          href={url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                        >
+                          {`View Contract File${viewContractFiles.length > 1 ? " " + (index + 1) : ""}`}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="rounded-xl border border-gray-200 bg-white p-4">
+                <div className="text-xs font-semibold uppercase text-gray-500 mb-2">
+                  Order Tracking
+                </div>
+                <StatusTimeline
+                  currentStatus={viewRequest.status}
+                  statusLogs={viewRequest.status_logs}
+                />
+              </div>
+            </div>
           </div>
         </div>
       )}

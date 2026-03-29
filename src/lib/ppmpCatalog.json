@@ -2661,22 +2661,6 @@
   },
   {
     "part": "PART I",
-    "category": "Prepared & Submitted by: | D668: Certified Fund Available: | L668: Approved:",
-    "items": [
-      {
-        "description": "MARY ELLEN C. CAMARILLO",
-        "uom": "",
-        "unitPrice": ""
-      },
-      {
-        "description": "End-User",
-        "uom": "",
-        "unitPrice": ""
-      }
-    ]
-  },
-  {
-    "part": "PART I",
     "category": "PAPER MATERIALS AND PRODUCTS",
     "items": [
       {
@@ -2768,48 +2752,6 @@
         "description": "TOILET TISSUE PAPER, Interfolded Paper Towel",
         "uom": "pack",
         "unitPrice": "50"
-      }
-    ]
-  },
-  {
-    "part": "PART I",
-    "category": "COMMON OFFICE EQUIPMENT | C312: 0 [formula: =SUM(G312:R312)]",
-    "items": [
-      {
-        "description": "COPIER, Monochrome",
-        "uom": "unit",
-        "unitPrice": "100000"
-      },
-      {
-        "description": "DISPENSER, Water, Hot and Cold",
-        "uom": "unit",
-        "unitPrice": "6000"
-      },
-      {
-        "description": "LAMINATING MACHINE, heavy duty",
-        "uom": "unit",
-        "unitPrice": "8000"
-      },
-      {
-        "description": "REFRIGERATOR, 8 cu. ft",
-        "uom": "set",
-        "unitPrice": "20000"
-      }
-    ]
-  },
-  {
-    "part": "PART I",
-    "category": "Prepared & Submitted by: | D667: Certified Fund Available: | L667: Approved:",
-    "items": [
-      {
-        "description": "MARY ELLEN C. CAMARILLO",
-        "uom": "",
-        "unitPrice": ""
-      },
-      {
-        "description": "End-User",
-        "uom": "",
-        "unitPrice": ""
       }
     ]
   }

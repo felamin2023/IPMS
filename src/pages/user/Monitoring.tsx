@@ -1,5 +1,5 @@
 // src/pages/user/Monitoring.tsx
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, Loader2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -11,6 +11,7 @@ import {
   STATUS_SHORT_LABELS,
   STATUS_TONE,
   STATUS_FLOW,
+  normalizeFlowStatus,
 } from "../../lib/requests";
 import { supabase } from "../../lib/supabase";
 import StatusTimeline from "../../components/StatusTimeline";
@@ -18,15 +19,37 @@ import RequestChatPanel from "../../components/RequestChatPanel";
 
 // ── helpers ────────────────────────────────────────────
 
-function progressFor(status: RequestStatus): { text: string; value: number } {
-  if (status === "returned_for_revision" || status === "returned_for_action")
-    return { text: "Returned to User", value: 0 };
+function progressFor(
+  status: RequestStatus,
+  statusLogs?: RequestRow["status_logs"],
+): { text: string; value: number } {
+  if (status === "returned_for_revision" || status === "returned_for_action") {
+    const lastNonReturn = (statusLogs ?? [])
+      .filter(
+        (log) =>
+          log.status !== "returned_for_revision" &&
+          log.status !== "returned_for_action",
+      )
+      .sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      )[0];
+    const lastStatus = lastNonReturn
+      ? normalizeFlowStatus(lastNonReturn.status as RequestStatus)
+      : null;
+    const idx = lastStatus ? STATUS_FLOW.indexOf(lastStatus) : -1;
+    const step = idx === -1 ? 1 : idx + 1;
+    return {
+      text: "Returned to User",
+      value: Math.round((step / STATUS_FLOW.length) * 100),
+    };
+  }
   if (status === "completed")
     return {
       text: `${STATUS_FLOW.length} of ${STATUS_FLOW.length}`,
       value: 100,
     };
-  const idx = STATUS_FLOW.indexOf(status);
+  const idx = STATUS_FLOW.indexOf(normalizeFlowStatus(status));
   const step = idx === -1 ? 1 : idx + 1;
   return {
     text: `${step} of ${STATUS_FLOW.length}`,
@@ -95,6 +118,7 @@ export default function Monitoring() {
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedFull, setSelectedFull] = useState<RequestRow | null>(null);
+  const cardRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const loadUnreadCounts = useCallback(
     async (requestIds: string[]) => {
@@ -124,17 +148,11 @@ export default function Monitoring() {
       }
       try {
         const all = await fetchRequestsLight({ createdBy: user.id });
-        const active = all.filter(
-          (r) =>
-            r.status !== "completed" &&
-            r.status !== "returned_for_revision" &&
-            r.status !== "returned_for_action",
-        );
-        const display = active.length > 0 ? active : all;
-        setRequests(display);
-        void loadUnreadCounts(display.map((r) => r.id));
-        if (display.length > 0) {
-          const targetId = selectedId ?? display[0].id;
+        const active = all.filter((r) => r.status !== "completed");
+        setRequests(active);
+        void loadUnreadCounts(active.map((r) => r.id));
+        if (active.length > 0) {
+          const targetId = selectedId ?? active[0].id;
           if (!selectedId) {
             setSelectedId(targetId);
           }
@@ -201,6 +219,17 @@ export default function Monitoring() {
       void supabase.removeChannel(channel);
     };
   }, [user?.id, requests, loadUnreadCounts]);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    const card = cardRefs.current[selectedId];
+    if (!card) return;
+    card.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "center",
+    });
+  }, [selectedId, requests]);
 
   useEffect(() => {
     loadData();
@@ -311,16 +340,19 @@ export default function Monitoring() {
           <div className="flex min-w-max gap-4">
             {requests.map((r) => {
               const active = r.id === selectedId;
-              const prog = progressFor(r.status);
+              const prog = progressFor(r.status, r.status_logs);
               return (
                 <button
                   key={r.id}
                   type="button"
                   onClick={() => handleSelect(r.id)}
+                  ref={(el) => {
+                    cardRefs.current[r.id] = el;
+                  }}
                   className={[
                     "w-[360px] shrink-0 rounded-2xl border bg-white p-5 text-left shadow-sm transition-colors",
                     active
-                      ? "border-blue-200 ring-2 ring-blue-100"
+                      ? "border-blue-500 bg-blue-50 ring-4 ring-blue-200 shadow-md"
                       : "border-gray-200 hover:bg-gray-50",
                   ].join(" ")}
                 >
