@@ -371,7 +371,7 @@ export default function Requests() {
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
-                              className="inline-flex items-center gap-1 text-blue-600 font-semibold hover:text-blue-700 text-sm"
+                              className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
                               onClick={() => openView(r)}
                             >
                               {viewLoading ? (

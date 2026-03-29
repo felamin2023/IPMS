@@ -410,6 +410,13 @@ export interface RequestItemRow {
   inspection_file_url?: string | null;
 }
 
+export interface RequestItemUsageRow {
+  id: string;
+  items?: Array<
+    Pick<RequestItemRow, "qty" | "item_description" | "category" | "uom">
+  >;
+}
+
 async function assignMainPrNoWithRetry(params: {
   requestId: string;
   maxAttempts?: number;
@@ -933,6 +940,26 @@ export async function fetchRequestsLight(filters?: {
   const { data, error } = await query;
   if (error) throw error;
   return (data ?? []) as RequestRow[];
+}
+
+export async function fetchCompletedRequestsForProgram(params: {
+  collegeId: string;
+  programId: string;
+}) {
+  const { data, error } = await supabase
+    .from("requests")
+    .select(
+      `
+      id,
+      items:request_items(qty, item_description, category, uom)
+    `,
+    )
+    .eq("status", "completed")
+    .eq("college_id", params.collegeId)
+    .eq("program_id", params.programId);
+
+  if (error) throw error;
+  return (data ?? []) as RequestItemUsageRow[];
 }
 
 /**

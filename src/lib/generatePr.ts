@@ -401,11 +401,16 @@ export function generatePrDocument(request: RequestRow) {
     }
     .sig-field { height: 24px; }
     .sig-field + .sig-field { border-left: 1px solid #000; }
+    .signatures tr td:first-child { border-right: 1px solid #000; }
     .sig-name {
       font-weight: 700;
       text-transform: uppercase;
-      border-bottom: 1px solid #000;
-      padding-bottom: 2px;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      text-decoration-thickness: 1px;
+    }
+    .signatures td.sig-name {
+      text-align: center;
     }
     .approval {
       border: 1px solid #000;

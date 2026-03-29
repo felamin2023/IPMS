@@ -6,6 +6,7 @@ import {
   Trash2,
   CheckCircle,
   PencilLine,
+  Eye,
   X,
   Download,
 } from "lucide-react";
@@ -14,10 +15,12 @@ import {
   completePpmpPlan,
   createPpmpPlan,
   fetchPrograms,
+  fetchCompletedRequestsForProgram,
   fetchUserPpmpPlans,
   fetchUserProfile,
   updatePpmpPlan,
   type PpmpPlanRow,
+  type RequestItemUsageRow,
 } from "../../lib/requests";
 import { generatePpmpDocument } from "../../lib/generatePpmp";
 import ppmpCatalog from "../../lib/ppmpCatalog.json";
@@ -31,6 +34,16 @@ type PpmpItemRow = {
   uom: string;
   unitPriceInput: string;
   unitPrice: number;
+};
+
+type PpmpItemSummary = {
+  key: string;
+  category: string;
+  itemDescription: string;
+  uom: string;
+  ppmpQty: number;
+  takenQty: number;
+  remainingQty: number;
 };
 
 let nextKey = 1;
@@ -58,6 +71,20 @@ function getPlanStatus(plan: PpmpPlanRow) {
   return isExpired(plan) ? "Expired" : "Active";
 }
 
+function normalizeKey(value: string | null | undefined) {
+  return (value ?? "").trim().toLowerCase();
+}
+
+function makeItemKey(params: {
+  category?: string | null;
+  description?: string | null;
+  uom?: string | null;
+}) {
+  return `${normalizeKey(params.category)}||${normalizeKey(
+    params.description,
+  )}||${normalizeKey(params.uom)}`;
+}
+
 export default function Ppmp() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -77,6 +104,13 @@ export default function Ppmp() {
     null,
   );
   const [expirationInput, setExpirationInput] = useState("");
+
+  const [viewPlan, setViewPlan] = useState<PpmpPlanRow | null>(null);
+  const [viewFilter, setViewFilter] = useState<"remaining" | "taken" | "all">(
+    "remaining",
+  );
+  const [viewLoading, setViewLoading] = useState(false);
+  const [viewRows, setViewRows] = useState<PpmpItemSummary[]>([]);
 
   const collegeId = profile?.college_id ?? "";
   const collegeName = profile?.college
@@ -229,6 +263,59 @@ export default function Ppmp() {
       programName: getProgramName(plan),
       unitName: profile?.office_name ?? profile?.department_name ?? "",
     });
+  }
+
+  async function openPlanView(plan: PpmpPlanRow) {
+    setViewPlan(plan);
+    setViewFilter("remaining");
+    setViewLoading(true);
+
+    try {
+      const usageRows = await fetchCompletedRequestsForProgram({
+        collegeId: plan.college_id,
+        programId: plan.program_id,
+      });
+      const takenMap = new Map<string, number>();
+
+      usageRows.forEach((row: RequestItemUsageRow) => {
+        (row.items ?? []).forEach((item) => {
+          const key = makeItemKey({
+            category: item.category,
+            description: item.item_description,
+            uom: item.uom,
+          });
+          const current = takenMap.get(key) ?? 0;
+          takenMap.set(key, current + (item.qty ?? 0));
+        });
+      });
+
+      const summaries = (plan.items ?? []).map((item) => {
+        const key = makeItemKey({
+          category: item.category,
+          description: item.item_description,
+          uom: item.uom,
+        });
+        const takenQty = takenMap.get(key) ?? 0;
+        const remainingQty = Math.max((item.qty ?? 0) - takenQty, 0);
+
+        return {
+          key: `${item.id}-${key}`,
+          category: item.category,
+          itemDescription: item.item_description,
+          uom: item.uom,
+          ppmpQty: item.qty ?? 0,
+          takenQty,
+          remainingQty,
+        };
+      });
+
+      setViewRows(summaries);
+    } catch (err) {
+      console.error("Failed to load PPMP usage:", err);
+      setViewRows([]);
+    } finally {
+      setViewLoading(false);
+    }
   }
 
   const isBlockedByActivePlan = Boolean(
@@ -460,6 +547,14 @@ export default function Ppmp() {
                             <>
                               <button
                                 type="button"
+                                className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
+                                onClick={() => openPlanView(plan)}
+                              >
+                                <Eye className="h-4 w-4" />
+                                View
+                              </button>
+                              <button
+                                type="button"
                                 className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"
                                 onClick={() => startEditingPlan(plan)}
                               >
@@ -480,6 +575,14 @@ export default function Ppmp() {
                             </>
                           ) : (
                             <>
+                              <button
+                                type="button"
+                                className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
+                                onClick={() => openPlanView(plan)}
+                              >
+                                <Eye className="h-4 w-4" />
+                                View
+                              </button>
                               <button
                                 type="button"
                                 className="inline-flex items-center gap-1 rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100"
@@ -776,6 +879,109 @@ export default function Ppmp() {
                 <CheckCircle className="h-4 w-4" />
                 Complete PPMP
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewPlan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-4xl h-[520px] rounded-2xl bg-white shadow-xl flex flex-col">
+            <div className="border-b border-gray-200 px-6 py-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    PPMP Items Usage
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {getProgramName(viewPlan)}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setViewPlan(null)}
+                  className="rounded-lg p-1 hover:bg-gray-100"
+                  aria-label="Close"
+                >
+                  <X className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            <div className="px-6 py-5 flex-1 flex flex-col min-h-0">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div className="text-sm text-gray-500">
+                  Completed requests are deducted from the PPMP plan.
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-semibold uppercase text-gray-500">
+                    Filter
+                  </label>
+                  <select
+                    value={viewFilter}
+                    onChange={(e) =>
+                      setViewFilter(
+                        e.target.value as "remaining" | "taken" | "all",
+                      )
+                    }
+                    className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  >
+                    <option value="remaining">Remaining</option>
+                    <option value="taken">Taken</option>
+                    <option value="all">All</option>
+                  </select>
+                </div>
+              </div>
+
+              {viewLoading ? (
+                <div className="py-10 text-sm text-gray-500">Loading...</div>
+              ) : viewRows.length === 0 ? (
+                <div className="py-10 text-sm text-gray-500">
+                  No items available for this PPMP.
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-xl border border-gray-200 flex-1 min-h-0">
+                  <div className="overflow-y-auto max-h-full">
+                    <table className="w-full min-w-[720px]">
+                      <thead className="bg-gray-50">
+                        <tr className="text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          <th className="px-4 py-3">Category</th>
+                          <th className="px-4 py-3">Item</th>
+                          <th className="px-4 py-3">UOM</th>
+                          <th className="px-4 py-3 text-right">PPMP Qty</th>
+                          <th className="px-4 py-3 text-right">Taken</th>
+                          <th className="px-4 py-3 text-right">Remaining</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
+                        {viewRows
+                          .filter((row) => {
+                            if (viewFilter === "all") return true;
+                            if (viewFilter === "taken") return row.takenQty > 0;
+                            return row.remainingQty > 0;
+                          })
+                          .map((row) => (
+                            <tr key={row.key}>
+                              <td className="px-4 py-3">{row.category}</td>
+                              <td className="px-4 py-3">
+                                {row.itemDescription}
+                              </td>
+                              <td className="px-4 py-3">{row.uom || "—"}</td>
+                              <td className="px-4 py-3 text-right">
+                                {row.ppmpQty}
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                {row.takenQty}
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                {row.remainingQty}
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
