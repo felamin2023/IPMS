@@ -587,9 +587,7 @@ export default function SignUp() {
                         }}
                         className={`${inputBase} appearance-none`}
                       >
-                        <option value="department_user">
-                          End User (Department)
-                        </option>
+                        <option value="department_user">End User</option>
                         <option value="accounting_admin">
                           Accounting Administrator
                         </option>
@@ -607,7 +605,7 @@ export default function SignUp() {
                       <>
                         <div className="relative">
                           <label htmlFor="college" className="sr-only">
-                            Department
+                            College
                           </label>
                           <select
                             id="college"
@@ -616,7 +614,7 @@ export default function SignUp() {
                             onBlur={() => handleBlur("college")}
                             className={`${inputBase} appearance-none`}
                           >
-                            <option value="">Select Department</option>
+                            <option value="">Select College</option>
                             {colleges.map((c) => (
                               <option key={c.code} value={c.code}>
                                 {c.name} ({c.code})
@@ -641,7 +639,7 @@ export default function SignUp() {
                             <option value="">
                               {college
                                 ? "Select Program"
-                                : "Select Department first"}
+                                : "Select College first"}
                             </option>
                             {filteredPrograms.map((p) => (
                               <option key={p.code} value={p.code}>
@@ -839,7 +837,7 @@ export default function SignUp() {
               <p className="text-xs md:text-sm text-white/90 leading-relaxed mb-6">
                 {showOtp
                   ? "Enter the verification code we sent to your email to complete registration."
-                  : "Sign in to access your department account and the request tracking system."}
+                  : "Sign in to access your college account and the request tracking system."}
               </p>
 
               <Link

@@ -115,7 +115,9 @@ model Request {
   purpose    String?
   fundSource String?       @map("fund_source")
   requestedBy String?      @map("requested_by")
+  requestedByDesignation String? @map("requested_by_designation")
   reviewedBy  String?      @map("reviewed_by")
+  reviewedByDesignation String? @map("reviewed_by_designation")
   contractAmount Decimal?  @map("contract_amount") @db.Decimal(12, 2)
   contractFileUrl String?  @map("contract_file_url")
   status     RequestStatus @default(request_sent)
@@ -177,6 +179,8 @@ model PpmpPlan {
   createdBy  String   @map("created_by")
   collegeId  String   @map("college_id")
   programId  String   @map("program_id")
+  module2Data Json?   @map("module2_data")
+  module3Rows Json?   @map("module3_rows")
   expiresAt  DateTime? @map("expires_at") @db.Timestamptz
   realignAt  DateTime? @map("realign_at") @db.Timestamptz
   completedAt DateTime? @map("completed_at") @db.Timestamptz

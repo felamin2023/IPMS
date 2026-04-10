@@ -63,7 +63,9 @@ export default function CreateRequest() {
   const [purpose, setPurpose] = useState("");
   const [fundSource, setFundSource] = useState("");
   const [requestedBy, setRequestedBy] = useState("");
+  const [requestedByDesignation, setRequestedByDesignation] = useState("");
   const [reviewedBy, setReviewedBy] = useState("");
+  const [reviewedByDesignation, setReviewedByDesignation] = useState("");
   const [items, setItems] = useState<ItemRow[]>([emptyItem()]);
   const [openItemKey, setOpenItemKey] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -158,7 +160,9 @@ export default function CreateRequest() {
         setPurpose(req.purpose || "");
         setFundSource(req.fund_source || "");
         setRequestedBy(req.requested_by || "");
+        setRequestedByDesignation(req.requested_by_designation || "");
         setReviewedBy(req.reviewed_by || "");
+        setReviewedByDesignation(req.reviewed_by_designation || "");
         // Map items to form items with keys
         if (req.items && req.items.length > 0) {
           const mappedItems = req.items.map((item) => ({
@@ -303,6 +307,8 @@ export default function CreateRequest() {
             itemSearch: "",
             itemDescription: "",
             availableQty: null,
+            qty: 0,
+            qtyInput: "",
             preferredBrand: it.preferredBrand ?? "",
           };
         }
@@ -316,11 +322,7 @@ export default function CreateRequest() {
           if (!match) {
             return it;
           }
-          const availableQty = match ? Number(match.qty) : null;
-          const nextQty =
-            availableQty != null && it.qty > availableQty
-              ? availableQty
-              : it.qty;
+          const availableQty = Math.max(Number(match.qty) || 0, 0);
           return {
             ...it,
             itemDescription: value,
@@ -331,8 +333,8 @@ export default function CreateRequest() {
             unitCost: match?.unitPrice
               ? parseFloat(match.unitPrice) || 0
               : it.unitCost,
-            qty: nextQty,
-            qtyInput: String(nextQty || 0),
+            qty: availableQty,
+            qtyInput: String(availableQty),
           };
         }
         if (field === "itemSearch") {
@@ -413,6 +415,12 @@ export default function CreateRequest() {
       setError("Requested by and Reviewed by are required.");
       return;
     }
+    if (!requestedByDesignation.trim() || !reviewedByDesignation.trim()) {
+      setError(
+        "Requested by designation and Reviewed by designation are required.",
+      );
+      return;
+    }
     if (!nameRegex.test(requestedBy.trim())) {
       setError("Requested by must contain letters only.");
       return;
@@ -468,6 +476,10 @@ export default function CreateRequest() {
         await resubmitReturnedRequest({
           requestId: editingReturnedRequestId,
           userId: user.id,
+          requestedBy: requestedBy || undefined,
+          requestedByDesignation: requestedByDesignation || undefined,
+          reviewedBy: reviewedBy || undefined,
+          reviewedByDesignation: reviewedByDesignation || undefined,
           items: items.map((it) => ({
             qty: it.qty,
             itemDescription: it.itemDescription,
@@ -486,7 +498,9 @@ export default function CreateRequest() {
           purpose: purpose || undefined,
           fundSource: fundSource || undefined,
           requestedBy: requestedBy || undefined,
+          requestedByDesignation: requestedByDesignation || undefined,
           reviewedBy: reviewedBy || undefined,
+          reviewedByDesignation: reviewedByDesignation || undefined,
           createdBy: user.id,
           items: items.map((it) => ({
             qty: it.qty,
@@ -505,7 +519,9 @@ export default function CreateRequest() {
           purpose,
           fundSource: fundSource || undefined,
           requestedBy: requestedBy || undefined,
+          requestedByDesignation: requestedByDesignation || undefined,
           reviewedBy: reviewedBy || undefined,
+          reviewedByDesignation: reviewedByDesignation || undefined,
           createdBy: user.id,
           items: items.map((it) => ({
             qty: it.qty,
@@ -541,7 +557,9 @@ export default function CreateRequest() {
         purpose: purpose || undefined,
         fundSource: fundSource || undefined,
         requestedBy: requestedBy || undefined,
+        requestedByDesignation: requestedByDesignation || undefined,
         reviewedBy: reviewedBy || undefined,
+        reviewedByDesignation: reviewedByDesignation || undefined,
         createdBy: user.id,
         items: items.map((it) => ({
           qty: it.qty,
@@ -569,7 +587,9 @@ export default function CreateRequest() {
     setPurpose(draft.purpose ?? "");
     setFundSource(draft.fund_source ?? "");
     setRequestedBy(draft.requested_by ?? "");
+    setRequestedByDesignation(draft.requested_by_designation ?? "");
     setReviewedBy(draft.reviewed_by ?? "");
+    setReviewedByDesignation(draft.reviewed_by_designation ?? "");
     const draftItems: ItemRow[] = (draft.items ?? []).map((it: any) => ({
       key: nextKey++,
       qty: it.qty,
@@ -593,7 +613,9 @@ export default function CreateRequest() {
     setPurpose("");
     setFundSource("");
     setRequestedBy("");
+    setRequestedByDesignation("");
     setReviewedBy("");
+    setReviewedByDesignation("");
     setItems([emptyItem()]);
     setError("");
   }
@@ -796,19 +818,14 @@ export default function CreateRequest() {
                 <label className="text-sm font-medium text-gray-700">
                   Purpose <span className="text-red-500">*</span>
                 </label>
-                <select
+                <input
+                  type="text"
                   value={purpose}
                   onChange={(e) => setPurpose(e.target.value)}
                   className="mt-2 w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  placeholder="Enter purpose"
                   required
-                >
-                  <option value="">Select purpose</option>
-                  {categoryOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
 
               {/* Fund Source */}
@@ -852,6 +869,20 @@ export default function CreateRequest() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700">
+                    Designation (Requested by){" "}
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    value={requestedByDesignation}
+                    onChange={(e) => setRequestedByDesignation(e.target.value)}
+                    className="mt-2 w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    placeholder="e.g. End-User"
+                    spellCheck
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
                     Reviewed by <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -859,6 +890,20 @@ export default function CreateRequest() {
                     onChange={(e) => setReviewedBy(e.target.value)}
                     className="mt-2 w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                     placeholder="Name of reviewer"
+                    spellCheck
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    Designation (Reviewed by){" "}
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    value={reviewedByDesignation}
+                    onChange={(e) => setReviewedByDesignation(e.target.value)}
+                    className="mt-2 w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    placeholder="e.g. Budget Officer"
                     spellCheck
                     required
                   />
@@ -1043,27 +1088,15 @@ export default function CreateRequest() {
                             max={item.availableQty ?? undefined}
                             step="1"
                             value={item.qtyInput}
-                            onChange={(e) =>
-                              updateItem(item.key, "qtyInput", e.target.value)
-                            }
-                            onBlur={(e) => {
-                              if (
-                                item.availableQty != null &&
-                                Number(e.target.value) > item.availableQty
-                              ) {
-                                updateItem(
-                                  item.key,
-                                  "qtyInput",
-                                  String(item.availableQty),
-                                );
-                              }
-                            }}
                             className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                             required
+                            readOnly
+                            disabled={item.availableQty != null}
                           />
                           {item.availableQty != null && (
                             <div className="mt-1 text-xs text-gray-500">
-                              Available: {item.availableQty}
+                              Auto-set from PPMP quantity. Available:{" "}
+                              {item.availableQty}
                             </div>
                           )}
                         </div>

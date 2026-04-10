@@ -92,6 +92,7 @@ export function generatePpmpDocument(
   plan: PpmpPlanRow,
   context: PpmpPrintContext,
 ) {
+  const baseUrl = window.location.origin;
   const items = plan.items ?? [];
 
   const part1Map = new Map<string, typeof items>();
@@ -188,7 +189,7 @@ export function generatePpmpDocument(
   <style>
     @page {
       size: A4 landscape;
-      margin: 8mm;
+      margin: 4mm;
     }
 
     @media print {
@@ -240,7 +241,31 @@ export function generatePpmpDocument(
       width: 100%;
       max-width: 100%;
       margin: 0 auto;
-      padding: 8px 10px 14px;
+      min-height: 202mm;
+      padding: 2px 4px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .main-content {
+      width: 100%;
+    }
+
+    .doc-header-image {
+      border: none;
+      padding: 2px 4px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #fff;
+    }
+
+    .doc-header-image img {
+      width: 100%;
+      max-width: 920px;
+      max-height: 88px;
+      height: auto;
+      object-fit: contain;
     }
 
     table {
@@ -370,6 +395,24 @@ export function generatePpmpDocument(
       margin-top: 10px;
       font-size: 8.8pt;
     }
+
+    .doc-footer-image {
+      border: none;
+      padding: 2px 4px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #fff;
+      margin-top: auto;
+    }
+
+    .doc-footer-image img {
+      width: 100%;
+      max-width: 920px;
+      max-height: 52px;
+      height: auto;
+      object-fit: contain;
+    }
   </style>
 </head>
 <body>
@@ -378,84 +421,94 @@ export function generatePpmpDocument(
   </div>
 
   <div class="container">
-    <table>
-      <colgroup>
-        <col class="col-item" />
-        <col class="col-qty" />
-        <col class="col-budget" />
-        <col class="col-mode" />
-        ${MONTHS.map(() => `<col class="col-month" />`).join("")}
-        <col class="col-price" />
-      </colgroup>
+    <div class="main-content">
+      <div class="doc-header-image">
+        <img src="${baseUrl}/assets/header.jpg" alt="PPMP header" />
+      </div>
 
-      <thead>
-        <tr class="title-row">
-          <th colspan="17">${escapeHtml(title)} ${year}</th>
-        </tr>
+      <table>
+        <colgroup>
+          <col class="col-item" />
+          <col class="col-qty" />
+          <col class="col-budget" />
+          <col class="col-mode" />
+          ${MONTHS.map(() => `<col class="col-month" />`).join("")}
+          <col class="col-price" />
+        </colgroup>
 
-        <tr class="meta-row">
-          <td colspan="17">
-            <div><strong>End-User/Unit:</strong> ${escapeHtml(endUserUnit)}</div>
-            <div><strong>Charged to:</strong> ${escapeHtml(context.chargedTo ?? "")}</div>
-            <div><strong>Projects, Programs and Activities (PAPs)</strong>${context.paps ? ` ${escapeHtml(context.paps)}` : ""}</div>
+        <thead>
+          <tr class="title-row">
+            <th colspan="17">${escapeHtml(title)} ${year}</th>
+          </tr>
+
+          <tr class="meta-row">
+            <td colspan="17">
+              <div><strong>End-User/Unit:</strong> ${escapeHtml(endUserUnit)}</div>
+              <div><strong>Charged to:</strong> ${escapeHtml(context.chargedTo ?? "")}</div>
+              <div><strong>Projects, Programs and Activities (PAPs)</strong>${context.paps ? ` ${escapeHtml(context.paps)}` : ""}</div>
+            </td>
+          </tr>
+
+          <tr>
+            <th rowspan="2">Item &amp; Specifications</th>
+            <th rowspan="2">QUANTITY &amp; UNIT</th>
+            <th rowspan="2">ESTIMATED BUDGET</th>
+            <th rowspan="2">MODE OF PROCUREMENT</th>
+            <th colspan="12">Monthly Quantity Requirement</th>
+            <th rowspan="2">Unit Price</th>
+          </tr>
+
+          <tr>
+            ${MONTHS.map((label) => `<th>${label}</th>`).join("")}
+          </tr>
+        </thead>
+
+        <tbody>
+          ${rows || `<tr><td colspan="17">No items listed.</td></tr>`}
+
+          <tr class="total-row">
+            <td colspan="2">TOTAL BUDGET:</td>
+            <td class="budget-col">${totalBudget ? num(totalBudget) : "-"}</td>
+            <td colspan="14"></td>
+          </tr>
+
+          <tr class="note-row">
+            <td colspan="17">
+              Note: Technical specifications for each item/project being proposed shall be submitted as part of the PPMP.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <table class="signatures">
+        <tr>
+          <td>
+            <div class="sig-label">Prepared &amp; Submitted by:</div>
+            <div class="sig-name">${escapeHtml(context.preparedBy ?? "MARY ELLEN C. CAMARILLO")}</div>
+            <div class="sig-title">${escapeHtml(context.preparedByTitle ?? "End-User")}</div>
+          </td>
+
+          <td>
+            <div class="sig-label">Certified Fund Available:</div>
+            <div class="sig-name">${escapeHtml(context.certifiedBy ?? "BETHANY B. URACA")}</div>
+            <div class="sig-title">${escapeHtml(context.certifiedByTitle ?? "Admin. Officer IV (Budget Officer II)")}</div>
+          </td>
+
+          <td>
+            <div class="sig-label">Approved:</div>
+            <div class="sig-name">${escapeHtml(context.approvedBy ?? "EINGILBERT C. BENOLIRAO, DEV.ED.D.")}</div>
+            <div class="sig-title">${escapeHtml(context.approvedByTitle ?? "Campus Director")}</div>
           </td>
         </tr>
+      </table>
 
-        <tr>
-          <th rowspan="2">Item &amp; Specifications</th>
-          <th rowspan="2">QUANTITY &amp; UNIT</th>
-          <th rowspan="2">ESTIMATED BUDGET</th>
-          <th rowspan="2">MODE OF PROCUREMENT</th>
-          <th colspan="12">Monthly Quantity Requirement</th>
-          <th rowspan="2">Unit Price</th>
-        </tr>
+      <div class="date-prepared">
+        <strong>Date Prepared:</strong> ${escapeHtml(datePrepared)}
+      </div>
+    </div>
 
-        <tr>
-          ${MONTHS.map((label) => `<th>${label}</th>`).join("")}
-        </tr>
-      </thead>
-
-      <tbody>
-        ${rows || `<tr><td colspan="17">No items listed.</td></tr>`}
-
-        <tr class="total-row">
-          <td colspan="2">TOTAL BUDGET:</td>
-          <td class="budget-col">${totalBudget ? num(totalBudget) : "-"}</td>
-          <td colspan="14"></td>
-        </tr>
-
-        <tr class="note-row">
-          <td colspan="17">
-            Note: Technical specifications for each item/project being proposed shall be submitted as part of the PPMP.
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <table class="signatures">
-      <tr>
-        <td>
-          <div class="sig-label">Prepared &amp; Submitted by:</div>
-          <div class="sig-name">${escapeHtml(context.preparedBy ?? "MARY ELLEN C. CAMARILLO")}</div>
-          <div class="sig-title">${escapeHtml(context.preparedByTitle ?? "End-User")}</div>
-        </td>
-
-        <td>
-          <div class="sig-label">Certified Fund Available:</div>
-          <div class="sig-name">${escapeHtml(context.certifiedBy ?? "BETHANY B. URACA")}</div>
-          <div class="sig-title">${escapeHtml(context.certifiedByTitle ?? "Admin. Officer IV (Budget Officer II)")}</div>
-        </td>
-
-        <td>
-          <div class="sig-label">Approved:</div>
-          <div class="sig-name">${escapeHtml(context.approvedBy ?? "EINGILBERT C. BENOLIRAO, DEV.ED.D.")}</div>
-          <div class="sig-title">${escapeHtml(context.approvedByTitle ?? "Campus Director")}</div>
-        </td>
-      </tr>
-    </table>
-
-    <div class="date-prepared">
-      <strong>Date Prepared:</strong> ${escapeHtml(datePrepared)}
+    <div class="doc-footer-image">
+      <img src="${baseUrl}/assets/footer.jpg" alt="PPMP footer" />
     </div>
   </div>
 </body>

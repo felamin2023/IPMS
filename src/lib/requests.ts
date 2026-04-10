@@ -372,7 +372,9 @@ export interface RequestRow {
   purpose: string | null;
   fund_source: string | null;
   requested_by?: string | null;
+  requested_by_designation?: string | null;
   reviewed_by?: string | null;
+  reviewed_by_designation?: string | null;
   contract_amount?: number | null;
   contract_file_url?: string | null;
   status: RequestStatus;
@@ -455,6 +457,8 @@ export interface PpmpPlanRow {
   created_by: string;
   college_id: string;
   program_id: string;
+  module2_data: unknown | null;
+  module3_rows: unknown | null;
   expires_at: string | null;
   realign_at: string | null;
   completed_at: string | null;
@@ -609,7 +613,9 @@ export async function saveDraft(params: {
   purpose?: string;
   fundSource?: string;
   requestedBy?: string;
+  requestedByDesignation?: string;
   reviewedBy?: string;
+  reviewedByDesignation?: string;
   createdBy: string;
   items: RequestItemInput[];
 }): Promise<RequestRow> {
@@ -623,7 +629,9 @@ export async function saveDraft(params: {
         purpose: params.purpose ?? null,
         fund_source: params.fundSource ?? null,
         requested_by: params.requestedBy ?? null,
+        requested_by_designation: params.requestedByDesignation ?? null,
         reviewed_by: params.reviewedBy ?? null,
+        reviewed_by_designation: params.reviewedByDesignation ?? null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", params.draftId)
@@ -645,7 +653,9 @@ export async function saveDraft(params: {
       purpose: params.purpose ?? null,
       fund_source: params.fundSource ?? null,
       requested_by: params.requestedBy ?? null,
+      requested_by_designation: params.requestedByDesignation ?? null,
       reviewed_by: params.reviewedBy ?? null,
+      reviewed_by_designation: params.reviewedByDesignation ?? null,
       status: "draft" as RequestStatus,
       created_by: params.createdBy,
       updated_at: new Date().toISOString(),
@@ -791,7 +801,9 @@ export async function createRequest(params: {
   purpose: string;
   fundSource?: string;
   requestedBy?: string;
+  requestedByDesignation?: string;
   reviewedBy?: string;
+  reviewedByDesignation?: string;
   createdBy: string;
   items: RequestItemInput[];
 }) {
@@ -811,7 +823,9 @@ export async function createRequest(params: {
         purpose: params.purpose,
         fund_source: params.fundSource ?? null,
         requested_by: params.requestedBy ?? null,
+        requested_by_designation: params.requestedByDesignation ?? null,
         reviewed_by: params.reviewedBy ?? null,
+        reviewed_by_designation: params.reviewedByDesignation ?? null,
         status: "request_sent" as RequestStatus,
         created_by: params.createdBy,
         updated_at: new Date().toISOString(),
@@ -1689,6 +1703,8 @@ export async function createPpmpPlan(params: {
   createdBy: string;
   collegeId: string;
   programId: string;
+  module2Data?: unknown;
+  module3Rows?: unknown;
   items: Array<{
     category: string;
     itemDescription: string;
@@ -1704,6 +1720,8 @@ export async function createPpmpPlan(params: {
     created_by: params.createdBy,
     college_id: params.collegeId,
     program_id: params.programId,
+    module2_data: params.module2Data ?? null,
+    module3_rows: params.module3Rows ?? null,
     expires_at: null,
     realign_at: null,
     completed_at: null,
@@ -1733,6 +1751,9 @@ export async function createPpmpPlan(params: {
 
 export async function updatePpmpPlan(params: {
   planId: string;
+  module2Data?: unknown;
+  module3Rows?: unknown;
+  expiresAt?: string | null;
   items: Array<{
     category: string;
     itemDescription: string;
@@ -1744,6 +1765,9 @@ export async function updatePpmpPlan(params: {
   const { error: updateError } = await supabase
     .from("ppmp_plans")
     .update({
+      module2_data: params.module2Data ?? null,
+      module3_rows: params.module3Rows ?? null,
+      expires_at: params.expiresAt ?? null,
       updated_at: new Date().toISOString(),
       realign_at: new Date().toISOString(),
     })
@@ -1789,6 +1813,20 @@ export async function completePpmpPlan(params: {
     })
     .eq("id", params.planId);
   if (error) throw error;
+}
+
+export async function deletePpmpPlan(params: { planId: string }) {
+  const { error: deleteItemsError } = await supabase
+    .from("ppmp_items")
+    .delete()
+    .eq("plan_id", params.planId);
+  if (deleteItemsError) throw deleteItemsError;
+
+  const { error: deletePlanError } = await supabase
+    .from("ppmp_plans")
+    .delete()
+    .eq("id", params.planId);
+  if (deletePlanError) throw deletePlanError;
 }
 
 // ── Stats ──────────────────────────────────────────────
@@ -2012,6 +2050,10 @@ export function getResumeStatusAfterReturnForAction(
 export async function resubmitReturnedRequest(params: {
   requestId: string;
   userId: string;
+  requestedBy?: string;
+  requestedByDesignation?: string;
+  reviewedBy?: string;
+  reviewedByDesignation?: string;
   items: RequestItemInput[];
 }): Promise<RequestRow> {
   // Delete old items and insert new ones
@@ -2048,6 +2090,10 @@ export async function resubmitReturnedRequest(params: {
   const { error: updateErr } = await supabase
     .from("requests")
     .update({
+      requested_by: params.requestedBy ?? null,
+      requested_by_designation: params.requestedByDesignation ?? null,
+      reviewed_by: params.reviewedBy ?? null,
+      reviewed_by_designation: params.reviewedByDesignation ?? null,
       status: "request_sent" as RequestStatus,
       updated_at: new Date().toISOString(),
     })

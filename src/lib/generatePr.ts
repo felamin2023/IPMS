@@ -59,7 +59,9 @@ export function generatePrDocument(request: RequestRow) {
   const responsibilityCenter = program?.name ?? "";
   console.log("PR responsibility center:", responsibilityCenter);
   const requestedBy = request.requested_by ?? "";
+  const requestedByDesignation = request.requested_by_designation ?? "";
   const reviewedBy = request.reviewed_by ?? "";
+  const reviewedByDesignation = request.reviewed_by_designation ?? "";
   const baseUrl = window.location.origin;
 
   const pages = Array.from(grouped.entries())
@@ -201,8 +203,8 @@ export function generatePrDocument(request: RequestRow) {
             </tr>
             <tr>
               <td class="sig-label">Designation:</td>
-              <td class="sig-field"></td>
-              <td class="sig-field"></td>
+              <td class="sig-field sig-designation">${escapeHtml(requestedByDesignation)}</td>
+              <td class="sig-field sig-designation">${escapeHtml(reviewedByDesignation)}</td>
             </tr>
           </table>
           <div class="approval">
@@ -410,6 +412,9 @@ export function generatePrDocument(request: RequestRow) {
       text-decoration-thickness: 1px;
     }
     .signatures td.sig-name {
+      text-align: center;
+    }
+    .signatures td.sig-designation {
       text-align: center;
     }
     .approval {
