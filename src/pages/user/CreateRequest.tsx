@@ -37,6 +37,41 @@ type ItemRow = RequestItemInput & {
 
 let nextKey = 1;
 
+function sanitizeIntegerInput(value: string) {
+  return String(value ?? "")
+    .replace(/,/g, "")
+    .replace(/\D/g, "");
+}
+
+function sanitizeDecimalInput(value: string) {
+  const cleaned = String(value ?? "")
+    .replace(/,/g, "")
+    .replace(/[^\d.]/g, "");
+  const dotIndex = cleaned.indexOf(".");
+  if (dotIndex === -1) return cleaned;
+  return (
+    cleaned.slice(0, dotIndex + 1) +
+    cleaned.slice(dotIndex + 1).replace(/\./g, "")
+  );
+}
+
+function formatNumberInput(value: string, allowDecimal = false) {
+  const cleaned = allowDecimal
+    ? sanitizeDecimalInput(value)
+    : sanitizeIntegerInput(value);
+  if (!cleaned) return "";
+
+  if (allowDecimal) {
+    const [intPart, decimalPart] = cleaned.split(".");
+    const formattedInt = (intPart || "0").replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return decimalPart === undefined
+      ? formattedInt
+      : `${formattedInt}.${decimalPart}`;
+  }
+
+  return cleaned.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
 function emptyItem(): ItemRow {
   return {
     key: nextKey++,
@@ -70,6 +105,7 @@ export default function CreateRequest() {
   const [openItemKey, setOpenItemKey] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
   const [error, setError] = useState("");
 
   // Returned request editing state
@@ -229,6 +265,42 @@ export default function CreateRequest() {
     );
   }, [ppmpItemsByCategory]);
 
+  function getAvailableCategoryOptions(currentKey: number) {
+    const selectedByOthers = new Set(
+      items
+        .filter((row) => row.key !== currentKey)
+        .map((row) => row.category?.trim())
+        .filter(Boolean),
+    );
+
+    return categoryOptions.filter((category) => {
+      const current = items.find((row) => row.key === currentKey);
+      if (current?.category === category) return true;
+      return !selectedByOthers.has(category);
+    });
+  }
+
+  function getAvailableItemsForRow(row: ItemRow) {
+    const options = row.category
+      ? (ppmpItemsByCategory.get(row.category) ?? [])
+      : [];
+    const selectedByOthers = new Set(
+      items
+        .filter((other) => other.key !== row.key)
+        .map(
+          (other) =>
+            `${other.category?.trim() ?? ""}||${other.itemDescription.trim()}`,
+        )
+        .filter((value) => !value.endsWith("||")),
+    );
+
+    return options.filter((option) => {
+      const key = `${row.category}||${option.description}`;
+      const isCurrent = row.itemDescription === option.description;
+      return isCurrent || !selectedByOthers.has(key);
+    });
+  }
+
   const uomOptions = useMemo(() => {
     const base = [
       "piece",
@@ -344,14 +416,15 @@ export default function CreateRequest() {
           return { ...it, preferredBrand: value };
         }
         if (field === "qtyInput") {
-          if (value === "") {
+          const sanitized = sanitizeIntegerInput(value);
+          if (sanitized === "") {
             return {
               ...it,
               qtyInput: "",
               qty: 0,
             };
           }
-          const parsed = parseInt(value, 10);
+          const parsed = parseInt(sanitized, 10);
           const maxQty = it.availableQty ?? null;
           const bounded =
             Number.isFinite(parsed) && parsed > 0
@@ -366,10 +439,11 @@ export default function CreateRequest() {
           };
         }
         if (field === "unitCostInput") {
-          const parsed = parseFloat(value);
+          const sanitized = sanitizeDecimalInput(value);
+          const parsed = parseFloat(sanitized);
           return {
             ...it,
-            unitCostInput: value,
+            unitCostInput: sanitized,
             unitCost: Number.isFinite(parsed) ? parsed : it.unitCost,
           };
         }
@@ -396,50 +470,49 @@ export default function CreateRequest() {
     [items],
   );
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function validateBeforeSubmit() {
     if (!user?.id) return;
     if (!collegeId || !programId) {
       setError("College and Program are required.");
-      return;
+      return false;
     }
     if (ppmpError || !activePpmp) {
       setError("You must have an active PPMP before submitting a request.");
-      return;
+      return false;
     }
     if (!fundSource.trim()) {
       setError("Fund Source is required.");
-      return;
+      return false;
     }
     if (!requestedBy.trim() || !reviewedBy.trim()) {
       setError("Requested by and Reviewed by are required.");
-      return;
+      return false;
     }
     if (!requestedByDesignation.trim() || !reviewedByDesignation.trim()) {
       setError(
         "Requested by designation and Reviewed by designation are required.",
       );
-      return;
+      return false;
     }
     if (!nameRegex.test(requestedBy.trim())) {
       setError("Requested by must contain letters only.");
-      return;
+      return false;
     }
     if (!nameRegex.test(reviewedBy.trim())) {
       setError("Reviewed by must contain letters only.");
-      return;
+      return false;
     }
     if (items.some((it) => !it.itemDescription.trim())) {
       setError("All items must have a description.");
-      return;
+      return false;
     }
     if (items.some((it) => !it.category?.trim())) {
       setError("All items must have a category.");
-      return;
+      return false;
     }
     if (items.some((it) => it.qty < 1)) {
       setError("Quantity must be at least 1 for all items.");
-      return;
+      return false;
     }
     const overLimit = items.find(
       (it) => it.availableQty != null && it.qty > it.availableQty,
@@ -448,7 +521,7 @@ export default function CreateRequest() {
       setError(
         "One or more items exceed the available PPMP quantity. Please adjust the quantities.",
       );
-      return;
+      return false;
     }
 
     const ppmpItems = (activePpmp.items ?? []) as {
@@ -465,11 +538,17 @@ export default function CreateRequest() {
       setError(
         "One or more items are not in your PPMP. Please choose items from the PPMP list.",
       );
-      return;
+      return false;
     }
 
-    setSubmitting(true);
     setError("");
+    return true;
+  }
+
+  async function submitRequest() {
+    if (!user?.id) return;
+
+    setSubmitting(true);
     try {
       if (editingReturnedRequestId) {
         // Resubmit returned request
@@ -540,6 +619,12 @@ export default function CreateRequest() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!validateBeforeSubmit()) return;
+    setSubmitConfirmOpen(true);
   }
 
   async function handleSaveDraft() {
@@ -953,11 +1038,13 @@ export default function CreateRequest() {
                             required
                           >
                             <option value="">Select category</option>
-                            {categoryOptions.map((option) => (
-                              <option key={option} value={option}>
-                                {option}
-                              </option>
-                            ))}
+                            {getAvailableCategoryOptions(item.key).map(
+                              (option) => (
+                                <option key={option} value={option}>
+                                  {option}
+                                </option>
+                              ),
+                            )}
                           </select>
                         </div>
 
@@ -1003,11 +1090,7 @@ export default function CreateRequest() {
                             </button>
                             {openItemKey === item.key && item.category && (
                               <div className="absolute z-20 mt-1 w-full max-h-48 overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg">
-                                {(item.category
-                                  ? (ppmpItemsByCategory.get(item.category) ??
-                                    [])
-                                  : []
-                                )
+                                {getAvailableItemsForRow(item)
                                   .filter((option) =>
                                     option.description
                                       .toLowerCase()
@@ -1034,16 +1117,13 @@ export default function CreateRequest() {
                                       {option.qty})
                                     </button>
                                   ))}
-                                {(item.category
-                                  ? (ppmpItemsByCategory.get(item.category) ??
-                                    [])
-                                  : []
-                                ).filter((option) =>
-                                  option.description
-                                    .toLowerCase()
-                                    .includes(
-                                      item.itemSearch.trim().toLowerCase(),
-                                    ),
+                                {getAvailableItemsForRow(item).filter(
+                                  (option) =>
+                                    option.description
+                                      .toLowerCase()
+                                      .includes(
+                                        item.itemSearch.trim().toLowerCase(),
+                                      ),
                                 ).length === 0 && (
                                   <div className="px-3 py-2 text-sm text-gray-500">
                                     No items found.
@@ -1083,11 +1163,9 @@ export default function CreateRequest() {
                         <div className="md:col-span-2">
                           <label className="text-xs text-gray-500">Qty *</label>
                           <input
-                            type="number"
-                            min={1}
-                            max={item.availableQty ?? undefined}
-                            step="1"
-                            value={item.qtyInput}
+                            type="text"
+                            inputMode="numeric"
+                            value={formatNumberInput(item.qtyInput)}
                             className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                             required
                             readOnly
@@ -1124,10 +1202,9 @@ export default function CreateRequest() {
                             Unit Cost
                           </label>
                           <input
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            value={item.unitCostInput}
+                            type="text"
+                            inputMode="decimal"
+                            value={formatNumberInput(item.unitCostInput, true)}
                             onChange={(e) =>
                               updateItem(
                                 item.key,
@@ -1136,7 +1213,7 @@ export default function CreateRequest() {
                               )
                             }
                             onBlur={(e) => {
-                              if (!e.target.value) {
+                              if (!sanitizeDecimalInput(e.target.value)) {
                                 updateItem(item.key, "unitCostInput", "0");
                               }
                             }}
@@ -1182,6 +1259,15 @@ export default function CreateRequest() {
 
           {/* Footer Actions */}
           <div className="flex items-center justify-end gap-3 border-t border-gray-200 bg-white px-6 py-4 rounded-b-2xl">
+            <button
+              type="button"
+              disabled={submitting || saving}
+              onClick={() => navigate("/requests")}
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              <X className="h-4 w-4" />
+              Cancel
+            </button>
             {!editingReturnedRequestId && (
               <button
                 type="button"
@@ -1212,6 +1298,48 @@ export default function CreateRequest() {
           </div>
         </form>
       </div>
+
+      {submitConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-start gap-3">
+              <span className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                <AlertCircle className="h-5 w-5" />
+              </span>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Submit Procurement Request
+                </h3>
+                <p className="mt-1 text-sm text-gray-600">
+                  Are you sure the entered information is correct? Submit now?
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setSubmitConfirmOpen(false)}
+                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={() => {
+                  setSubmitConfirmOpen(false);
+                  void submitRequest();
+                }}
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                <Send className="h-4 w-4" />
+                Submit Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

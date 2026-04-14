@@ -81,6 +81,18 @@ function parseContractFileUrls(value: string | null | undefined): string[] {
   return [value];
 }
 
+function sanitizeIntegerInput(value: string) {
+  return String(value ?? "")
+    .replace(/,/g, "")
+    .replace(/\D/g, "");
+}
+
+function formatIntegerInput(value: number | string) {
+  const cleaned = sanitizeIntegerInput(String(value ?? ""));
+  if (!cleaned) return "";
+  return cleaned.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
 export default function Requests() {
   const { user } = useAuth();
   const [data, setData] = useState<RequestRow[]>([]);
@@ -609,9 +621,11 @@ export default function Requests() {
                         <th className="px-3 py-2">Description</th>
                         <th className="px-3 py-2">Preferred Brand</th>
                         <th className="px-3 py-2">Qty</th>
+                        <th className="px-3 py-2">Received Qty</th>
                         <th className="px-3 py-2">UOM</th>
                         <th className="px-3 py-2">Unit Cost</th>
                         <th className="px-3 py-2">Total</th>
+                        <th className="px-3 py-2">End-User Notes</th>
                         <th className="px-3 py-2">Inspection Notes</th>
                         <th className="px-3 py-2">Inspection File</th>
                       </tr>
@@ -627,6 +641,11 @@ export default function Requests() {
                             {item.preferred_brand || "—"}
                           </td>
                           <td className="px-3 py-2">{item.qty}</td>
+                          <td className="px-3 py-2">
+                            {item.received_qty != null
+                              ? item.received_qty
+                              : "—"}
+                          </td>
                           <td className="px-3 py-2">{item.uom}</td>
                           <td className="px-3 py-2">
                             {item.unit_cost
@@ -637,6 +656,9 @@ export default function Requests() {
                             {item.total_cost
                               ? money.format(Number(item.total_cost))
                               : "—"}
+                          </td>
+                          <td className="px-3 py-2">
+                            {item.damage_notes?.trim() || "—"}
                           </td>
                           <td className="px-3 py-2">
                             {item.inspection_notes || "—"}
@@ -884,14 +906,16 @@ export default function Requests() {
                           Received Qty
                         </label>
                         <input
-                          type="number"
-                          min={0}
-                          max={item.qty}
-                          value={feedback.receivedQty}
+                          type="text"
+                          inputMode="numeric"
+                          value={formatIntegerInput(feedback.receivedQty)}
                           onChange={(e) => {
+                            const sanitized = sanitizeIntegerInput(
+                              e.target.value,
+                            );
                             const val = Math.max(
                               0,
-                              Math.min(item.qty, Number(e.target.value) || 0),
+                              Math.min(item.qty, Number(sanitized) || 0),
                             );
                             setReceiptItems((prev) =>
                               prev.map((f, i) =>

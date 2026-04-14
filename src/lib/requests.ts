@@ -1762,15 +1762,20 @@ export async function updatePpmpPlan(params: {
     unitPrice?: number;
   }>;
 }) {
+  const updatePayload: Record<string, unknown> = {
+    module2_data: params.module2Data ?? null,
+    module3_rows: params.module3Rows ?? null,
+    updated_at: new Date().toISOString(),
+    realign_at: new Date().toISOString(),
+  };
+
+  if (Object.prototype.hasOwnProperty.call(params, "expiresAt")) {
+    updatePayload.expires_at = params.expiresAt ?? null;
+  }
+
   const { error: updateError } = await supabase
     .from("ppmp_plans")
-    .update({
-      module2_data: params.module2Data ?? null,
-      module3_rows: params.module3Rows ?? null,
-      expires_at: params.expiresAt ?? null,
-      updated_at: new Date().toISOString(),
-      realign_at: new Date().toISOString(),
-    })
+    .update(updatePayload)
     .eq("id", params.planId);
   if (updateError) throw updateError;
 
@@ -1796,6 +1801,20 @@ export async function updatePpmpPlan(params: {
       .insert(items);
     if (itemsError) throw itemsError;
   }
+}
+
+export async function updatePpmpPlanExpiration(params: {
+  planId: string;
+  expiresAt: string;
+}) {
+  const { error } = await supabase
+    .from("ppmp_plans")
+    .update({
+      expires_at: params.expiresAt,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", params.planId);
+  if (error) throw error;
 }
 
 export async function completePpmpPlan(params: {

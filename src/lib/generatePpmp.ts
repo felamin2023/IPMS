@@ -484,20 +484,20 @@ export function generatePpmpDocument(
         <tr>
           <td>
             <div class="sig-label">Prepared &amp; Submitted by:</div>
-            <div class="sig-name">${escapeHtml(context.preparedBy ?? "MARY ELLEN C. CAMARILLO")}</div>
+            <div class="sig-name">${escapeHtml(context.preparedBy ?? "")}</div>
             <div class="sig-title">${escapeHtml(context.preparedByTitle ?? "End-User")}</div>
           </td>
 
           <td>
             <div class="sig-label">Certified Fund Available:</div>
-            <div class="sig-name">${escapeHtml(context.certifiedBy ?? "BETHANY B. URACA")}</div>
-            <div class="sig-title">${escapeHtml(context.certifiedByTitle ?? "Admin. Officer IV (Budget Officer II)")}</div>
+            <div class="sig-name">${escapeHtml(context.certifiedBy ?? "")}</div>
+            <div class="sig-title">${escapeHtml(context.certifiedByTitle ?? "")}</div>
           </td>
 
           <td>
             <div class="sig-label">Approved:</div>
-            <div class="sig-name">${escapeHtml(context.approvedBy ?? "EINGILBERT C. BENOLIRAO, DEV.ED.D.")}</div>
-            <div class="sig-title">${escapeHtml(context.approvedByTitle ?? "Campus Director")}</div>
+            <div class="sig-name">${escapeHtml(context.approvedBy ?? "")}</div>
+            <div class="sig-title">${escapeHtml(context.approvedByTitle ?? "")}</div>
           </td>
         </tr>
       </table>

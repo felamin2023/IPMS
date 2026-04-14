@@ -26,6 +26,7 @@ import {
   fetchUserPpmpPlans,
   fetchUserProfile,
   updatePpmpPlan,
+  updatePpmpPlanExpiration,
   type PpmpPlanRow,
   type RequestItemUsageRow,
 } from "../../lib/requests";
@@ -100,6 +101,329 @@ type Module2FundKey =
 
 type Module2SubsectionKey = keyof FundSection;
 
+type Module2ItemOption = {
+  label: string;
+  amount: string;
+};
+
+type Module2GroupOption = {
+  title: string;
+  items: Module2ItemOption[];
+};
+
+const MODULE2_GROUP_OPTIONS: Record<
+  Module2SubsectionKey,
+  Module2GroupOption[]
+> = {
+  ps: [
+    {
+      title: "Other Compensation",
+      items: [{ label: "Honoraria", amount: "0" }],
+    },
+  ],
+  mooe: [
+    {
+      title: "Traveling Expenses",
+      items: [
+        {
+          label: "Traveling Expenses - Local (see attached L & D Plan)",
+          amount: "0",
+        },
+        { label: "Traveling Expenses - Foreign", amount: "0" },
+      ],
+    },
+    {
+      title: "Training and Scholarship Expenses",
+      items: [
+        { label: "Training Expenses (see attached L & D Plan)", amount: "0" },
+      ],
+    },
+    {
+      title: "Supplies and Materials Expenses",
+      items: [
+        { label: "Office Supplies Expenses", amount: "0" },
+        { label: "Drugs and Medicines Expenses", amount: "0" },
+        { label: "Medical, Dental and Laboratory Expenses", amount: "0" },
+        { label: "Fuel, Oil and Lubricants Expense", amount: "0" },
+        {
+          label: "Semi-Expendable Machinery & Equipment Expenses",
+          amount: "0",
+        },
+        { label: "Semi-Expendable Furniture, Fixture & Books", amount: "0" },
+        { label: "Other Supplies and Materials Expenses", amount: "0" },
+      ],
+    },
+    {
+      title: "Utility Expenses",
+      items: [
+        { label: "Water Expenses (Purified Water w/ PPMP)", amount: "0" },
+        { label: "Electricity Expenses", amount: "0" },
+      ],
+    },
+    {
+      title: "Communication Expenses",
+      items: [
+        { label: "Telephone Expenses - Mobile", amount: "0" },
+        { label: "Telephone Expenses - Landline", amount: "0" },
+        { label: "Internet Subscription Expenses", amount: "0" },
+      ],
+    },
+    {
+      title: "Awards/Rewards, Prizes and Indemnities",
+      items: [{ label: "Awards/Rewards Expenses", amount: "0" }],
+    },
+    {
+      title: "Professional Services",
+      items: [{ label: "Other Professional Services", amount: "0" }],
+    },
+    {
+      title: "General Services",
+      items: [
+        { label: "Janitorial Services", amount: "0" },
+        { label: "Security Services", amount: "0" },
+        {
+          label: "Other General Services (see attached J.O. Assessment)",
+          amount: "0",
+        },
+      ],
+    },
+    {
+      title: "Repairs and Maintenance",
+      items: [
+        {
+          label: "Repairs and Maintenance - Buildings and Other Structures",
+          amount: "0",
+        },
+        {
+          label: "Repairs and Maintenance - Machinery & Equipment",
+          amount: "0",
+        },
+        { label: "Repairs and Maintenance - Motor Vehicles", amount: "0" },
+        {
+          label: "Repairs and Maintenance - Furniture & Fixtures",
+          amount: "0",
+        },
+        {
+          label:
+            "Repairs and Maintenance - Semi-Expendable Machinery & Equipment",
+          amount: "0",
+        },
+        {
+          label:
+            "Repairs and Maintenance - Semi-Expendable Furniture, Fixtures & Books",
+          amount: "0",
+        },
+      ],
+    },
+    {
+      title: "Taxes, Insurance Premiums and Other Fees",
+      items: [
+        { label: "Taxes, Duties and Licenses", amount: "0" },
+        { label: "Fidelity Bond Premiums", amount: "0" },
+        { label: "Insurance Expenses", amount: "0" },
+      ],
+    },
+    {
+      title: "Other Maintenance and Operating Expenses",
+      items: [
+        { label: "Printing and Publication Expenses", amount: "0" },
+        {
+          label: "Representation Expenses (Meals/Snacks w/ ppmp)",
+          amount: "0",
+        },
+        { label: "Transportation and Delivery Expenses", amount: "0" },
+        { label: "Rent Expenses - Motor Vehicles", amount: "0" },
+        { label: "Rent Expenses - Equipment", amount: "0" },
+      ],
+    },
+    {
+      title: "Membership Dues and Contributions to Organizations",
+      items: [
+        {
+          label: "Membership Dues and Contributions to Organizations",
+          amount: "0",
+        },
+      ],
+    },
+    {
+      title: "Subscription Expenses",
+      items: [{ label: "Subscription Expenses", amount: "0" }],
+    },
+    {
+      title: "Other Maintenance & Operating Expenses",
+      items: [{ label: "Other Maintenance & Operating Expenses", amount: "0" }],
+    },
+  ],
+  co: [
+    {
+      title: "Buildings and Other Structures",
+      items: [
+        { label: "Buildings", amount: "0" },
+        { label: "School Buildings", amount: "0" },
+        { label: "Other Structures", amount: "0" },
+      ],
+    },
+    {
+      title: "Machinery and Equipment",
+      items: [
+        { label: "Machinery", amount: "0" },
+        { label: "Office Equipment", amount: "0" },
+        {
+          label: "Information and Communication Technology Equipment",
+          amount: "0",
+        },
+        { label: "Printing Equipment", amount: "0" },
+        { label: "Sports Equipment", amount: "0" },
+        { label: "Technical and Scientific Equipment", amount: "0" },
+        { label: "Other Machinery and Equipment", amount: "0" },
+      ],
+    },
+    {
+      title: "Transportation Equipment",
+      items: [{ label: "Motor Vehicles", amount: "0" }],
+    },
+    {
+      title: "Furniture, Fixtures and Books",
+      items: [
+        { label: "Furniture and Fixtures", amount: "0" },
+        { label: "Books", amount: "0" },
+      ],
+    },
+    {
+      title: "Other Plant, Property and Equipment",
+      items: [{ label: "Other Plant, Property and Equipment", amount: "0" }],
+    },
+  ],
+};
+
+const MODULE2_ITEM_AMOUNT_OVERRIDES: Record<
+  Module2FundKey,
+  Record<string, string>
+> = {
+  facultyStaffFund: {
+    "Office Supplies Expenses": "15069.77",
+  },
+  curriculumFund: {},
+  studentFund: {},
+  facilitiesFund: {},
+};
+
+function getModule2GroupOptions(subsectionKey: Module2SubsectionKey) {
+  return MODULE2_GROUP_OPTIONS[subsectionKey] ?? [];
+}
+
+function getModule2ItemOptions(
+  fundKey: Module2FundKey,
+  subsectionKey: Module2SubsectionKey,
+  groupTitle: string,
+) {
+  const group = getModule2GroupOptions(subsectionKey).find(
+    (entry) => entry.title === groupTitle,
+  );
+
+  if (!group) return [];
+
+  const overrides = MODULE2_ITEM_AMOUNT_OVERRIDES[fundKey];
+  return group.items.map((item) => ({
+    label: item.label,
+    amount: overrides[item.label] ?? item.amount,
+  }));
+}
+
+function getRemainingModule2GroupOptions(
+  section: FundSection,
+  subsectionKey: Module2SubsectionKey,
+) {
+  const usedTitles = new Set(
+    section[subsectionKey].map((group) => group.title.trim()).filter(Boolean),
+  );
+
+  return getModule2GroupOptions(subsectionKey).filter(
+    (option) => !usedTitles.has(option.title),
+  );
+}
+
+function getModule2GroupSelectOptions(
+  section: FundSection,
+  subsectionKey: Module2SubsectionKey,
+  currentTitle: string,
+) {
+  const remainingOptions = getRemainingModule2GroupOptions(
+    section,
+    subsectionKey,
+  );
+
+  if (!currentTitle.trim()) {
+    return remainingOptions;
+  }
+
+  const currentOption = getModule2GroupOptions(subsectionKey).find(
+    (option) => option.title === currentTitle,
+  );
+
+  if (!currentOption) {
+    return remainingOptions;
+  }
+
+  return [
+    currentOption,
+    ...remainingOptions.filter((option) => option.title !== currentTitle),
+  ];
+}
+
+function getFilteredModule2ItemOptions(
+  fundKey: Module2FundKey,
+  subsectionKey: Module2SubsectionKey,
+  group: BudgetGroup,
+  query: string,
+) {
+  const normalized = query.trim().toLowerCase();
+  const options = getModule2ItemOptions(fundKey, subsectionKey, group.title);
+  if (!normalized) return options;
+  return options.filter((option) =>
+    option.label.toLowerCase().includes(normalized),
+  );
+}
+
+function parseModule2Amount(value: string) {
+  return Number(String(value ?? "").replace(/,/g, "")) || 0;
+}
+
+function sanitizeIntegerInput(value: string) {
+  return String(value ?? "")
+    .replace(/,/g, "")
+    .replace(/\D/g, "");
+}
+
+function sanitizeDecimalInput(value: string) {
+  const cleaned = String(value ?? "")
+    .replace(/,/g, "")
+    .replace(/[^\d.]/g, "");
+  const dotIndex = cleaned.indexOf(".");
+  if (dotIndex === -1) return cleaned;
+  return (
+    cleaned.slice(0, dotIndex + 1) +
+    cleaned.slice(dotIndex + 1).replace(/\./g, "")
+  );
+}
+
+function formatNumberInput(value: string, allowDecimal = false) {
+  const cleaned = allowDecimal
+    ? sanitizeDecimalInput(value)
+    : sanitizeIntegerInput(value);
+  if (!cleaned) return "";
+
+  if (allowDecimal) {
+    const [intPart, decimalPart] = cleaned.split(".");
+    const formattedInt = (intPart || "0").replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return decimalPart === undefined
+      ? formattedInt
+      : `${formattedInt}.${decimalPart}`;
+  }
+
+  return cleaned.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
 type Module3Row = {
   key: number;
   title: string;
@@ -138,6 +462,8 @@ type PpmpWizardDraft = {
   module3Rows: Module3Row[];
   updatedAt: string;
 };
+
+type PpmpSubmissionStep = "module1" | "module2" | "module3";
 
 let nextKey = 1;
 
@@ -363,14 +689,6 @@ function normalizeKey(value: string | null | undefined) {
   return (value ?? "").trim().toLowerCase();
 }
 
-function autoCapitalizeName(value: string): string {
-  return value
-    .trim()
-    .split(/\s+/)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
-}
-
 function getPreparedByName(profile: any) {
   const firstName = String(profile?.first_name ?? "").trim();
   const lastName = String(profile?.last_name ?? "").trim();
@@ -442,6 +760,8 @@ export default function Ppmp() {
   const [deletingPlanId, setDeletingPlanId] = useState<string | null>(null);
   const [planPendingDelete, setPlanPendingDelete] =
     useState<PpmpPlanRow | null>(null);
+  const [planPendingExpirationEdit, setPlanPendingExpirationEdit] =
+    useState<PpmpPlanRow | null>(null);
   const [planPendingDownload, setPlanPendingDownload] =
     useState<PpmpPlanRow | null>(null);
 
@@ -471,9 +791,14 @@ export default function Ppmp() {
   const [module3Rows, setModule3Rows] = useState<Module3Row[]>([
     emptyModule3Row(),
   ]);
+  const [pendingSubmissionStep, setPendingSubmissionStep] =
+    useState<PpmpSubmissionStep | null>(null);
   const [openItemDropdownKey, setOpenItemDropdownKey] = useState<number | null>(
     null,
   );
+  const [openModule2DropdownKey, setOpenModule2DropdownKey] = useState<
+    string | null
+  >(null);
   const [draftHydrated, setDraftHydrated] = useState(false);
 
   const collegeId = profile?.college_id ?? "";
@@ -628,6 +953,12 @@ export default function Ppmp() {
       .catch(console.error);
   }, [collegeId]);
 
+  const selectedProgramLabel = useMemo(() => {
+    const selected = programOptions.find((program) => program.id === programId);
+    if (!selected) return "";
+    return `${selected.code} – ${selected.name}`;
+  }, [programOptions, programId]);
+
   const refreshPlans = async () => {
     if (!user?.id) return;
     setLoadingPlans(true);
@@ -644,6 +975,15 @@ export default function Ppmp() {
   useEffect(() => {
     void refreshPlans();
   }, [user?.id]);
+
+  // Auto-populate Department and College/Office from selected Program and College
+  useEffect(() => {
+    setModule2Data((prev) => ({
+      ...prev,
+      department: selectedProgramLabel,
+      collegeOffice: collegeName,
+    }));
+  }, [selectedProgramLabel, collegeName]);
 
   const categoryOptions = useMemo(() => {
     const all = ppmpCatalog.map((entry) => entry.category);
@@ -792,10 +1132,18 @@ export default function Ppmp() {
   }
 
   function handleDownload(plan: PpmpPlanRow) {
+    const module2ForDownload = getModule2DataForDownload(plan);
+
     generatePpmpDocument(plan, {
       collegeName,
       programName: getProgramName(plan),
       unitName: profile?.office_name ?? profile?.department_name ?? "",
+      preparedBy: getPreparedByName(profile),
+      preparedByTitle: "End-User",
+      certifiedBy: module2ForDownload.certifiedAllotmentName,
+      certifiedByTitle: module2ForDownload.certifiedAllotmentDesignation,
+      approvedBy: module2ForDownload.approvedName,
+      approvedByTitle: module2ForDownload.approvedDesignation,
     });
   }
 
@@ -873,6 +1221,8 @@ export default function Ppmp() {
       generateBudgetProposalDocument(planPendingDownload, {
         collegeName,
         programName: getProgramName(planPendingDownload),
+        preparedByName: getPreparedByName(profile),
+        preparedByDesignation: "End-User",
         module2DataOverride: module2ForDownload,
       });
     } else if (type === "learning_development_budget_proposal") {
@@ -970,11 +1320,6 @@ export default function Ppmp() {
   async function persistPpmpRequest() {
     if (!user?.id || !collegeId || !programId) return;
 
-    if (editingPlanId && !expirationInput.trim()) {
-      setError("Please provide an expiration date for realignment.");
-      return;
-    }
-
     const trimmed = items.filter(
       (item) => item.itemDescription.trim() && item.category.trim(),
     );
@@ -1003,7 +1348,6 @@ export default function Ppmp() {
           planId: editingPlanId,
           module2Data,
           module3Rows,
-          expiresAt: expirationInput || null,
           items: trimmed.map((item) => ({
             category: item.category,
             itemDescription: item.itemDescription,
@@ -1046,7 +1390,7 @@ export default function Ppmp() {
     }
   }
 
-  function saveModuleTwoUiOnly() {
+  function validateModuleTwo() {
     const missingFields: string[] = [];
     if (!module2Data.department.trim()) {
       missingFields.push("Department");
@@ -1064,13 +1408,24 @@ export default function Ppmp() {
     if (missingFields.length > 0) {
       setModule2ValidationAttempted(true);
       setError(`Please complete required fields: ${missingFields.join(", ")}.`);
-      return;
+      return false;
     }
+
+    return true;
+  }
+
+  function saveModuleTwoUiOnly() {
+    if (!validateModuleTwo()) return;
 
     setModule2ValidationAttempted(false);
     setError("");
     setModuleProgress((prev) => ({ ...prev, module2: true }));
     setActiveModule(3);
+  }
+
+  function requestSaveModuleTwo() {
+    if (!validateModuleTwo()) return;
+    setPendingSubmissionStep("module2");
   }
 
   function updateModule2FundSection(
@@ -1102,7 +1457,13 @@ export default function Ppmp() {
     updateModule2FundSection(sectionKey, (section) => ({
       ...section,
       [subsectionKey]: section[subsectionKey].map((group) =>
-        group.key === groupKey ? { ...group, title } : group,
+        group.key === groupKey
+          ? {
+              ...group,
+              title,
+              items: group.title === title ? group.items : [emptyBudgetItem()],
+            }
+          : group,
       ),
     }));
   }
@@ -1185,28 +1546,28 @@ export default function Ppmp() {
     {
       key: "facultyStaffFund" as const,
       title: "1.1. Faculty and Staff Development Fund (12.5%)",
-      appropriation: parseFloat(module2Data.facultyStaffAmount) || 0,
+      appropriation: parseModule2Amount(module2Data.facultyStaffAmount),
     },
     {
       key: "curriculumFund" as const,
       title: "1.2. Curriculum Development Fund (12.5%)",
-      appropriation: parseFloat(module2Data.curriculumAmount) || 0,
+      appropriation: parseModule2Amount(module2Data.curriculumAmount),
     },
     {
       key: "studentFund" as const,
       title: "1.3. Student Development Fund (12.5%)",
-      appropriation: parseFloat(module2Data.studentAmount) || 0,
+      appropriation: parseModule2Amount(module2Data.studentAmount),
     },
     {
       key: "facilitiesFund" as const,
       title: "1.4. Facilities Development Fund (12.5%)",
-      appropriation: parseFloat(module2Data.facilitiesAmount) || 0,
+      appropriation: parseModule2Amount(module2Data.facilitiesAmount),
     },
   ];
 
   function calculateModule2GroupTotal(group: BudgetGroup) {
     return group.items.reduce(
-      (sum, item) => sum + (parseFloat(item.amount) || 0),
+      (sum, item) => sum + parseModule2Amount(item.amount),
       0,
     );
   }
@@ -1293,7 +1654,7 @@ export default function Ppmp() {
   ];
 
   function parseModule3Amount(value: string) {
-    return parseFloat(value) || 0;
+    return parseFloat(String(value ?? "").replace(/,/g, "")) || 0;
   }
 
   function getModule3Planned(row: Module3Row) {
@@ -1332,7 +1693,7 @@ export default function Ppmp() {
     );
   }
 
-  function saveModuleThreeUiOnly() {
+  function validateModuleThree() {
     const activeRows = module3Rows.filter((row) =>
       [
         row.title,
@@ -1349,7 +1710,7 @@ export default function Ppmp() {
 
     if (activeRows.length === 0) {
       setError("Please add at least one Learning and Development entry.");
-      return;
+      return false;
     }
 
     const invalidRows = activeRows.filter(
@@ -1365,11 +1726,22 @@ export default function Ppmp() {
       setError(
         "Please complete required columns in Module 3 rows: Title, Frequency, Category, Expected Participants, and Duration.",
       );
-      return;
+      return false;
     }
+
+    return true;
+  }
+
+  function saveModuleThreeUiOnly() {
+    if (!validateModuleThree()) return;
     setError("");
     setModuleProgress((prev) => ({ ...prev, module3: true }));
     void persistPpmpRequest();
+  }
+
+  function requestSaveModuleThree() {
+    if (!validateModuleThree()) return;
+    setPendingSubmissionStep("module3");
   }
 
   function updateItem(key: number, field: string, value: string) {
@@ -1395,18 +1767,26 @@ export default function Ppmp() {
           };
         }
         if (field === "qtyInput") {
-          const parsed = parseInt(value, 10);
+          const sanitized = sanitizeIntegerInput(value);
+          if (!sanitized) {
+            return {
+              ...it,
+              qtyInput: "",
+            };
+          }
+          const parsed = parseInt(sanitized, 10);
           return {
             ...it,
-            qtyInput: value,
+            qtyInput: sanitized,
             qty: Number.isFinite(parsed) && parsed > 0 ? parsed : it.qty,
           };
         }
         if (field === "unitPriceInput") {
-          const parsed = parseFloat(value);
+          const sanitized = sanitizeDecimalInput(value);
+          const parsed = parseFloat(sanitized);
           return {
             ...it,
-            unitPriceInput: value,
+            unitPriceInput: sanitized,
             unitPrice: Number.isFinite(parsed) ? parsed : it.unitPrice,
           };
         }
@@ -1428,6 +1808,7 @@ export default function Ppmp() {
     setItems([emptyItem()]);
     setSelectedCategories([]);
     setPendingCategory("");
+    setOpenModule2DropdownKey(null);
     clearWizardDraft();
     setEditingPlanId(null);
     setActiveModule(1);
@@ -1467,10 +1848,8 @@ export default function Ppmp() {
     setError("");
     setPendingCategory("");
     setOpenItemDropdownKey(null);
+    setOpenModule2DropdownKey(null);
     setModule2ValidationAttempted(false);
-    setExpirationInput(
-      plan.expires_at ? String(plan.expires_at).slice(0, 10) : "",
-    );
     setModuleProgress({ module1: true, module2: true, module3: true });
     const localMeta = loadPlanLocalMeta(plan.id);
     const module2FromDb = normalizeModule2Data(plan.module2_data);
@@ -1514,7 +1893,8 @@ export default function Ppmp() {
     }
 
     if (editingPlanId) {
-      void persistPpmpRequest();
+      setError("");
+      setPendingSubmissionStep("module1");
       return;
     }
 
@@ -1542,8 +1922,52 @@ export default function Ppmp() {
     }
 
     setError("");
-    setModuleProgress((prev) => ({ ...prev, module1: true }));
-    setActiveModule(2);
+    setPendingSubmissionStep("module1");
+  }
+
+  function confirmPendingSubmission() {
+    const step = pendingSubmissionStep;
+    if (!step) return;
+    setPendingSubmissionStep(null);
+
+    if (step === "module1") {
+      if (editingPlanId) {
+        void persistPpmpRequest();
+      } else {
+        setModuleProgress((prev) => ({ ...prev, module1: true }));
+        setActiveModule(2);
+      }
+      return;
+    }
+
+    if (step === "module2") {
+      saveModuleTwoUiOnly();
+      return;
+    }
+
+    saveModuleThreeUiOnly();
+  }
+
+  function getSubmissionConfirmCopy(step: PpmpSubmissionStep) {
+    if (step === "module1") {
+      return {
+        title: editingPlanId ? "Save Module 1 Changes" : "Submit Module 1",
+        message: "Are you sure the entered information is correct? Submit now?",
+        actionLabel: editingPlanId ? "Save Now" : "Submit Now",
+      };
+    }
+    if (step === "module2") {
+      return {
+        title: "Submit Budget Proposal",
+        message: "Are you sure the entered information is correct? Submit now?",
+        actionLabel: "Submit Now",
+      };
+    }
+    return {
+      title: "Submit Learning and Development",
+      message: "Are you sure the entered information is correct? Submit now?",
+      actionLabel: "Submit Now",
+    };
   }
 
   async function handleCompletePlan() {
@@ -1590,6 +2014,31 @@ export default function Ppmp() {
       setError(err.message || "Failed to delete PPMP.");
     } finally {
       setDeletingPlanId(null);
+    }
+  }
+
+  async function handleEditExpirationDate() {
+    if (!planPendingExpirationEdit) return;
+    if (!expirationInput.trim()) {
+      setError("Please provide a PPMP expiration date.");
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+    try {
+      await updatePpmpPlanExpiration({
+        planId: planPendingExpirationEdit.id,
+        expiresAt: expirationInput,
+      });
+      setPlanPendingExpirationEdit(null);
+      setExpirationInput("");
+      await refreshPlans();
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Failed to update expiration date.");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -1711,6 +2160,21 @@ export default function Ppmp() {
                               </button>
                               <button
                                 type="button"
+                                className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
+                                onClick={() => {
+                                  setPlanPendingExpirationEdit(plan);
+                                  setExpirationInput(
+                                    plan.expires_at
+                                      ? String(plan.expires_at).slice(0, 10)
+                                      : "",
+                                  );
+                                }}
+                              >
+                                <PencilLine className="h-3.5 w-3.5" />
+                                Edit Expiration
+                              </button>
+                              <button
+                                type="button"
                                 className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"
                                 onClick={() => setPlanPendingDownload(plan)}
                               >
@@ -1774,24 +2238,6 @@ export default function Ppmp() {
                   </select>
                 </div>
               </div>
-
-              {editingPlanId && (
-                <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
-                  <label className="text-sm font-medium text-gray-700">
-                    Expiration Date <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    value={expirationInput}
-                    onChange={(e) => setExpirationInput(e.target.value)}
-                    className="mt-2 w-full rounded-lg border border-blue-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-                    required
-                  />
-                  <p className="mt-2 text-xs text-gray-500">
-                    Editable during realignment.
-                  </p>
-                </div>
-              )}
 
               {isBlockedByActivePlan && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -2095,10 +2541,9 @@ export default function Ppmp() {
                                       Qty *
                                     </label>
                                     <input
-                                      type="number"
-                                      min={1}
-                                      step="1"
-                                      value={item.qtyInput}
+                                      type="text"
+                                      inputMode="numeric"
+                                      value={formatNumberInput(item.qtyInput)}
                                       onChange={(e) =>
                                         updateItem(
                                           item.key,
@@ -2107,7 +2552,9 @@ export default function Ppmp() {
                                         )
                                       }
                                       onBlur={(e) => {
-                                        if (!e.target.value) {
+                                        if (
+                                          !sanitizeIntegerInput(e.target.value)
+                                        ) {
                                           updateItem(item.key, "qtyInput", "1");
                                         }
                                       }}
@@ -2145,10 +2592,12 @@ export default function Ppmp() {
                                       Unit Price
                                     </label>
                                     <input
-                                      type="number"
-                                      min={0}
-                                      step="0.01"
-                                      value={item.unitPriceInput}
+                                      type="text"
+                                      inputMode="decimal"
+                                      value={formatNumberInput(
+                                        item.unitPriceInput,
+                                        true,
+                                      )}
                                       onChange={(e) =>
                                         updateItem(
                                           item.key,
@@ -2157,7 +2606,9 @@ export default function Ppmp() {
                                         )
                                       }
                                       onBlur={(e) => {
-                                        if (!e.target.value) {
+                                        if (
+                                          !sanitizeDecimalInput(e.target.value)
+                                        ) {
                                           updateItem(
                                             item.key,
                                             "unitPriceInput",
@@ -2210,24 +2661,13 @@ export default function Ppmp() {
                         <input
                           type="text"
                           value={module2Data.department}
-                          onChange={(e) =>
-                            setModule2Data((prev) => ({
-                              ...prev,
-                              department: e.target.value,
-                            }))
-                          }
-                          className={`mt-1 w-full rounded bg-white px-2 py-1.5 text-sm outline-none focus:ring-1 ${
-                            module2MissingFields.department
-                              ? "border border-red-300 focus:border-red-400 focus:ring-red-100"
-                              : "border border-gray-200 focus:border-blue-400 focus:ring-blue-200"
-                          }`}
+                          disabled
+                          className={`mt-1 w-full rounded bg-gray-50 px-2 py-1.5 text-sm outline-none focus:ring-1 border border-gray-200 text-gray-600 cursor-not-allowed`}
                           placeholder="Department"
                         />
-                        {module2MissingFields.department && (
-                          <p className="mt-1 text-xs text-red-600">
-                            Department is required.
-                          </p>
-                        )}
+                        <p className="mt-1 text-xs text-gray-500">
+                          Auto-populated from your profile
+                        </p>
                       </div>
                       <div>
                         <label className="text-xs font-medium text-gray-600">
@@ -2236,24 +2676,13 @@ export default function Ppmp() {
                         <input
                           type="text"
                           value={module2Data.collegeOffice}
-                          onChange={(e) =>
-                            setModule2Data((prev) => ({
-                              ...prev,
-                              collegeOffice: e.target.value,
-                            }))
-                          }
-                          className={`mt-1 w-full rounded bg-white px-2 py-1.5 text-sm outline-none focus:ring-1 ${
-                            module2MissingFields.collegeOffice
-                              ? "border border-red-300 focus:border-red-400 focus:ring-red-100"
-                              : "border border-gray-200 focus:border-blue-400 focus:ring-blue-200"
-                          }`}
+                          disabled
+                          className={`mt-1 w-full rounded bg-gray-50 px-2 py-1.5 text-sm outline-none focus:ring-1 border border-gray-200 text-gray-600 cursor-not-allowed`}
                           placeholder="College/Office"
                         />
-                        {module2MissingFields.collegeOffice && (
-                          <p className="mt-1 text-xs text-red-600">
-                            College/Office is required.
-                          </p>
-                        )}
+                        <p className="mt-1 text-xs text-gray-500">
+                          Auto-populated from the selected college
+                        </p>
                       </div>
                       <div>
                         <label className="text-xs font-medium text-gray-600">
@@ -2320,14 +2749,18 @@ export default function Ppmp() {
                             Faculty &amp; Staff Dev. *
                           </label>
                           <input
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            value={module2Data.facultyStaffAmount}
+                            type="text"
+                            inputMode="decimal"
+                            value={formatNumberInput(
+                              module2Data.facultyStaffAmount,
+                              true,
+                            )}
                             onChange={(e) =>
                               setModule2Data((prev) => ({
                                 ...prev,
-                                facultyStaffAmount: e.target.value,
+                                facultyStaffAmount: sanitizeDecimalInput(
+                                  e.target.value,
+                                ),
                               }))
                             }
                             className="mt-1 w-full rounded border border-gray-200 px-2 py-1.5 text-sm"
@@ -2338,14 +2771,18 @@ export default function Ppmp() {
                             Curriculum Dev. *
                           </label>
                           <input
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            value={module2Data.curriculumAmount}
+                            type="text"
+                            inputMode="decimal"
+                            value={formatNumberInput(
+                              module2Data.curriculumAmount,
+                              true,
+                            )}
                             onChange={(e) =>
                               setModule2Data((prev) => ({
                                 ...prev,
-                                curriculumAmount: e.target.value,
+                                curriculumAmount: sanitizeDecimalInput(
+                                  e.target.value,
+                                ),
                               }))
                             }
                             className="mt-1 w-full rounded border border-gray-200 px-2 py-1.5 text-sm"
@@ -2356,14 +2793,18 @@ export default function Ppmp() {
                             Student Dev. *
                           </label>
                           <input
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            value={module2Data.studentAmount}
+                            type="text"
+                            inputMode="decimal"
+                            value={formatNumberInput(
+                              module2Data.studentAmount,
+                              true,
+                            )}
                             onChange={(e) =>
                               setModule2Data((prev) => ({
                                 ...prev,
-                                studentAmount: e.target.value,
+                                studentAmount: sanitizeDecimalInput(
+                                  e.target.value,
+                                ),
                               }))
                             }
                             className="mt-1 w-full rounded border border-gray-200 px-2 py-1.5 text-sm"
@@ -2374,14 +2815,18 @@ export default function Ppmp() {
                             Facilities Dev. *
                           </label>
                           <input
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            value={module2Data.facilitiesAmount}
+                            type="text"
+                            inputMode="decimal"
+                            value={formatNumberInput(
+                              module2Data.facilitiesAmount,
+                              true,
+                            )}
                             onChange={(e) =>
                               setModule2Data((prev) => ({
                                 ...prev,
-                                facilitiesAmount: e.target.value,
+                                facilitiesAmount: sanitizeDecimalInput(
+                                  e.target.value,
+                                ),
                               }))
                             }
                             className="mt-1 w-full rounded border border-gray-200 px-2 py-1.5 text-sm"
@@ -2392,9 +2837,14 @@ export default function Ppmp() {
                             Total Appropriations Available
                           </label>
                           <input
-                            type="number"
+                            type="text"
                             disabled
-                            value={module2TotalAppropriation.toFixed(2)}
+                            value={Number(
+                              module2TotalAppropriation || 0,
+                            ).toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
                             className="mt-1 w-full rounded border border-gray-300 bg-gray-100 px-2 py-1.5 text-sm font-medium"
                           />
                         </div>
@@ -2437,23 +2887,13 @@ export default function Ppmp() {
                                     <div className="text-sm font-semibold text-gray-900">
                                       {subsectionLabel}
                                     </div>
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        addModule2Group(fund.key, subsectionKey)
-                                      }
-                                      className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
-                                    >
-                                      <Plus className="h-3.5 w-3.5" />
-                                      Add Title
-                                    </button>
                                   </div>
 
                                   <div className="mt-3 space-y-4">
                                     {groups.map((group) => {
                                       const groupTotal = group.items.reduce(
                                         (sum, item) =>
-                                          sum + (parseFloat(item.amount) || 0),
+                                          sum + parseModule2Amount(item.amount),
                                         0,
                                       );
 
@@ -2467,8 +2907,7 @@ export default function Ppmp() {
                                               <label className="text-xs text-gray-500">
                                                 Title
                                               </label>
-                                              <input
-                                                type="text"
+                                              <select
                                                 value={group.title}
                                                 onChange={(e) =>
                                                   updateModule2GroupTitle(
@@ -2479,8 +2918,23 @@ export default function Ppmp() {
                                                   )
                                                 }
                                                 className="mt-1 w-full rounded border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200"
-                                                placeholder="Traveling Expenses"
-                                              />
+                                              >
+                                                <option value="">
+                                                  Select title
+                                                </option>
+                                                {getModule2GroupSelectOptions(
+                                                  fundData,
+                                                  subsectionKey,
+                                                  group.title,
+                                                ).map((option) => (
+                                                  <option
+                                                    key={option.title}
+                                                    value={option.title}
+                                                  >
+                                                    {option.title}
+                                                  </option>
+                                                ))}
+                                              </select>
                                             </div>
 
                                             <button
@@ -2508,26 +2962,149 @@ export default function Ppmp() {
                                                 key={item.key}
                                                 className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_150px_auto] md:items-center"
                                               >
+                                                <div className="relative">
+                                                  <input
+                                                    value={item.description}
+                                                    onFocus={() =>
+                                                      setOpenModule2DropdownKey(
+                                                        `${fund.key}-${subsectionKey}-group-${group.key}-item-${item.key}`,
+                                                      )
+                                                    }
+                                                    onClick={() =>
+                                                      setOpenModule2DropdownKey(
+                                                        `${fund.key}-${subsectionKey}-group-${group.key}-item-${item.key}`,
+                                                      )
+                                                    }
+                                                    onBlur={() => {
+                                                      window.setTimeout(() => {
+                                                        setOpenModule2DropdownKey(
+                                                          (prev) =>
+                                                            prev ===
+                                                            `${fund.key}-${subsectionKey}-group-${group.key}-item-${item.key}`
+                                                              ? null
+                                                              : prev,
+                                                        );
+                                                      }, 120);
+                                                    }}
+                                                    onChange={(e) => {
+                                                      const option =
+                                                        getModule2ItemOptions(
+                                                          fund.key,
+                                                          subsectionKey,
+                                                          group.title,
+                                                        ).find(
+                                                          (entry) =>
+                                                            entry.label ===
+                                                            e.target.value,
+                                                        );
+                                                      updateModule2Item(
+                                                        fund.key,
+                                                        subsectionKey,
+                                                        group.key,
+                                                        item.key,
+                                                        "description",
+                                                        e.target.value,
+                                                      );
+                                                      if (option) {
+                                                        updateModule2Item(
+                                                          fund.key,
+                                                          subsectionKey,
+                                                          group.key,
+                                                          item.key,
+                                                          "amount",
+                                                          option.amount,
+                                                        );
+                                                      }
+                                                      setOpenModule2DropdownKey(
+                                                        `${fund.key}-${subsectionKey}-group-${group.key}-item-${item.key}`,
+                                                      );
+                                                    }}
+                                                    className="w-full rounded border border-gray-200 bg-white px-3 py-2 pr-10 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200"
+                                                    placeholder="Type or select item"
+                                                  />
+                                                  <button
+                                                    type="button"
+                                                    onMouseDown={(e) =>
+                                                      e.preventDefault()
+                                                    }
+                                                    onClick={() =>
+                                                      setOpenModule2DropdownKey(
+                                                        (prev) =>
+                                                          prev ===
+                                                          `${fund.key}-${subsectionKey}-group-${group.key}-item-${item.key}`
+                                                            ? null
+                                                            : `${fund.key}-${subsectionKey}-group-${group.key}-item-${item.key}`,
+                                                      )
+                                                    }
+                                                    className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700"
+                                                    aria-label="Toggle item list"
+                                                  >
+                                                    <ChevronDown className="h-4 w-4" />
+                                                  </button>
+
+                                                  {openModule2DropdownKey ===
+                                                    `${fund.key}-${subsectionKey}-group-${group.key}-item-${item.key}` && (
+                                                    <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
+                                                      <div className="max-h-56 overflow-auto py-1">
+                                                        {getFilteredModule2ItemOptions(
+                                                          fund.key,
+                                                          subsectionKey,
+                                                          group,
+                                                          item.description,
+                                                        ).length === 0 ? (
+                                                          <div className="px-3 py-2 text-sm text-gray-500">
+                                                            No matching items.
+                                                          </div>
+                                                        ) : (
+                                                          getFilteredModule2ItemOptions(
+                                                            fund.key,
+                                                            subsectionKey,
+                                                            group,
+                                                            item.description,
+                                                          )
+                                                            .slice(0, 80)
+                                                            .map((option) => (
+                                                              <button
+                                                                key={
+                                                                  option.label
+                                                                }
+                                                                type="button"
+                                                                onMouseDown={(
+                                                                  e,
+                                                                ) => {
+                                                                  e.preventDefault();
+                                                                  updateModule2Item(
+                                                                    fund.key,
+                                                                    subsectionKey,
+                                                                    group.key,
+                                                                    item.key,
+                                                                    "description",
+                                                                    option.label,
+                                                                  );
+                                                                  updateModule2Item(
+                                                                    fund.key,
+                                                                    subsectionKey,
+                                                                    group.key,
+                                                                    item.key,
+                                                                    "amount",
+                                                                    option.amount,
+                                                                  );
+                                                                  setOpenModule2DropdownKey(
+                                                                    null,
+                                                                  );
+                                                                }}
+                                                                className="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-blue-50"
+                                                              >
+                                                                {option.label}
+                                                              </button>
+                                                            ))
+                                                        )}
+                                                      </div>
+                                                    </div>
+                                                  )}
+                                                </div>
                                                 <input
                                                   type="text"
-                                                  value={item.description}
-                                                  onChange={(e) =>
-                                                    updateModule2Item(
-                                                      fund.key,
-                                                      subsectionKey,
-                                                      group.key,
-                                                      item.key,
-                                                      "description",
-                                                      e.target.value,
-                                                    )
-                                                  }
-                                                  className="w-full rounded border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200"
-                                                  placeholder="Traveling Expenses - Local"
-                                                />
-                                                <input
-                                                  type="number"
-                                                  min={0}
-                                                  step="0.01"
                                                   value={item.amount}
                                                   onChange={(e) =>
                                                     updateModule2Item(
@@ -2566,7 +3143,7 @@ export default function Ppmp() {
                                             ))}
                                           </div>
 
-                                          <div className="mt-3 flex items-center justify-between border-t border-gray-200 pt-3">
+                                          <div className="mt-3 flex items-start justify-between border-t border-gray-200 pt-3">
                                             <button
                                               type="button"
                                               onClick={() =>
@@ -2581,9 +3158,29 @@ export default function Ppmp() {
                                               <Plus className="h-3.5 w-3.5" />
                                               Add Item
                                             </button>
-                                            <div className="text-xs font-semibold text-gray-700">
-                                              Group Total:{" "}
-                                              {groupTotal.toFixed(2)}
+                                            <div className="flex flex-col items-end gap-1">
+                                              <div className="text-xs font-semibold text-gray-700">
+                                                Subtotal:{" "}
+                                                {groupTotal.toFixed(2)}
+                                              </div>
+                                              {getRemainingModule2GroupOptions(
+                                                fundData,
+                                                subsectionKey,
+                                              ).length > 0 ? (
+                                                <button
+                                                  type="button"
+                                                  onClick={() =>
+                                                    addModule2Group(
+                                                      fund.key,
+                                                      subsectionKey,
+                                                    )
+                                                  }
+                                                  className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
+                                                >
+                                                  <Plus className="h-3.5 w-3.5" />
+                                                  Add Title
+                                                </button>
+                                              ) : null}
                                             </div>
                                           </div>
                                         </div>
@@ -2631,9 +3228,7 @@ export default function Ppmp() {
                         onChange={(e) =>
                           setModule2Data((prev) => ({
                             ...prev,
-                            certifiedAllotmentName: autoCapitalizeName(
-                              e.target.value,
-                            ),
+                            certifiedAllotmentName: e.target.value,
                           }))
                         }
                         className="mb-2 w-full rounded border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200"
@@ -2662,7 +3257,7 @@ export default function Ppmp() {
                         onChange={(e) =>
                           setModule2Data((prev) => ({
                             ...prev,
-                            approvedName: autoCapitalizeName(e.target.value),
+                            approvedName: e.target.value,
                           }))
                         }
                         className="mb-2 w-full rounded border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200"
@@ -2685,7 +3280,7 @@ export default function Ppmp() {
                   <div className="flex justify-end border-t pt-4">
                     <button
                       type="button"
-                      onClick={saveModuleTwoUiOnly}
+                      onClick={requestSaveModuleTwo}
                       className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
                     >
                       <Save className="h-4 w-4" />
@@ -2701,14 +3296,6 @@ export default function Ppmp() {
                     <div className="text-sm font-semibold text-gray-900">
                       Module 3: Learning and Development
                     </div>
-                    <button
-                      type="button"
-                      onClick={addModule3Row}
-                      className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      Add L and D Row
-                    </button>
                   </div>
 
                   <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
@@ -2811,15 +3398,16 @@ export default function Ppmp() {
                               </td>
                               <td className="border border-gray-300 p-1">
                                 <input
-                                  type="number"
-                                  min={1}
-                                  step="1"
-                                  value={row.expectedParticipants}
+                                  type="text"
+                                  inputMode="numeric"
+                                  value={formatNumberInput(
+                                    row.expectedParticipants,
+                                  )}
                                   onChange={(e) =>
                                     updateModule3Row(
                                       row.key,
                                       "expectedParticipants",
-                                      e.target.value,
+                                      sanitizeIntegerInput(e.target.value),
                                     )
                                   }
                                   className="w-full rounded border border-gray-200 px-2 py-1.5 text-xs"
@@ -2842,15 +3430,17 @@ export default function Ppmp() {
                               </td>
                               <td className="border border-gray-300 p-1">
                                 <input
-                                  type="number"
-                                  min={0}
-                                  step="0.01"
-                                  value={row.registrationFees}
+                                  type="text"
+                                  inputMode="decimal"
+                                  value={formatNumberInput(
+                                    row.registrationFees,
+                                    true,
+                                  )}
                                   onChange={(e) =>
                                     updateModule3Row(
                                       row.key,
                                       "registrationFees",
-                                      e.target.value,
+                                      sanitizeDecimalInput(e.target.value),
                                     )
                                   }
                                   className="w-full rounded border border-gray-200 px-2 py-1.5 text-xs"
@@ -2859,15 +3449,17 @@ export default function Ppmp() {
                               </td>
                               <td className="border border-gray-300 p-1">
                                 <input
-                                  type="number"
-                                  min={0}
-                                  step="0.01"
-                                  value={row.travellingExpenses}
+                                  type="text"
+                                  inputMode="decimal"
+                                  value={formatNumberInput(
+                                    row.travellingExpenses,
+                                    true,
+                                  )}
                                   onChange={(e) =>
                                     updateModule3Row(
                                       row.key,
                                       "travellingExpenses",
-                                      e.target.value,
+                                      sanitizeDecimalInput(e.target.value),
                                     )
                                   }
                                   className="w-full rounded border border-gray-200 px-2 py-1.5 text-xs"
@@ -2882,15 +3474,17 @@ export default function Ppmp() {
                               </td>
                               <td className="border border-gray-300 p-1">
                                 <input
-                                  type="number"
-                                  min={0}
-                                  step="0.01"
-                                  value={row.actualBudget}
+                                  type="text"
+                                  inputMode="decimal"
+                                  value={formatNumberInput(
+                                    row.actualBudget,
+                                    true,
+                                  )}
                                   onChange={(e) =>
                                     updateModule3Row(
                                       row.key,
                                       "actualBudget",
-                                      e.target.value,
+                                      sanitizeDecimalInput(e.target.value),
                                     )
                                   }
                                   className="w-full rounded border border-gray-200 px-2 py-1.5 text-xs"
@@ -2928,6 +3522,17 @@ export default function Ppmp() {
                     </table>
                   </div>
 
+                  <div className="mt-3 flex justify-start">
+                    <button
+                      type="button"
+                      onClick={addModule3Row}
+                      className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Add L and D Row
+                    </button>
+                  </div>
+
                   <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                     <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm font-semibold text-green-900">
                       Total Planned Budget: {module3TotalPlanned.toFixed(2)}
@@ -2940,7 +3545,7 @@ export default function Ppmp() {
                   <div className="mt-4 flex justify-end">
                     <button
                       type="button"
-                      onClick={saveModuleThreeUiOnly}
+                      onClick={requestSaveModuleThree}
                       className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
                     >
                       <Save className="h-4 w-4" />
@@ -2980,6 +3585,44 @@ export default function Ppmp() {
           )}
         </form>
       </div>
+
+      {pendingSubmissionStep && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-start gap-3">
+              <span className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                <AlertTriangle className="h-5 w-5" />
+              </span>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {getSubmissionConfirmCopy(pendingSubmissionStep).title}
+                </h3>
+                <p className="mt-1 text-sm text-gray-600">
+                  {getSubmissionConfirmCopy(pendingSubmissionStep).message}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setPendingSubmissionStep(null)}
+                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmPendingSubmission}
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+              >
+                <Save className="h-4 w-4" />
+                {getSubmissionConfirmCopy(pendingSubmissionStep).actionLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {completingPlan && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -3219,7 +3862,7 @@ export default function Ppmp() {
                         >
                           <span className="text-gray-700">{item.label}</span>
                           <span className="font-semibold text-gray-900">
-                            {(parseFloat(item.amount) || 0).toFixed(2)}
+                            {parseModule2Amount(item.amount).toFixed(2)}
                           </span>
                         </div>
                       ))}
@@ -3259,7 +3902,7 @@ export default function Ppmp() {
                               group.items.some(
                                 (item) =>
                                   item.description.trim() ||
-                                  (parseFloat(item.amount) || 0) > 0,
+                                  parseModule2Amount(item.amount) > 0,
                               ),
                           );
                           return { subsectionKey, groups };
@@ -3538,6 +4181,60 @@ export default function Ppmp() {
                 className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {planPendingExpirationEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-start justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Edit Expiration Date
+              </h3>
+              <button
+                onClick={() => setPlanPendingExpirationEdit(null)}
+                className="rounded-lg p-1 hover:bg-gray-100"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+
+            <p className="mb-3 text-sm text-gray-500">
+              Update the expiration date for this PPMP.
+            </p>
+
+            <div className="mb-4">
+              <label className="text-xs font-semibold uppercase text-gray-500">
+                Expiration Date
+              </label>
+              <input
+                type="date"
+                value={expirationInput}
+                onChange={(e) => setExpirationInput(e.target.value)}
+                className="mt-2 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                required
+              />
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setPlanPendingExpirationEdit(null)}
+                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={handleEditExpirationDate}
+                className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+              >
+                <Save className="h-4 w-4" />
+                Save Expiration
               </button>
             </div>
           </div>

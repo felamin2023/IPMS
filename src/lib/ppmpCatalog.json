@@ -1213,7 +1213,7 @@
         "unitPrice": "1000"
       },
       {
-        "description": "FLASHLIGHT, cs-5671 LED Rechargeable Emergency Lamp, 100,000 hour Life Span, 4000mah rechargeable battery, used in patrol, camping, hiking, etc\u2026",
+        "description": "FLASHLIGHT, cs-5671 LED Rechargeable Emergency Lamp, 100,000 hour Life Span, 4000mah rechargeable battery, used in patrol, camping, hiking, etc…",
         "uom": "unit",
         "unitPrice": "1500"
       },
@@ -1880,22 +1880,22 @@
         "unitPrice": "50"
       },
       {
-        "description": "RING BINDER, adventure, (1/2\u201ddia; 1 m long)",
+        "description": "RING BINDER, adventure, (1/2”dia; 1 m long)",
         "uom": "piece",
         "unitPrice": "25"
       },
       {
-        "description": "RING BINDER, adventure, (1/4\u201d dia; 1 m long)",
+        "description": "RING BINDER, adventure, (1/4” dia; 1 m long)",
         "uom": "piece",
         "unitPrice": "20"
       },
       {
-        "description": "RING BINDER, adventure, (3/4\u201d dia; 1 m long)",
+        "description": "RING BINDER, adventure, (3/4” dia; 1 m long)",
         "uom": "piece",
         "unitPrice": "30"
       },
       {
-        "description": "RING BINDER, adventure, (3/8\u201d dia; 1 m long)",
+        "description": "RING BINDER, adventure, (3/8” dia; 1 m long)",
         "uom": "piece",
         "unitPrice": "20"
       },
@@ -1925,22 +1925,22 @@
         "unitPrice": "50"
       },
       {
-        "description": "SPECIAL PAPER, 200 gsm, 8.5\u201d x 13\u201d, white",
+        "description": "SPECIAL PAPER, 200 gsm, 8.5” x 13”, white",
         "uom": "pack",
         "unitPrice": "60"
       },
       {
-        "description": "SPECIAL PAPER, 200 gsm, 8.5\u201d x 13\u201d, blue",
+        "description": "SPECIAL PAPER, 200 gsm, 8.5” x 13”, blue",
         "uom": "pack",
         "unitPrice": "60"
       },
       {
-        "description": "SPECIAL PAPER, 200 gsm, 8.5\u201d x 13\u201d, cream",
+        "description": "SPECIAL PAPER, 200 gsm, 8.5” x 13”, cream",
         "uom": "pack",
         "unitPrice": "60"
       },
       {
-        "description": "SPECIAL PAPER, 200 gsm, 8.5\u201d x 13\u201d, ivory",
+        "description": "SPECIAL PAPER, 200 gsm, 8.5” x 13”, ivory",
         "uom": "pack",
         "unitPrice": "60"
       },
@@ -2752,6 +2752,187 @@
         "description": "TOILET TISSUE PAPER, Interfolded Paper Towel",
         "uom": "pack",
         "unitPrice": "50"
+      }
+    ]
+  },
+  {
+    "part": "PART II",
+    "category": "PART II. OTHER ITEMS NOT AVALABLE AT PS-DBM BUT ARE REGULARLY PURCHASED FROM OTHER SOURCES",
+    "items": [
+      {
+        "description": "Calibration fees of equipment",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "Air Conditioning Unit, Split Type, ______ (specs)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "White Board,  50x40 inches (size)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "White Board,  30x20 inches (size)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "SMART Television, ____ (size)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "Microphone, ______ (specs)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "Speakers, ______ (specs)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "Amplifier, ______ (specs)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "Equalizer, ______ (specs)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "HD Camera, ______ (specs)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "DSLR Camera, ______ (specs)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "HD Video Camera, ______ (specs)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "Video Conference Equipment, ______ (specs)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "LED bulb, ______ (specs)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "PRINTER, Inkjet, Monochrome",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "PRINTER, Inkjet, Color",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "Portable Printer, ______ (specs)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "Android Tablet, ______ (specs)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "Hub/Switches, ______ (specs)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "Network Routers, ______ (specs)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "Wireless Access Point, ______ (specs)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "Scanner, Flatbed, ______ (specs)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "Wireless Pointing Device / Laser Pointer, ______ (specs)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "Multi Function PRINTER, ______ (specs)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "UNINTERRUPTIBLE POWER SUPPLY (UPS), ______ (specs)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "Mobile Phone, ______ (specs)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "Scanner, Colored, Double sided, feeder type",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "GO BAG, for disaster relief, rescue operations, ______ (specs)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "Solar Panel, ______ (specs)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "Life Vest / Life Jacket (for emergency purposes / emergency preparedness / for disaster relief / rescue operations)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "Charge Controller and DC Inverter for Solar Panel, _____(specs)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "Wheels, _____ (type of vehicle)",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "Fuel Filters",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "Drinking Water/ Fountain",
+        "uom": "",
+        "unitPrice": ""
+      },
+      {
+        "description": "Auto Battery, ______ (specs)",
+        "uom": "",
+        "unitPrice": ""
       }
     ]
   }

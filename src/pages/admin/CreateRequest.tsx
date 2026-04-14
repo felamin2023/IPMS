@@ -20,6 +20,41 @@ type ItemRow = RequestItemInput & {
 
 let nextKey = 1;
 
+function sanitizeIntegerInput(value: string) {
+  return String(value ?? "")
+    .replace(/,/g, "")
+    .replace(/\D/g, "");
+}
+
+function sanitizeDecimalInput(value: string) {
+  const cleaned = String(value ?? "")
+    .replace(/,/g, "")
+    .replace(/[^\d.]/g, "");
+  const dotIndex = cleaned.indexOf(".");
+  if (dotIndex === -1) return cleaned;
+  return (
+    cleaned.slice(0, dotIndex + 1) +
+    cleaned.slice(dotIndex + 1).replace(/\./g, "")
+  );
+}
+
+function formatNumberInput(value: string, allowDecimal = false) {
+  const cleaned = allowDecimal
+    ? sanitizeDecimalInput(value)
+    : sanitizeIntegerInput(value);
+  if (!cleaned) return "";
+
+  if (allowDecimal) {
+    const [intPart, decimalPart] = cleaned.split(".");
+    const formattedInt = (intPart || "0").replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return decimalPart === undefined
+      ? formattedInt
+      : `${formattedInt}.${decimalPart}`;
+  }
+
+  return cleaned.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
 function emptyItem(): ItemRow {
   return {
     key: nextKey++,
@@ -164,18 +199,20 @@ export default function CreateRequest() {
           return { ...it, preferredBrand: value };
         }
         if (field === "qtyInput") {
-          const parsed = parseInt(value, 10);
+          const sanitized = sanitizeIntegerInput(value);
+          const parsed = parseInt(sanitized, 10);
           return {
             ...it,
-            qtyInput: value,
+            qtyInput: sanitized,
             qty: Number.isFinite(parsed) && parsed > 0 ? parsed : it.qty,
           };
         }
         if (field === "unitCostInput") {
-          const parsed = parseFloat(value);
+          const sanitized = sanitizeDecimalInput(value);
+          const parsed = parseFloat(sanitized);
           return {
             ...it,
-            unitCostInput: value,
+            unitCostInput: sanitized,
             unitCost: Number.isFinite(parsed) ? parsed : it.unitCost,
           };
         }
@@ -510,15 +547,14 @@ export default function CreateRequest() {
                       <div className="md:col-span-2">
                         <label className="text-xs text-gray-500">Qty *</label>
                         <input
-                          type="number"
-                          min={1}
-                          step="1"
-                          value={it.qtyInput}
+                          type="text"
+                          inputMode="numeric"
+                          value={formatNumberInput(it.qtyInput)}
                           onChange={(e) =>
                             updateItem(it.key, "qtyInput", e.target.value)
                           }
                           onBlur={(e) => {
-                            if (!e.target.value) {
+                            if (!sanitizeIntegerInput(e.target.value)) {
                               updateItem(it.key, "qtyInput", "1");
                             }
                           }}
@@ -549,15 +585,14 @@ export default function CreateRequest() {
                           Unit Cost
                         </label>
                         <input
-                          type="number"
-                          min={0}
-                          step="0.01"
-                          value={it.unitCostInput}
+                          type="text"
+                          inputMode="decimal"
+                          value={formatNumberInput(it.unitCostInput, true)}
                           onChange={(e) =>
                             updateItem(it.key, "unitCostInput", e.target.value)
                           }
                           onBlur={(e) => {
-                            if (!e.target.value) {
+                            if (!sanitizeDecimalInput(e.target.value)) {
                               updateItem(it.key, "unitCostInput", "0");
                             }
                           }}

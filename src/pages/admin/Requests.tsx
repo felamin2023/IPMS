@@ -977,9 +977,11 @@ export default function Requests() {
                           <th className="px-3 py-2">Description</th>
                           <th className="px-3 py-2">Preferred Brand</th>
                           <th className="px-3 py-2">Qty</th>
+                          <th className="px-3 py-2">Received Qty</th>
                           <th className="px-3 py-2">UOM</th>
                           <th className="px-3 py-2">Unit Cost</th>
                           <th className="px-3 py-2">Total</th>
+                          <th className="px-3 py-2">End-User Notes</th>
                           <th className="px-3 py-2">Inspection Notes</th>
                           <th className="px-3 py-2">Inspection File</th>
                         </tr>
@@ -997,6 +999,11 @@ export default function Requests() {
                               {item.preferred_brand || "—"}
                             </td>
                             <td className="px-3 py-2">{item.qty}</td>
+                            <td className="px-3 py-2">
+                              {item.received_qty != null
+                                ? item.received_qty
+                                : "—"}
+                            </td>
                             <td className="px-3 py-2">{item.uom}</td>
                             <td className="px-3 py-2">
                               {item.unit_cost
@@ -1007,6 +1014,9 @@ export default function Requests() {
                               {item.total_cost
                                 ? money.format(Number(item.total_cost))
                                 : "—"}
+                            </td>
+                            <td className="px-3 py-2">
+                              {item.damage_notes?.trim() || "—"}
                             </td>
                             <td className="px-3 py-2">
                               {item.inspection_notes || "—"}
