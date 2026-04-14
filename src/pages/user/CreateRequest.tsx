@@ -266,17 +266,24 @@ export default function CreateRequest() {
   }, [ppmpItemsByCategory]);
 
   function getAvailableCategoryOptions(currentKey: number) {
-    const selectedByOthers = new Set(
-      items
-        .filter((row) => row.key !== currentKey)
-        .map((row) => row.category?.trim())
-        .filter(Boolean),
-    );
+    const current = items.find((row) => row.key === currentKey);
 
     return categoryOptions.filter((category) => {
-      const current = items.find((row) => row.key === currentKey);
+      // Keep currently selected category visible for the active row.
       if (current?.category === category) return true;
-      return !selectedByOthers.has(category);
+
+      const options = ppmpItemsByCategory.get(category) ?? [];
+      if (options.length === 0) return false;
+
+      const usedByOthers = new Set(
+        items
+          .filter((row) => row.key !== currentKey && row.category === category)
+          .map((row) => row.itemDescription.trim())
+          .filter(Boolean),
+      );
+
+      // Category stays available while it has at least one unused item option.
+      return options.some((option) => !usedByOthers.has(option.description));
     });
   }
 

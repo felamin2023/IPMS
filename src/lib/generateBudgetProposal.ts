@@ -268,7 +268,7 @@
       <section class="page">
         <div class="header">
           <img
-            src="/assets/footer.jpg"
+            src="/assets/header.jpg"
             alt="Header"
           />
         </div>
@@ -352,7 +352,7 @@
       <section class="page">
         <div class="header">
           <img
-            src="/assets/footer.jpg"
+            src="/assets/header.jpg"
             alt="Header"
           />
         </div>
@@ -384,7 +384,7 @@
       <section class="page">
         <div class="header">
           <img
-            src="/assets/footer.jpg"
+            src="/assets/header.jpg"
             alt="Header"
           />
         </div>
@@ -440,7 +440,7 @@
       <section class="page">
         <div class="header">
           <img
-            src="/assets/footer.jpg"
+            src="/assets/header.jpg"
             alt="Header"
           />
         </div>

@@ -424,6 +424,14 @@ function formatNumberInput(value: string, allowDecimal = false) {
   return cleaned.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
+function formatAmountDisplay(value: number | string) {
+  const parsed = Number(String(value ?? "").replace(/,/g, "")) || 0;
+  return parsed.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 type Module3Row = {
   key: number;
   title: string;
@@ -3105,7 +3113,11 @@ export default function Ppmp() {
                                                 </div>
                                                 <input
                                                   type="text"
-                                                  value={item.amount}
+                                                  inputMode="decimal"
+                                                  value={formatNumberInput(
+                                                    item.amount,
+                                                    true,
+                                                  )}
                                                   onChange={(e) =>
                                                     updateModule2Item(
                                                       fund.key,
@@ -3161,7 +3173,9 @@ export default function Ppmp() {
                                             <div className="flex flex-col items-end gap-1">
                                               <div className="text-xs font-semibold text-gray-700">
                                                 Subtotal:{" "}
-                                                {groupTotal.toFixed(2)}
+                                                {formatAmountDisplay(
+                                                  groupTotal,
+                                                )}
                                               </div>
                                               {getRemainingModule2GroupOptions(
                                                 fundData,
@@ -3194,7 +3208,7 @@ export default function Ppmp() {
 
                           <div className="mt-4 rounded-lg bg-blue-50 px-3 py-2 text-sm font-semibold text-gray-900">
                             Total {fund.title.replace(/^\d+\.\d+\.\s*/, "")}:{" "}
-                            {fundTotal.toFixed(2)}
+                            {formatAmountDisplay(fundTotal)}
                           </div>
                         </div>
                       );
@@ -3204,14 +3218,19 @@ export default function Ppmp() {
                   <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
                     <div className="flex items-center justify-between text-sm font-semibold text-gray-900">
                       <span>TOTAL PROPOSED EXPENDITURES TUITION</span>
-                      <span>{module2TotalExpenditures.toFixed(2)}</span>
+                      <span>
+                        {formatAmountDisplay(module2TotalExpenditures)}
+                      </span>
                     </div>
                     <div className="mt-2 flex items-center justify-between text-sm font-semibold text-gray-900">
                       <span>BALANCE END (Appropriation less Expenditures)</span>
                       <span>
                         {(
                           module2TotalAppropriation - module2TotalExpenditures
-                        ).toFixed(2)}
+                        ).toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </span>
                     </div>
                   </div>
@@ -3535,10 +3554,12 @@ export default function Ppmp() {
 
                   <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                     <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm font-semibold text-green-900">
-                      Total Planned Budget: {module3TotalPlanned.toFixed(2)}
+                      Total Planned Budget:{" "}
+                      {formatAmountDisplay(module3TotalPlanned)}
                     </div>
                     <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-900">
-                      Total Actual Budget: {module3TotalActual.toFixed(2)}
+                      Total Actual Budget:{" "}
+                      {formatAmountDisplay(module3TotalActual)}
                     </div>
                   </div>
 

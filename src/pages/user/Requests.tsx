@@ -412,29 +412,25 @@ export default function Requests() {
                                 Confirm Receipt
                               </button>
                             )}
-                            {STATUS_FLOW.indexOf(
-                              normalizeFlowStatus(r.status),
-                            ) >= 1 && (
-                              <button
-                                type="button"
-                                className="inline-flex items-center gap-1 text-green-600 font-semibold hover:text-green-700 text-sm"
-                                onClick={async () => {
-                                  try {
-                                    const full = await fetchRequestById(r.id);
-                                    generatePrDocument(full);
-                                  } catch (err) {
-                                    console.error(
-                                      "Failed to load request for PR download:",
-                                      err,
-                                    );
-                                    generatePrDocument(r);
-                                  }
-                                }}
-                              >
-                                <Download className="h-4 w-4" />
-                                PR
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-1 text-green-600 font-semibold hover:text-green-700 text-sm"
+                              onClick={async () => {
+                                try {
+                                  const full = await fetchRequestById(r.id);
+                                  generatePrDocument(full);
+                                } catch (err) {
+                                  console.error(
+                                    "Failed to load request for PR download:",
+                                    err,
+                                  );
+                                  generatePrDocument(r);
+                                }
+                              }}
+                            >
+                              <Download className="h-4 w-4" />
+                              PR
+                            </button>
                             {canEditReturnedRequest(r) && (
                               <Link
                                 to={`/user/edit-request/${r.id}`}
@@ -801,19 +797,16 @@ export default function Requests() {
             />
 
             {/* Download button */}
-            {STATUS_FLOW.indexOf(normalizeFlowStatus(viewRequest.status)) >=
-              1 && (
-              <div className="mt-4 flex justify-end">
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
-                  onClick={() => generatePrDocument(viewRequest)}
-                >
-                  <Download className="h-4 w-4" />
-                  Download PR Document
-                </button>
-              </div>
-            )}
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+                onClick={() => generatePrDocument(viewRequest)}
+              >
+                <Download className="h-4 w-4" />
+                Download PR Document
+              </button>
+            </div>
           </div>
         </div>
       )}
