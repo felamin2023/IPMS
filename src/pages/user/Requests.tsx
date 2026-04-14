@@ -23,7 +23,6 @@ import {
   STATUS_TONE,
   STATUS_FLOW,
   getDisplayNote,
-  normalizeFlowStatus,
 } from "../../lib/requests";
 import { supabase } from "../../lib/supabase";
 import { generatePrDocument } from "../../lib/generatePr";
