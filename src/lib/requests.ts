@@ -776,6 +776,11 @@ export async function submitDraft(
     requestId: draftId,
   });
 
+  await sendAccountingReviewEmail({
+    requestId: draftId,
+    prNo: mainPrNo,
+  });
+
   return {
     id: draftId,
     pr_no: mainPrNo,
@@ -904,6 +909,12 @@ export async function createRequest(params: {
     body: params.purpose || "A new procurement request needs review",
     type: "new_request",
     requestId: request.id,
+  });
+
+  await sendAccountingReviewEmail({
+    requestId: request.id,
+    prNo: request.pr_no ?? "",
+    purpose: params.purpose ?? null,
   });
 
   return request as RequestRow;
@@ -1355,6 +1366,209 @@ async function sendStatusEmail(params: {
   }
 }
 
+async function sendAccountingReviewEmail(params: {
+  requestId: string;
+  prNo: string;
+  purpose?: string | null;
+}) {
+  try {
+    const { data: admins, error: adminsError } = await supabase
+      .from("users")
+      .select("email, first_name, last_name")
+      .eq("role", "accounting_admin")
+      .not("email", "is", null);
+
+    if (adminsError) {
+      console.error(
+        "Failed to fetch accounting admin recipients:",
+        adminsError,
+      );
+      return;
+    }
+
+    const recipients = Array.from(
+      new Map(
+        (admins ?? [])
+          .map((admin) => ({
+            email: String(admin.email || "").trim(),
+            name: `${String(admin.first_name || "").trim()} ${String(
+              admin.last_name || "",
+            ).trim()}`.trim(),
+          }))
+          .filter((entry) => Boolean(entry.email))
+          .map((entry) => [entry.email.toLowerCase(), entry] as const),
+      ).values(),
+    );
+
+    if (recipients.length === 0) {
+      console.warn("No accounting admin emails found for review notification.");
+      return;
+    }
+
+    // Fetch the request to get creator name and college
+    const { data: requestData } = await supabase
+      .from("requests")
+      .select(
+        "id, purpose, created_by, creator:users!requests_created_by_fkey(first_name, last_name), college:colleges(code, name)",
+      )
+      .eq("id", params.requestId)
+      .single();
+
+    const raw = requestData?.creator as unknown;
+    const creatorArray = Array.isArray(raw) ? raw : raw ? [raw] : [];
+    const creator = creatorArray[0] as
+      | { first_name: string; last_name: string }
+      | undefined;
+    const creatorName = creator
+      ? `${creator.first_name} ${creator.last_name}`.trim()
+      : "A user";
+
+    const collegeRaw = requestData?.college as unknown;
+    const collegeArray = Array.isArray(collegeRaw)
+      ? collegeRaw
+      : collegeRaw
+        ? [collegeRaw]
+        : [];
+    const college = collegeArray[0] as
+      | { code: string; name: string }
+      | undefined;
+    const creatorCollege = college ? `${college.code} - ${college.name}` : "";
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+
+    // Send admin notification email
+    const { error } = await supabase.functions.invoke(
+      "send-admin-request-notification",
+      {
+        body: {
+          prNo: params.prNo || params.requestId,
+          creatorName,
+          creatorCollege,
+          purpose: params.purpose ?? null,
+          recipients: recipients.map((r) => ({
+            email: r.email,
+            name: r.name,
+          })),
+        },
+        headers: accessToken
+          ? {
+              Authorization: `Bearer ${accessToken}`,
+            }
+          : undefined,
+      },
+    );
+
+    if (error) {
+      console.error("Admin notification email error:", error);
+    } else {
+      console.log(
+        "Admin notification emails sent to",
+        recipients.length,
+        "accounting admin(s)",
+      );
+    }
+  } catch (err) {
+    // Do not block request submission if email delivery fails.
+    console.error("Failed to send accounting review email:", err);
+  }
+}
+
+async function fetchUsersByRole(role: UserRole) {
+  const { data, error } = await supabase
+    .from("users")
+    .select("email, first_name, last_name")
+    .eq("role", role)
+    .not("email", "is", null);
+
+  if (error) {
+    throw error;
+  }
+
+  return Array.from(
+    new Map(
+      (data ?? [])
+        .map((user) => ({
+          email: String(user.email || "").trim(),
+          name: `${String(user.first_name || "").trim()} ${String(
+            user.last_name || "",
+          ).trim()}`.trim(),
+        }))
+        .filter((entry) => Boolean(entry.email))
+        .map((entry) => [entry.email.toLowerCase(), entry] as const),
+    ).values(),
+  );
+}
+
+function getNextNotificationRoles(
+  status: RequestStatus,
+  currentRole: UserRole,
+) {
+  const startIndex = STATUS_FLOW.indexOf(normalizeFlowStatus(status));
+  if (startIndex < 0) return [] as UserRole[];
+
+  const nextStatus = STATUS_FLOW[startIndex + 1];
+  if (!nextStatus) return [] as UserRole[];
+
+  const nextRole = STATUS_RESPONSIBLE_ROLE[nextStatus];
+  if (nextRole === currentRole) return [] as UserRole[];
+
+  return [nextRole];
+}
+
+async function sendAdminRoleNotification(params: {
+  requestId: string;
+  role: UserRole;
+  prNo: string;
+  statusLabel: string;
+  note?: string | null;
+  ownerName: string;
+  ownerCollege?: string | null;
+}) {
+  try {
+    const recipients = await fetchUsersByRole(params.role);
+    if (recipients.length === 0) {
+      console.warn(`No users found for role ${params.role}.`);
+      return;
+    }
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+
+    const { error } = await supabase.functions.invoke(
+      "send-admin-request-notification",
+      {
+        body: {
+          recipients: recipients.map((recipient) => ({
+            email: recipient.email,
+            name: recipient.name,
+          })),
+          prNo: params.prNo || params.requestId,
+          creatorName: params.ownerName,
+          creatorCollege: params.ownerCollege ?? null,
+          purpose:
+            `${ROLE_LABELS[params.role]} action required: ${params.statusLabel}` +
+            (params.note ? `\n\nNote: ${params.note}` : ""),
+        },
+        headers: accessToken
+          ? {
+              Authorization: `Bearer ${accessToken}`,
+            }
+          : undefined,
+      },
+    );
+
+    if (error) {
+      console.error(`Admin role notification error for ${params.role}:`, error);
+    }
+  } catch (err) {
+    console.error(
+      `Failed to send admin role notification for ${params.role}:`,
+      err,
+    );
+  }
+}
+
 export interface SpecialStatusNoticeParams {
   status: "notice_of_meeting" | "hope_approval" | "issuance";
   prNo: string;
@@ -1373,10 +1587,15 @@ export interface SpecialStatusNoticeParams {
 export async function sendSpecialStatusNotice(
   params: SpecialStatusNoticeParams,
 ) {
-  // Enforce owner-only email delivery for special notices.
-  const ownerRecipient = String(params.ownerEmail ?? "").trim();
+  const dedupedRecipients = Array.from(
+    new Set(
+      [params.ownerEmail ?? "", ...(params.additionalEmails ?? [])]
+        .map((email) => email.trim())
+        .filter(Boolean),
+    ),
+  );
 
-  if (!ownerRecipient) {
+  if (dedupedRecipients.length === 0) {
     return;
   }
 
@@ -1387,7 +1606,7 @@ export async function sendSpecialStatusNotice(
         status: params.status,
         prNo: params.prNo,
         ownerName: params.ownerName,
-        recipients: [ownerRecipient],
+        recipients: dedupedRecipients,
         meetingDate: params.meetingDate ?? null,
         meetingTime: params.meetingTime ?? null,
         venue: params.venue ?? null,
@@ -1557,6 +1776,44 @@ export async function updateRequestStatus(params: {
         }
       }
 
+      // ── Email notification to the next two distinct responsible roles ──
+      // Never broadcast status-update emails to all department users.
+      // End-user updates should go only to the request owner via sendStatusEmail above.
+      const emailRoles = getNextNotificationRoles(
+        params.newStatus,
+        userRole,
+      ).filter((role) => role !== "department_user");
+      if (emailRoles.length > 0) {
+        const requesterName = creator
+          ? `${creator.first_name} ${creator.last_name}`.trim()
+          : "A user";
+        const collegeRaw = request?.college as unknown;
+        const collegeArray = Array.isArray(collegeRaw)
+          ? collegeRaw
+          : collegeRaw
+            ? [collegeRaw]
+            : [];
+        const college = collegeArray[0] as
+          | { code: string; name: string }
+          | undefined;
+        const requesterCollege = college
+          ? `${college.code} - ${college.name}`
+          : null;
+
+        await Promise.all(
+          emailRoles.map((role) =>
+            sendAdminRoleNotification({
+              requestId: params.requestId,
+              role,
+              prNo: request.pr_no ?? params.requestId,
+              statusLabel: STATUS_LABELS[params.newStatus] ?? params.newStatus,
+              note: params.note ?? DEFAULT_STATUS_NOTES[params.newStatus],
+              ownerName: requesterName,
+              ownerCollege: requesterCollege,
+            }),
+          ),
+        );
+      }
     } else {
       console.warn("[email-notify] No creator found on request");
     }
