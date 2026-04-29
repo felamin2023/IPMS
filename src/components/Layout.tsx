@@ -32,7 +32,7 @@ export default function Layout() {
 
           <div className="relative h-full w-64 bg-white shadow-lg">
             <div className="p-3 border-b border-gray-200 flex items-center justify-between">
-              <div className="text-lg font-semibold">IPMS</div>
+              <div className="text-lg font-semibold">ARMS</div>
               <button
                 aria-label="Close navigation"
                 onClick={() => setMobileOpen(false)}

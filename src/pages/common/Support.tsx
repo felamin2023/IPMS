@@ -41,7 +41,7 @@ export default function Support() {
 
           <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-semibold text-gray-900">
-              How to Use IPMS
+              How to Use Automated Requisitioning and Monitoring System
             </h2>
             <ol className="mt-3 space-y-2 text-sm text-gray-600 list-decimal list-inside">
               <li>Go to PPMP and add your planned items for the year.</li>
@@ -54,7 +54,7 @@ export default function Support() {
           <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-semibold text-gray-900">Contact</h2>
             <div className="mt-3 text-sm text-gray-600">
-              <p>Email: ipms.support@ctu.edu.ph</p>
+              <p>Email: arms.support@ctu.edu.ph</p>
               <p>Phone: (032) 401-0737 local 1700</p>
               <p>Office: Procurement Office, CTU Argao Campus</p>
             </div>
