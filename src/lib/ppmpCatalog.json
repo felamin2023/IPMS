@@ -2237,22 +2237,6 @@
   },
   {
     "part": "PART I",
-    "category": "PAPER MATERIALS & PRODUCTS",
-    "items": [
-      {
-        "description": "Answer Sheets, KA",
-        "uom": "sheet",
-        "unitPrice": "35"
-      },
-      {
-        "description": "Answer Sheets, SATT",
-        "uom": "sheet",
-        "unitPrice": "35"
-      }
-    ]
-  },
-  {
-    "part": "PART I",
     "category": "ICT ACCESSORIES AND PERIPHERALS",
     "items": [
       {
